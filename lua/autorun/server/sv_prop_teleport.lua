@@ -33,7 +33,7 @@ hook.Add("Think", "seamless_portal_teleport", function()
             end
         end
 
-        if closestPortalDist > 10000 then 
+        --[[if closestPortalDist > 10000 then 
             destroyPortalEnt(prop)
             continue 
         end
@@ -51,9 +51,7 @@ hook.Add("Think", "seamless_portal_teleport", function()
             prop.PORTAL_ENTITY:SetRenderMode(prop:GetRenderMode())
             prop.PORTAL_ENTITY:SetRenderFX(prop:GetRenderFX())
             prop.PORTAL_ENTITY:GetPhysicsObject():EnableMotion(false)
-            --prop.PORTAL_ENTITY:SetMoveType(MOVETYPE_NONE)
-            --prop.PORTAL_ENTITY:SetCollisionGroup(COLLISION_GROUP_WORLD)
-            --prop.PORTAL_ENTITY:SetSolid(SOLID_NONE)
+            prop.PORTAL_ENTITY:SetPersistent(true)
             prop.PORTAL_ENTITY.PORTAL_PARENT_ENTITY = prop
         end
 
@@ -62,7 +60,7 @@ hook.Add("Think", "seamless_portal_teleport", function()
         prop.PORTAL_ENTITY:SetPos(editedPos)
         prop.PORTAL_ENTITY:SetAngles(editedAng)
 
-        if prop:IsPlayerHolding() or (realPos - closestPortal:GetPos()):Dot(closestPortal:GetUp()) < 0 then continue end
+        if (realPos - closestPortal:GetPos()):Dot(closestPortal:GetUp()) < 0 then continue end]]
         
         -- can it go through the portal?
         local tr = util.TraceLine({

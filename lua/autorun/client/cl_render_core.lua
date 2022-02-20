@@ -98,10 +98,6 @@ hook.Add("PostDrawOpaqueRenderables", "seamless_portals_draw", function(_, sky)
 
 		if drawPlayerInView then 
 			DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(1, 1, -backAmt))
-			--if !SeamlessPortals.stupid_halo_fix then
-			--	DrawQuadEasier(v, Vector(scaley, -scalex, -backAmt), Vector(1, 1, -backAmt))
-			--end
-			--continue
 		end
 
 		-- outer quads
