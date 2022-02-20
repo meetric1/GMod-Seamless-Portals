@@ -3,6 +3,8 @@ My seamless portals addon for garrys mod
 
 THIS IS WORK IN PROGRESS!
 
+BEST RESULTS ARE IN A LOCAL SERVER BECAUSE I CANT DO PREDICTION IN SINGLEPLAYER!
+
 This WILL become an addon on the workshop ONCE IT IS FINISHED!
 
 
