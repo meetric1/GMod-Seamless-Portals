@@ -2,6 +2,8 @@
 
 AddCSLuaFile()
 
+if SERVER then return end
+
 local portals = {}
 local renderViewTable = {
 	origin = Vector(),

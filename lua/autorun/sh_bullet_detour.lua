@@ -15,6 +15,7 @@ hook.Add("EntityFireBullets", "seamless_portal_detour_bullet", function(entity, 
 			data.IgnoreEntity = hitPortal:ExitPortal()
 			data.Src = newPos
 			data.Dir = newAng:Forward()
+			--print("detoured bullet")
 			return true
 		end
 	end

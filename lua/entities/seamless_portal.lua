@@ -29,6 +29,7 @@ function ENT:Initialize()
 	self:SetRenderMode(RENDERMODE_TRANSCOLOR)
 	self:GetPhysicsObject():EnableMotion(false)
 	self:SetCollisionGroup(COLLISION_GROUP_WORLD)
+	self:DrawShadow(false)
 
 	if self.EXIT_PORTAL then return end
 	self.EXIT_PORTAL = ents.Create("seamless_portal")
