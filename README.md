@@ -1,8 +1,11 @@
 # GMod-Seamless-Portals
 My seamless portals addon for garrys mod
 
-THIS IS WORK IN PROGRESS!
-Don't expect a release date, it will come out when its finished :)
+To install this addon, download and unzip the contents and put it in your garrys mod addon folder
+
+BEST RESULTS ARE IN A LOCAL SERVER BECAUSE I CANT DO PREDICTION IN SINGLEPLAYER!
+
+This WILL become an addon on the workshop ONCE IT IS FINISHED!
 
 
 I plan to add:
