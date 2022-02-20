@@ -8,8 +8,7 @@ local function destroyPortalEnt(e)
 end
 
 hook.Add("Think", "seamless_portal_teleport", function()
-    if !SeamlessPortals then return end
-    if SeamlessPortals.PortalIndex < 1 then return end
+    if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
     for _, prop in ipairs(ents.GetAll()) do
         if prop:GetClass() == "player" or prop:GetClass() == "seamless_portal" then continue end
         if prop.PORTAL_PARENT_ENTITY then 
@@ -73,18 +72,23 @@ hook.Add("Think", "seamless_portal_teleport", function()
         local hitPortal = tr.Entity
         if hitPortal:GetClass() == "seamless_portal" and hitPortal:ExitPortal():IsValid() then
             if prop:GetVelocity():Dot(hitPortal:GetUp()) < 0 then
-                -- rotate velocity, position, and angles
-                local editedPos, editedAng = SeamlessPortals.TransformPortal(hitPortal, hitPortal:ExitPortal(), tr.HitPos, prop:GetVelocity():Angle())
+                --local propsToTeleport = prop.Constraints
+                --table.insert(propsToTeleport, prop)
 
-                --extra angle rotate
-                local newPropAng = prop:GetAngles()
-                newPropAng:RotateAroundAxis(hitPortal:GetForward(), 180)
-                local editedPropAng = hitPortal:ExitPortal():LocalToWorldAngles(hitPortal:WorldToLocalAngles(newPropAng))
+                --for _, constraintedProp in ipairs(propsToTeleport) do
+                    -- rotate velocity, position, and angles
+                    local editedPos, editedAng = SeamlessPortals.TransformPortal(hitPortal, hitPortal:ExitPortal(), tr.HitPos, prop:GetVelocity():Angle())
 
-                local max = math.Max(prop:GetVelocity():Length(), hitPortal:ExitPortal():GetUp():Dot(-physenv.GetGravity() / 3))
-                prop:GetPhysicsObject():SetVelocity(editedAng:Forward() * max)
-                prop:GetPhysicsObject():SetAngles(editedPropAng)
-                prop:GetPhysicsObject():SetPos(editedPos)
+                    --extra angle rotate
+                    local newPropAng = prop:GetAngles()
+                    newPropAng:RotateAroundAxis(hitPortal:GetForward(), 180)
+                    local editedPropAng = hitPortal:ExitPortal():LocalToWorldAngles(hitPortal:WorldToLocalAngles(newPropAng))
+
+                    local max = math.Max(prop:GetVelocity():Length(), hitPortal:ExitPortal():GetUp():Dot(-physenv.GetGravity() / 3))
+                    prop:GetPhysicsObject():SetVelocity(editedAng:Forward() * max)
+                    prop:GetPhysicsObject():SetAngles(editedPropAng)
+                    prop:GetPhysicsObject():SetPos(editedPos)
+                --end
                 destroyPortalEnt(prop)
             end
         end

@@ -25,7 +25,7 @@ function ENT:Initialize()
 	self:SetMoveType(MOVETYPE_VPHYSICS)
 	self:SetSolid(SOLID_VPHYSICS)
 	self:PhysWake()
-	self:SetMaterial("phoenix_storms/stripes")
+	self:SetMaterial("debug/debugempty")
 	self:SetRenderMode(RENDERMODE_TRANSCOLOR)
 	self:GetPhysicsObject():EnableMotion(false)
 	self:SetCollisionGroup(COLLISION_GROUP_WORLD)
@@ -44,7 +44,7 @@ end
 function ENT:OnRemove()
 	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex - 1
 	if self.EXIT_PORTAL then
-		self.EXIT_PORTAL:Remove()
+		SafeRemoveEntity(self.EXIT_PORTAL)
 	end
 end
 
@@ -62,15 +62,16 @@ function ENT:Think()
 	self:NextThink(math.huge)
 end
 
+
 function ENT:Draw()
-	if halo.RenderedEntity():IsValid() then SeamlessPortals.stupid_halo_fix = true end
+	
 end
 
 SeamlessPortals = SeamlessPortals or {} 
 SeamlessPortals.drawPlayerInView = false
-SeamlessPortals.stupid_halo_fix = false
 SeamlessPortals.PortalIndex = #ents.FindByClass("seamless_portal")	-- for hotreloading
 SeamlessPortals.TransformPortal = function(a, b, pos, angle, mul)
+	if !b:IsValid() or !a:IsValid() then return Vector(), Angle() end
 	local editedPos = a:WorldToLocal(pos) * (b.PORTAL_SCALE or 1)
 	editedPos = b:LocalToWorld(Vector(editedPos[1], -editedPos[2], -editedPos[3]))
 	editedPos = editedPos + b:GetUp() * (mul or 1)

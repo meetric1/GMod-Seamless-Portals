@@ -19,6 +19,7 @@ local function updateCalcViews(portal1, portal2, finalPos, finalVel)
 	timer.Remove("portals_eye_fix_delay")	--just in case you enter the portal while the timer is running
 	
 	local weaponAng = LocalPlayer():EyeAngles()
+	local weaponPos = LocalPlayer():EyePos()
 	local addAngle = 1
 	hook.Add("CalcView", "seamless_portals_fix", function(ply, origin, angle)
 		if ply:EyePos():DistToSqr(origin) > 10000 then return end
@@ -29,17 +30,19 @@ local function updateCalcViews(portal1, portal2, finalPos, finalVel)
 		if freezePly and ply:Ping() > 5 then
 			finalPos = finalPos + finalVel * ply:GetVelocity():Length() * FrameTime()
 			weaponAng = angle
+			weaponPos = ply:EyePos()
             SeamlessPortals.drawPlayerInView = true
 		else
 			weaponAng = angle
             finalPos = ply:EyePos()
+			weaponPos = finalPos
 		end
         return {origin = finalPos, angles = angle}
 	end)
 
     -- weapons sometimes glitch out a bit when you teleport, since the weapon angle is wrong
 	hook.Add("CalcViewModelView", "seamless_portals_fix", function(wep, vm, oldPos, oldAng, pos, ang)
-		return LocalPlayer():EyePos(), weaponAng
+		return weaponPos, weaponAng
 	end)
 
     -- finish eyeangle lerp
@@ -55,8 +58,7 @@ end
 -- teleport players
 local seamless_check = function(e) return !(e:GetClass() == "seamless_portal" or e:GetClass() == "player") end    -- for traces
 hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
-    if !SeamlessPortals then return end
-	if SeamlessPortals.PortalIndex < 1 then return end
+    if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	local plyPos = ply:EyePos()
 	local tr = util.TraceLine({
 		start = plyPos - mv:GetVelocity() * 0.01, 

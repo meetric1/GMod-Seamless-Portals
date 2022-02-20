@@ -51,8 +51,14 @@ timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
 end)
 
 -- update the rendertarget here since we cant do it in postdraw (cuz of infinite recursion)
+local oldHalo = 0
 local drawPlayerInView = false
+
+--oldHalo = GetConVar("physgun_halo"):GetInt()
+--LocalPlayer():ConCommand("physgun_halo 0")
+
 hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles)
+    if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	drawPlayerInView = !SeamlessPortals.drawPlayerInView
 	for k, v in ipairs(portals) do
 		if !v:IsValid() or !v:ExitPortal():IsValid() then continue end
@@ -76,9 +82,9 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles)
 		render.PopRenderTarget()
 
 	end
+
 	drawPlayerInView = false
 	SeamlessPortals.drawPlayerInView = false
-	SeamlessPortals.stupid_halo_fix = false
 end)
 
 -- draw the player in renderview
@@ -88,7 +94,7 @@ end)
 
 -- draw the quad on the portals
 local drawMat = Material("models/props_lab/cornerunit_cloud")
-hook.Add("PostDrawOpaqueRenderables", "seamless_portals_draw", function(_, sky)
+hook.Add("PostDrawOpaqueRenderables", "seamless_portals_draw", function(_, _, sky)
 	if sky then return end
 	for k, v in ipairs(portals) do
 		if !v or !v:IsValid() then continue end
@@ -103,11 +109,11 @@ hook.Add("PostDrawOpaqueRenderables", "seamless_portals_draw", function(_, sky)
 		end
 
 		-- outer quads
-		DrawQuadEasier(v, Vector(scaley, -scalex, -backAmt), Vector(1, 1, -backAmt))
-		DrawQuadEasier(v, Vector(scaley, -scalex, backAmt), Vector(1, 1, -backAmt), 1)
-		DrawQuadEasier(v, Vector(scaley, scalex, -backAmt), Vector(1, 1, -backAmt), 1)
-		DrawQuadEasier(v, Vector(scaley, -scalex, backAmt), Vector(1, 1, -backAmt), 2)
-		DrawQuadEasier(v, Vector(-scaley, -scalex, -backAmt), Vector(1, 1, -backAmt), 2)
+		DrawQuadEasier(v, Vector(scaley, -scalex, -backAmt), Vector(0, 0, -backAmt))
+		DrawQuadEasier(v, Vector(scaley, -scalex, backAmt), Vector(0, 0, -backAmt), 1)
+		DrawQuadEasier(v, Vector(scaley, scalex, -backAmt), Vector(0, 0, -backAmt), 1)
+		DrawQuadEasier(v, Vector(scaley, -scalex, backAmt), Vector(0, 0, -backAmt), 2)
+		DrawQuadEasier(v, Vector(-scaley, -scalex, -backAmt), Vector(0, 0, -backAmt), 2)
 
 		-- do cursed stencil stuff
 		render.ClearStencil()
@@ -122,12 +128,12 @@ hook.Add("PostDrawOpaqueRenderables", "seamless_portals_draw", function(_, sky)
 		render.SetStencilCompareFunction(STENCIL_ALWAYS)
 	
 		-- draw the quad that the 2d texture will be drawn on
-		--DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(1, 1, -backAmt))
-		DrawQuadEasier(v, Vector(scaley, scalex, -backAmt), Vector(1, 1, -backAmt))
-		DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(1, 1, -backAmt), 1)
-		DrawQuadEasier(v, Vector(scaley, -scalex, -backAmt), Vector(1, 1, -backAmt), 1)
-		DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(1, 1, -backAmt), 2)
-		DrawQuadEasier(v, Vector(-scaley, scalex, -backAmt), Vector(1, 1, -backAmt), 2)
+		--DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt))
+		DrawQuadEasier(v, Vector(scaley, scalex, -backAmt), Vector(0, 0, -backAmt))
+		DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt), 1)
+		DrawQuadEasier(v, Vector(scaley, -scalex, -backAmt), Vector(0, 0, -backAmt), 1)
+		DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt), 2)
+		DrawQuadEasier(v, Vector(-scaley, scalex, -backAmt), Vector(0, 0, -backAmt), 2)
 
 		-- draw the actual portal texture
 		render.SetMaterial(v.PORTAL_MATERIAL)
