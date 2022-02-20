@@ -18,6 +18,7 @@ end
 local function updateCalcViews(portal1, portal2, finalPos, finalVel)
 	timer.Remove("portals_eye_fix_delay")	--just in case you enter the portal while the timer is running
 	
+	local weaponAng = LocalPlayer():EyeAngles()
 	local addAngle = 1
 	hook.Add("CalcView", "seamless_portals_fix", function(ply, origin, angle)
 		if ply:EyePos():DistToSqr(origin) > 10000 then return end
@@ -27,8 +28,10 @@ local function updateCalcViews(portal1, portal2, finalPos, finalVel)
 		-- position ping compensation
 		if freezePly and ply:Ping() > 5 then
 			finalPos = finalPos + finalVel * ply:GetVelocity():Length() * FrameTime()
+			weaponAng = angle
             SeamlessPortals.drawPlayerInView = true
 		else
+			weaponAng = angle
             finalPos = ply:EyePos()
 		end
         return {origin = finalPos, angles = angle}
@@ -36,7 +39,7 @@ local function updateCalcViews(portal1, portal2, finalPos, finalVel)
 
     -- weapons sometimes glitch out a bit when you teleport, since the weapon angle is wrong
 	hook.Add("CalcViewModelView", "seamless_portals_fix", function(wep, vm, oldPos, oldAng, pos, ang)
-		return LocalPlayer():EyePos()
+		return LocalPlayer():EyePos(), weaponAng
 	end)
 
     -- finish eyeangle lerp
