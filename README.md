@@ -2,7 +2,8 @@
 My seamless portals addon for garrys mod
 
 THIS IS WORK IN PROGRESS!
-Don't expect a release date, it will come out when its finished :)
+
+This WILL become an addon on the workshop ONCE IT IS FINISHED!
 
 
 I plan to add:
