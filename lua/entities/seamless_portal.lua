@@ -50,16 +50,17 @@ end
 
 -- initialize doesn't run when an incoming client joins, so im just use think hook and make it run once
 function ENT:Think()
-	if CLIENT then
-		self.PORTAL_RT = GetRenderTarget("SeamlessPortal" .. SeamlessPortals.PortalIndex, ScrW(), ScrH())
-		self.PORTAL_MATERIAL = CreateMaterial("SeamlessPortalsMaterial" .. SeamlessPortals.PortalIndex, "GMODScreenspace", {
-			["$basetexture"] = self.PORTAL_RT:GetName(), 
-			["$model"] = "1"
-		})
-		self:SetNextClientThink(math.huge)
+	if !self.PORTAL_INITIALIZED then
+		if CLIENT then
+			self.PORTAL_RT = GetRenderTarget("SeamlessPortal" .. SeamlessPortals.PortalIndex, ScrW(), ScrH())
+			self.PORTAL_MATERIAL = CreateMaterial("SeamlessPortalsMaterial" .. SeamlessPortals.PortalIndex, "GMODScreenspace", {
+				["$basetexture"] = self.PORTAL_RT:GetName(), 
+				["$model"] = "1"
+			})
+		end
+		SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
+		self.PORTAL_INITIALIZED = true
 	end
-	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
-	self:NextThink(math.huge)
 end
 
 

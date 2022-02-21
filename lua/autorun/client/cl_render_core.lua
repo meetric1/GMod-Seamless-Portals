@@ -43,22 +43,34 @@ local function DrawQuadEasier(e, multiplier, offset, rotate)
 end
 
 -- sort the portals by distance since draw functions do not obey the z buffer
+local haloChanged = false
 timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
 	portals = ents.FindByClass("seamless_portal")
 	table.sort(portals, function(a, b) 
 		return a:GetPos():DistToSqr(EyePos()) < b:GetPos():DistToSqr(EyePos())
 	end)
+
+	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then		-- black halo fix
+		if haloChanged then
+			LocalPlayer():ConCommand("physgun_halo 1")	-- sorry animators, but we need to turn this back on
+			LocalPlayer():ConCommand("effects_freeze 1")
+			LocalPlayer():ConCommand("effects_unfreeze 1")
+			haloChanged = false
+		end
+	else
+		haloChanged = true
+		LocalPlayer():ConCommand("physgun_halo 0")
+		LocalPlayer():ConCommand("effects_freeze 0")
+		LocalPlayer():ConCommand("effects_unfreeze 0")
+	end
 end)
 
 -- update the rendertarget here since we cant do it in postdraw (cuz of infinite recursion)
 local oldHalo = 0
 local drawPlayerInView = false
-
---oldHalo = GetConVar("physgun_halo"):GetInt()
---LocalPlayer():ConCommand("physgun_halo 0")
-
 hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles)
-    if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
+
+	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	drawPlayerInView = !SeamlessPortals.drawPlayerInView
 	for k, v in ipairs(portals) do
 		if !v:IsValid() or !v:ExitPortal():IsValid() then continue end
@@ -89,7 +101,9 @@ end)
 
 -- draw the player in renderview
 hook.Add("ShouldDrawLocalPlayer", "seamless_portal_drawplayer", function()
-	if drawPlayerInView then return true end
+	if drawPlayerInView then 
+		return true 
+	end
 end)
 
 -- draw the quad on the portals
