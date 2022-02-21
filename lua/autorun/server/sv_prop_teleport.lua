@@ -19,6 +19,7 @@ hook.Add("Think", "seamless_portal_teleport", function()
         end
         if !prop:GetPhysicsObject():IsValid() then continue end
         if prop:GetVelocity() == Vector(0, 0, 0) then continue end
+        if prop:IsPlayerHolding() then continue end
 
         -- puts fake prop in the other portal
         local realPos = prop:GetPos()
@@ -32,7 +33,8 @@ hook.Add("Think", "seamless_portal_teleport", function()
             end
         end
 
-        --[[if closestPortalDist > 10000 then 
+        --[[
+        if closestPortalDist > 10000 then 
             destroyPortalEnt(prop)
             continue 
         end
@@ -49,15 +51,18 @@ hook.Add("Think", "seamless_portal_teleport", function()
             prop.PORTAL_ENTITY:SetMaterial(prop:GetMaterial())
             prop.PORTAL_ENTITY:SetRenderMode(prop:GetRenderMode())
             prop.PORTAL_ENTITY:SetRenderFX(prop:GetRenderFX())
-            prop.PORTAL_ENTITY:GetPhysicsObject():EnableMotion(false)
+            prop.PORTAL_ENTITY:GetPhysicsObject():Wake()
             prop.PORTAL_ENTITY:SetPersistent(true)
             prop.PORTAL_ENTITY.PORTAL_PARENT_ENTITY = prop
+            prop.PORTAL_TOGGLE = true
+        else
+            -- set its position and angle
+            prop.PORTAL_TOGGLE = !prop.PORTAL_TOGGLE
+            if 
+            local editedPos, editedAng = SeamlessPortals.TransformPortal(closestPortal, closestPortal:ExitPortal(), realPos, prop:GetAngles())
+            prop.PORTAL_ENTITY:SetPos(editedPos)
+            prop.PORTAL_ENTITY:SetAngles(editedAng)
         end
-
-        -- set its position and angle
-        local editedPos, editedAng = SeamlessPortals.TransformPortal(closestPortal, closestPortal:ExitPortal(), realPos, prop:GetAngles())
-        prop.PORTAL_ENTITY:SetPos(editedPos)
-        prop.PORTAL_ENTITY:SetAngles(editedAng)
 
         if (realPos - closestPortal:GetPos()):Dot(closestPortal:GetUp()) < 0 then continue end]]
         

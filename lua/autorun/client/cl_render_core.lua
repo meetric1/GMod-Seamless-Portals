@@ -50,7 +50,7 @@ timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
 		return a:GetPos():DistToSqr(EyePos()) < b:GetPos():DistToSqr(EyePos())
 	end)
 
-	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then		-- black halo fix
+	if SeamlessPortals.PortalIndex < 1 then		-- black halo fix
 		if haloChanged then
 			LocalPlayer():ConCommand("physgun_halo 1")	-- sorry animators, but we need to turn this back on
 			LocalPlayer():ConCommand("effects_freeze 1")
@@ -143,6 +143,7 @@ hook.Add("PostDrawOpaqueRenderables", "seamless_portals_draw", function(_, _, sk
 	
 		-- draw the quad that the 2d texture will be drawn on
 		--DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt))
+		local plane = util.IntersectRayWithPlane(v:GetPos(), -v:GetUp(), EyePos(), -v:GetUp())
 		DrawQuadEasier(v, Vector(scaley, scalex, -backAmt), Vector(0, 0, -backAmt))
 		DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt), 1)
 		DrawQuadEasier(v, Vector(scaley, -scalex, -backAmt), Vector(0, 0, -backAmt), 1)
