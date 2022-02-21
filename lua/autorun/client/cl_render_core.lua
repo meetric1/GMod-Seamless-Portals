@@ -51,14 +51,14 @@ timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
 end)
 
 -- update the rendertarget here since we cant do it in postdraw (cuz of infinite recursion)
-local oldHalo = 0
+local physgun_halo = GetConVar("physgun_halo")
 local drawPlayerInView = false
 
 --oldHalo = GetConVar("physgun_halo"):GetInt()
 --LocalPlayer():ConCommand("physgun_halo 0")
 
 hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles)
-    if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
+	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	drawPlayerInView = !SeamlessPortals.drawPlayerInView
 	for k, v in ipairs(portals) do
 		if !v:IsValid() or !v:ExitPortal():IsValid() then continue end
@@ -76,7 +76,11 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles)
 		local oldClip = render.EnableClipping(true)
 		render.PushRenderTarget(v.PORTAL_RT)
 		render.PushCustomClipPlane(exitPortal:GetUp(), exitPortal:GetUp():Dot(exitPortal:GetPos() + exitPortal:GetUp() * 0.1))
+
+		physgun_halo:SetInt(0)
 		render.RenderView(renderViewTable)
+		physgun_halo:SetInt(1)
+
 		render.PopCustomClipPlane()
 		render.EnableClipping(oldClip)
 		render.PopRenderTarget()
