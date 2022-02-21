@@ -4,6 +4,7 @@
 
 AddCSLuaFile()
 
+local freezePly = false
 local function updateCalcViews(portal1, portal2, finalPos, finalVel)
 	timer.Remove("portals_eye_fix_delay")	--just in case you enter the portal while the timer is running
 	
@@ -19,11 +20,11 @@ local function updateCalcViews(portal1, portal2, finalPos, finalVel)
 		if freezePly and ply:Ping() > 5 then
 			finalPos = finalPos + finalVel * ply:GetVelocity():Length() * FrameTime()
 			weaponAng = angle
-			weaponPos = ply:EyePos()
+			weaponPos = finalPos
             SeamlessPortals.drawPlayerInView = true
 		else
+			finalPos = ply:EyePos()
 			weaponAng = angle
-            finalPos = ply:EyePos()
 			weaponPos = finalPos
 		end
         return {origin = finalPos, angles = angle}
@@ -46,7 +47,6 @@ end
 
 -- this indicates wheather the player is 'teleporting' and waiting for the server to give the OK that the client position is valid
 -- (only a problem with users that have higher ping)
-local freezePly = false
 if SERVER then
     util.AddNetworkString("PORTALS_FREEZE")
 else
@@ -62,8 +62,8 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
     if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	local plyPos = ply:EyePos()
 	local tr = util.TraceLine({
-		start = plyPos - mv:GetVelocity() * 0.01, 
-		endpos = plyPos + mv:GetVelocity() * 0.01, 
+		start = plyPos - mv:GetVelocity() * 0.02, 
+		endpos = plyPos + mv:GetVelocity() * 0.02, 
 		filter = ply
 	})
 	
@@ -105,7 +105,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 				ply:SetEyeAngles(editedEyeAng)
 				updateCalcViews(hitPortal, hitPortal:ExitPortal(), finalPos + (ply:EyePos() - ply:GetPos()), editedAng:Forward())	--fix viewmodel lerping for a tiny bit
 				ply.PORTAL_TELEPORTING = true 
-				timer.Simple(0.01, function() 
+				timer.Simple(0, function() 
                     ply.PORTAL_TELEPORTING = false 
                 end)
 			end

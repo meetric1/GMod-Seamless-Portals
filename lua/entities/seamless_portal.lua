@@ -30,6 +30,7 @@ function ENT:Initialize()
 	self:GetPhysicsObject():EnableMotion(false)
 	self:SetCollisionGroup(COLLISION_GROUP_WORLD)
 	self:DrawShadow(false)
+	print("Portal " .. tostring(self) .." was initialized")
 
 	if self.EXIT_PORTAL then return end
 	self.EXIT_PORTAL = ents.Create("seamless_portal")

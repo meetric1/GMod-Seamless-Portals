@@ -6,8 +6,8 @@ if SERVER then return end
 hook.Add("EntityEmitSound", "seamless_portals_detour_sound", function(t)
     if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	for k, v in ipairs(ents.FindByClass("seamless_portal")) do
-        if !t.Pos or !t.Entity or t.Entity:GetClass() == "player" then continue end
-        if (t.Pos - v:GetPos()):Dot(v:GetUp()) > 0 then
+        if !t.Pos or !t.Entity or t.Entity == NULL then continue end
+        if t.Pos:DistToSqr(v:GetPos()) < 50000 and (t.Pos - v:GetPos()):Dot(v:GetUp()) > 0 then
             local newPos, _ = SeamlessPortals.TransformPortal(v, v:ExitPortal(), t.Pos, Angle())
             local oldPos = t.Entity:GetPos() or Vector()
             t.Entity:SetPos(newPos)

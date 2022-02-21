@@ -119,7 +119,7 @@ hook.Add("PostDrawOpaqueRenderables", "seamless_portals_draw", function(_, _, sk
 
 
 		if drawPlayerInView then 
-			DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(1, 1, -backAmt))
+			DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt))
 		end
 
 		-- outer quads
@@ -127,7 +127,7 @@ hook.Add("PostDrawOpaqueRenderables", "seamless_portals_draw", function(_, _, sk
 		DrawQuadEasier(v, Vector(scaley, -scalex, backAmt), Vector(0, 0, -backAmt), 1)
 		DrawQuadEasier(v, Vector(scaley, scalex, -backAmt), Vector(0, 0, -backAmt), 1)
 		DrawQuadEasier(v, Vector(scaley, -scalex, backAmt), Vector(0, 0, -backAmt), 2)
-		DrawQuadEasier(v, Vector(-scaley, -scalex, -backAmt), Vector(0, 0, -backAmt), 2)
+		DrawQuadEasier(v, Vector(-scaley, -scalex, -backAmt), Vector(0, 0, -backAmt), 2) 
 
 		-- do cursed stencil stuff
 		render.ClearStencil()
@@ -142,9 +142,9 @@ hook.Add("PostDrawOpaqueRenderables", "seamless_portals_draw", function(_, _, sk
 		render.SetStencilCompareFunction(STENCIL_ALWAYS)
 	
 		-- draw the quad that the 2d texture will be drawn on
-		--DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt))
-		local plane = util.IntersectRayWithPlane(v:GetPos(), -v:GetUp(), EyePos(), -v:GetUp())
-		DrawQuadEasier(v, Vector(scaley, scalex, -backAmt), Vector(0, 0, -backAmt))
+		-- weapon rendering causes flashing if the quad is drawn right next to the player, so we offset it
+		local plane = v:WorldToLocal(util.IntersectRayWithPlane(v:GetPos() - v:GetUp() * backAmt * 1.1, v:GetUp(), EyePos() - v:GetUp() * 2, -v:GetUp()) or v:GetPos())
+		DrawQuadEasier(v, Vector(scaley, scalex, math.Min(plane.z, backAmt)), Vector(0, 0, -backAmt))
 		DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt), 1)
 		DrawQuadEasier(v, Vector(scaley, -scalex, -backAmt), Vector(0, 0, -backAmt), 1)
 		DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt), 2)
