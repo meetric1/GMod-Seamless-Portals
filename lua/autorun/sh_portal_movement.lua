@@ -4,17 +4,6 @@
 
 AddCSLuaFile()
 
--- this indicates wheather the player is 'teleporting' and waiting for the server to give the OK that the client position is valid
--- (only a problem with users that have higher ping)
-local freezePly = false
-if SERVER then
-    util.AddNetworkString("PORTALS_FREEZE")
-else
-    net.Receive("PORTALS_FREEZE", function()
-        freezePly = false
-    end)
-end
-
 local function updateCalcViews(portal1, portal2, finalPos, finalVel)
 	timer.Remove("portals_eye_fix_delay")	--just in case you enter the portal while the timer is running
 	
@@ -55,6 +44,18 @@ local function updateCalcViews(portal1, portal2, finalPos, finalVel)
 	end)
 end
 
+-- this indicates wheather the player is 'teleporting' and waiting for the server to give the OK that the client position is valid
+-- (only a problem with users that have higher ping)
+local freezePly = false
+if SERVER then
+    util.AddNetworkString("PORTALS_FREEZE")
+else
+    net.Receive("PORTALS_FREEZE", function()
+		if game.SinglePlayer() then updateCalcViews() end 	--singleplayer lerp fix
+        freezePly = false
+    end)
+end
+
 -- teleport players
 local seamless_check = function(e) return !(e:GetClass() == "seamless_portal" or e:GetClass() == "player") end    -- for traces
 hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
@@ -91,11 +92,9 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			local finalPos = editedPos - (editedPos - floor_trace.HitPos) + Vector(0, 0, 0.1)	--tiny offset so we arent in the floor
 			freezePly = true
 
-			-- lerp fix because move hook isnt called on client in singleplayer
 			if game.SinglePlayer() then
 				ply:SetPos(finalPos)
-				editedEyeAng.r = 0
-                ply:SetEyeAngles(editedEyeAng)
+				ply:SetEyeAngles(editedEyeAng)
 			end
 
 			if SERVER then 

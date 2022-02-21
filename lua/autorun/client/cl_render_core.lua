@@ -43,20 +43,31 @@ local function DrawQuadEasier(e, multiplier, offset, rotate)
 end
 
 -- sort the portals by distance since draw functions do not obey the z buffer
+local haloChanged = false
 timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
 	portals = ents.FindByClass("seamless_portal")
 	table.sort(portals, function(a, b) 
 		return a:GetPos():DistToSqr(EyePos()) < b:GetPos():DistToSqr(EyePos())
 	end)
+
+	if SeamlessPortals.PortalIndex < 1 then		-- black halo fix
+		if haloChanged then
+			LocalPlayer():ConCommand("physgun_halo 1")	-- sorry animators, but we need to turn this back on
+			LocalPlayer():ConCommand("effects_freeze 1")
+			LocalPlayer():ConCommand("effects_unfreeze 1")
+			haloChanged = false
+		end
+	else
+		haloChanged = true
+		LocalPlayer():ConCommand("physgun_halo 0")
+		LocalPlayer():ConCommand("effects_freeze 0")
+		LocalPlayer():ConCommand("effects_unfreeze 0")
+	end
 end)
 
 -- update the rendertarget here since we cant do it in postdraw (cuz of infinite recursion)
 local physgun_halo = GetConVar("physgun_halo")
 local drawPlayerInView = false
-
---oldHalo = GetConVar("physgun_halo"):GetInt()
---LocalPlayer():ConCommand("physgun_halo 0")
-
 hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles)
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	drawPlayerInView = !SeamlessPortals.drawPlayerInView
@@ -93,7 +104,9 @@ end)
 
 -- draw the player in renderview
 hook.Add("ShouldDrawLocalPlayer", "seamless_portal_drawplayer", function()
-	if drawPlayerInView then return true end
+	if drawPlayerInView then 
+		return true 
+	end
 end)
 
 -- draw the quad on the portals
@@ -133,6 +146,7 @@ hook.Add("PostDrawOpaqueRenderables", "seamless_portals_draw", function(_, _, sk
 	
 		-- draw the quad that the 2d texture will be drawn on
 		--DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt))
+		local plane = util.IntersectRayWithPlane(v:GetPos(), -v:GetUp(), EyePos(), -v:GetUp())
 		DrawQuadEasier(v, Vector(scaley, scalex, -backAmt), Vector(0, 0, -backAmt))
 		DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt), 1)
 		DrawQuadEasier(v, Vector(scaley, -scalex, -backAmt), Vector(0, 0, -backAmt), 1)
