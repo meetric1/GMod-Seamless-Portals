@@ -14,29 +14,29 @@ local renderViewTable = {
 
 local function DrawQuadEasier(e, multiplier, offset, rotate)
 	local right = e:GetRight() * multiplier.x
-	local forward = e:GetForward() * multiplier.y 
-	local up = e:GetUp() * multiplier.z 
+	local forward = e:GetForward() * multiplier.y
+	local up = e:GetUp() * multiplier.z
 
 	local pos = e:GetPos() + e:GetRight() * offset.x + e:GetForward() * offset.y + e:GetUp() * offset.z
 	if !rotate then
 		render.DrawQuad(
-			pos + right - forward + up, 
-			pos - right - forward + up, 
-			pos - right + forward + up, 
+			pos + right - forward + up,
+			pos - right - forward + up,
+			pos - right + forward + up,
 			pos + right + forward + up
 		)
 	elseif rotate == 1 then
 		render.DrawQuad(
-			pos + right + forward - up, 
-			pos - right + forward - up, 
-			pos - right + forward + up, 
+			pos + right + forward - up,
+			pos - right + forward - up,
+			pos - right + forward + up,
 			pos + right + forward + up
 		)
 	else
 		render.DrawQuad(
-			pos + right - forward + up, 
-			pos + right - forward - up, 
-			pos + right + forward - up, 
+			pos + right - forward + up,
+			pos + right - forward - up,
+			pos + right + forward - up,
 			pos + right + forward + up
 		)
 	end
@@ -46,7 +46,7 @@ end
 local haloChanged = false
 timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
 	portals = ents.FindByClass("seamless_portal")
-	table.sort(portals, function(a, b) 
+	table.sort(portals, function(a, b)
 		return a:GetPos():DistToSqr(EyePos()) < b:GetPos():DistToSqr(EyePos())
 	end)
 
@@ -66,7 +66,7 @@ timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
 end)
 
 -- update the rendertarget here since we cant do it in postdraw (cuz of infinite recursion)
-local oldHalo = 0
+local physgun_halo = GetConVar("physgun_halo")
 local drawPlayerInView = false
 hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles)
 
@@ -88,7 +88,12 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles)
 		local oldClip = render.EnableClipping(true)
 		render.PushRenderTarget(v.PORTAL_RT)
 		render.PushCustomClipPlane(exitPortal:GetUp(), exitPortal:GetUp():Dot(exitPortal:GetPos() + exitPortal:GetUp() * 0.1))
+
+		local oldHalo = physgun_halo:GetInt()
+		physgun_halo:SetInt(0)
 		render.RenderView(renderViewTable)
+		physgun_halo:SetInt(oldHalo)
+
 		render.PopCustomClipPlane()
 		render.EnableClipping(oldClip)
 		render.PopRenderTarget()
@@ -101,8 +106,8 @@ end)
 
 -- draw the player in renderview
 hook.Add("ShouldDrawLocalPlayer", "seamless_portal_drawplayer", function()
-	if drawPlayerInView then 
-		return true 
+	if drawPlayerInView then
+		return true
 	end
 end)
 
@@ -118,7 +123,7 @@ hook.Add("PostDrawOpaqueRenderables", "seamless_portals_draw", function(_, _, sk
 		render.SetMaterial(drawMat)
 
 
-		if drawPlayerInView then 
+		if drawPlayerInView then
 			DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(1, 1, -backAmt))
 		end
 
@@ -140,7 +145,7 @@ hook.Add("PostDrawOpaqueRenderables", "seamless_portals_draw", function(_, _, sk
 		render.SetStencilPassOperation(STENCIL_REPLACE)
 		render.SetStencilCompareFunction(STENCIL_EQUAL)
 		render.SetStencilCompareFunction(STENCIL_ALWAYS)
-	
+
 		-- draw the quad that the 2d texture will be drawn on
 		--DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt))
 		local plane = util.IntersectRayWithPlane(v:GetPos(), -v:GetUp(), EyePos(), -v:GetUp())
