@@ -75,8 +75,7 @@ hook.Add("ShouldDrawLocalPlayer", "seamless_portal_drawplayer", function()
 	end
 end)
 
--- draw the quad on the portals
-local drawMat = Material("models/props_lab/cornerunit_cloud")
-hook.Add("PostDrawOpaqueRenderables", "seamless_portals_draw", function(_, _, sky)
-	--if sky then return end
-end)
+print("-------------------------------------")
+print("Successfully loaded Seamless Portals!")
+print("Made by Mee, do not reupload!")
+print("-------------------------------------")
