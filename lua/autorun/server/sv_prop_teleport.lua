@@ -27,7 +27,7 @@ hook.Add("Think", "seamless_portal_teleport", function()
         local closestPortal = nil
         for k, portal in ipairs(ents.FindByClass("seamless_portal")) do 
             local dist = realPos:DistToSqr(portal:GetPos())
-            if dist < closestPortalDist or k == 1 then
+            if (dist < closestPortalDist or k == 1) and portal:ExitPortal() and portal:ExitPortal():IsValid() then
                 closestPortalDist = dist
                 closestPortal = portal
             end

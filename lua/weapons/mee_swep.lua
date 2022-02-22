@@ -36,12 +36,6 @@ SWEP.Secondary.Automatic = false
 --language.Add("#weapon_mee", "MEE'S WAPON")
 if CLIENT then return end
 
-function SWEP:Initialize()
-	self:SetHoldType("pistol")
-	self.Portals = ents.Create("seamless_portal")
-	self.Portals:Spawn()
-end
-
 -- from portal gun addon
 local function VectorAngle(vec1, vec2)
 	local costheta = vec1:Dot(vec2) / (vec1:Length() * vec2:Length())
@@ -49,38 +43,51 @@ local function VectorAngle(vec1, vec2)
 	return math.deg(theta)
 end
 
-function SWEP:PrimaryAttack()
-	local tr = self.Owner:GetEyeTrace()
-	local offset = math.abs(tr.HitNormal:Dot(Vector(0, 0, 1))) * 7
+local function setPortalPlacement(owner, portal)
+	local tr = owner:GetEyeTrace()
+	local offset = math.abs(tr.HitNormal:Dot(Vector(0, 0, 1))) * 11
 	local rotatedAng = tr.HitNormal:Angle() + Angle(90, 0, 0)
 
 	local elevationangle = VectorAngle(vector_up, tr.HitNormal)
 	if elevationangle < 1 or (elevationangle > 179 and elevationangle < 181) then 
-		rotatedAng.y = self.Owner:EyeAngles().y + 180
+		rotatedAng.y = owner:EyeAngles().y + 180
 	end
 
-	self.Portals:SetPos((tr.HitPos + tr.HitNormal * 18) + Vector(0, 0, offset))
-	self.Portals:SetAngles(rotatedAng)
+	portal:SetPos((tr.HitPos + tr.HitNormal * 18) + Vector(0, 0, offset))
+	portal:SetAngles(rotatedAng)
+end
+
+function SWEP:PrimaryAttack()
+	if !self.Portal or !self.Portal:IsValid() then
+		self.Portal = ents.Create("seamless_portal")
+		self.Portal:Spawn()
+		SafeRemoveEntity(self.Portal:ExitPortal())
+		self.Portal:LinkPortal(self.Portal2)
+	end
+
+	setPortalPlacement(self.Owner, self.Portal)
 	self:SetNextPrimaryFire(1)
 end
 
-function SWEP:OnRemove()
-	SafeRemoveEntity(self.Portals)
-	SafeRemoveEntity(self.Portals:ExitPortal())
-end
-
 function SWEP:SecondaryAttack() 
-	local tr = self.Owner:GetEyeTrace()
-	local offset = math.abs(tr.HitNormal:Dot(Vector(0, 0, 1))) * 7
-	local rotatedAng = tr.HitNormal:Angle() + Angle(90, 0, 0)
-
-	local elevationangle = VectorAngle(vector_up, tr.HitNormal)
-	if elevationangle <= 15 or (elevationangle >= 175 and elevationangle <= 185) then 
-		rotatedAng.y = self.Owner:EyeAngles().y + 180
+	if !self.Portal2 or !self.Portal2:IsValid() then
+		self.Portal2 = ents.Create("seamless_portal")
+		self.Portal2:Spawn()
+		SafeRemoveEntity(self.Portal2:ExitPortal())
+		self.Portal2:LinkPortal(self.Portal)
 	end
 
-	self.Portals:ExitPortal():SetPos((tr.HitPos + tr.HitNormal * 18) + Vector(0, 0, offset))
-	self.Portals:ExitPortal():SetAngles(rotatedAng)
+	setPortalPlacement(self.Owner, self.Portal2)
 	self:SetNextSecondaryFire(1)
+end
+
+function SWEP:OnRemove()
+	SafeRemoveEntity(self.Portal)
+	SafeRemoveEntity(self.Portal2)
+end
+
+function SWEP:Reload() 
+	SafeRemoveEntity(self.Portal)
+	SafeRemoveEntity(self.Portal2)
 end
 

@@ -69,7 +69,6 @@ end)
 local oldHalo = 0
 local drawPlayerInView = false
 hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles)
-
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	drawPlayerInView = !SeamlessPortals.drawPlayerInView
 	for k, v in ipairs(portals) do
@@ -121,6 +120,7 @@ hook.Add("PostDrawOpaqueRenderables", "seamless_portals_draw", function(_, _, sk
 		if drawPlayerInView then 
 			DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt))
 		end
+		
 
 		-- outer quads
 		DrawQuadEasier(v, Vector(scaley, -scalex, -backAmt), Vector(0, 0, -backAmt))
@@ -149,6 +149,8 @@ hook.Add("PostDrawOpaqueRenderables", "seamless_portals_draw", function(_, _, sk
 		DrawQuadEasier(v, Vector(scaley, -scalex, -backAmt), Vector(0, 0, -backAmt), 1)
 		DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt), 2)
 		DrawQuadEasier(v, Vector(-scaley, scalex, -backAmt), Vector(0, 0, -backAmt), 2)
+
+		if !v:ExitPortal() or !v:ExitPortal():IsValid() then continue end
 
 		-- draw the actual portal texture
 		render.SetMaterial(v.PORTAL_MATERIAL)

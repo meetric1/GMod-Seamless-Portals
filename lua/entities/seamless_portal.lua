@@ -1,3 +1,6 @@
+-- Seamless portals addon by Mee
+-- You may use this code as a reference for your own projects, but please do not publish this addon as your own.
+
 AddCSLuaFile()
 
 ENT.Type = "anim"
@@ -17,6 +20,14 @@ function ENT:ExitPortal()
 	return self.EXIT_PORTAL
 end
 
+function ENT:LinkPortal(ent)
+	if !ent or !ent:IsValid() then return end
+	self.EXIT_PORTAL = ent
+	ent.EXIT_PORTAL = self
+	self:SetNWEntity("EXIT_PORTAL", ent)
+	ent:SetNWEntity("EXIT_PORTAL", self)
+end
+
 function ENT:Initialize()
 	if CLIENT then return end
 	self:SetModel("models/hunter/plates/plate2x2.mdl")
@@ -31,22 +42,14 @@ function ENT:Initialize()
 	self:SetCollisionGroup(COLLISION_GROUP_WORLD)
 	self:DrawShadow(false)
 	print("Portal " .. tostring(self) .." was initialized")
+end
 
-	if self.EXIT_PORTAL then return end
-	self.EXIT_PORTAL = ents.Create("seamless_portal")
-	self.EXIT_PORTAL.EXIT_PORTAL = self
-	self.EXIT_PORTAL:SetPos(self:GetPos() + Vector(0, 0, 100))
-	self.EXIT_PORTAL:Spawn()
-
-	self:SetNWEntity("EXIT_PORTAL", self:ExitPortal())
-	self.EXIT_PORTAL:SetNWEntity("EXIT_PORTAL", self)
+function ENT:SpawnFunction()
+	return nil
 end
 
 function ENT:OnRemove()
 	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex - 1
-	if self.EXIT_PORTAL then
-		SafeRemoveEntity(self.EXIT_PORTAL)
-	end
 end
 
 -- initialize doesn't run when an incoming client joins, so im just use think hook and make it run once
