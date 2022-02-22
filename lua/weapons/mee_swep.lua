@@ -38,12 +38,16 @@ if CLIENT then return end
 
 -- from portal gun addon
 local function VectorAngle(vec1, vec2)
-	local costheta = vec1:Dot(vec2) / (vec1:Length() * vec2:Length())
-	local theta = math.acos(costheta)
-	return math.deg(theta)
+	if IsValid(vec1) and IsValid(vec2) then
+		local costheta = vec1:Dot(vec2) / (vec1:Length() * vec2:Length())
+		local theta = math.acos(costheta)
+		return math.deg(theta)
+	end
 end
 
 local function setPortalPlacement(owner, portal)
+	if not IsValid(owner) then return end
+	
 	local tr = owner:GetEyeTrace()
 	local offset = math.abs(tr.HitNormal:Dot(Vector(0, 0, 1))) * 11
 	local rotatedAng = tr.HitNormal:Angle() + Angle(90, 0, 0)
@@ -51,6 +55,11 @@ local function setPortalPlacement(owner, portal)
 	local elevationangle = VectorAngle(vector_up, tr.HitNormal)
 	if elevationangle < 1 or (elevationangle > 179 and elevationangle < 181) then 
 		rotatedAng.y = owner:EyeAngles().y + 180
+	end
+
+	if not IsValid(portal) then 
+		print("Error: Portal in setPortalPlacement(owner, portal) is not valid!")
+		return 
 	end
 
 	portal:SetPos((tr.HitPos + tr.HitNormal * 18) + Vector(0, 0, offset))
@@ -77,17 +86,29 @@ function SWEP:SecondaryAttack()
 		self.Portal2:LinkPortal(self.Portal)
 	end
 
-	setPortalPlacement(self.Owner, self.Portal2)
-	self:SetNextSecondaryFire(1)
+	if IsValid(self.Owner) and IsValid(self.Portal2) then
+		setPortalPlacement(self.Owner, self.Portal2)
+		self:SetNextSecondaryFire(1)
+	end
 end
 
 function SWEP:OnRemove()
-	SafeRemoveEntity(self.Portal)
-	SafeRemoveEntity(self.Portal2)
+	if IsValid(self.Portal) then
+		SafeRemoveEntity(self.Portal)
+	end
+
+	if IsValid(self.Portal2) then
+		SafeRemoveEntity(self.Portal2)
+	end
 end
 
 function SWEP:Reload() 
-	SafeRemoveEntity(self.Portal)
-	SafeRemoveEntity(self.Portal2)
+	if IsValid(self.Portal) then
+		SafeRemoveEntity(self.Portal)
+	end
+
+	if IsValid(self.Portal2) then
+		SafeRemoveEntity(self.Portal2)
+	end
 end
 
