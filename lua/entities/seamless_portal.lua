@@ -64,7 +64,6 @@ function ENT:Think()
 	end
 end
 
-
 function ENT:Draw()
 	
 end
@@ -74,7 +73,7 @@ SeamlessPortals.drawPlayerInView = false
 SeamlessPortals.PortalIndex = #ents.FindByClass("seamless_portal")	-- for hotreloading
 SeamlessPortals.TransformPortal = function(a, b, pos, angle, mul)
 	if !b:IsValid() or !a:IsValid() then return Vector(), Angle() end
-	local editedPos = a:WorldToLocal(pos) * (b.PORTAL_SCALE or 1)
+	local editedPos = a:WorldToLocal(pos)-- * (b.PORTAL_SCALE or 1)
 	editedPos = b:LocalToWorld(Vector(editedPos[1], -editedPos[2], -editedPos[3]))
 	editedPos = editedPos + b:GetUp() * (mul or 1)
 	

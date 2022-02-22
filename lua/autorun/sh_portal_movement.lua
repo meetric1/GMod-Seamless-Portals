@@ -11,6 +11,7 @@ local function updateCalcViews(portal1, portal2, finalPos, finalVel)
 	local weaponAng = LocalPlayer():EyeAngles()
 	local weaponPos = LocalPlayer():EyePos()
 	local addAngle = 1
+	finalPos = finalPos - finalVel * FrameTime() * 0.5	-- why does this work? idk but it feels nice, could be a source prediction thing
 	hook.Add("CalcView", "seamless_portals_fix", function(ply, origin, angle)
 		if ply:EyePos():DistToSqr(origin) > 10000 then return end
 		addAngle = addAngle * 0.9
@@ -18,16 +19,17 @@ local function updateCalcViews(portal1, portal2, finalPos, finalVel)
 
 		-- position ping compensation
 		if freezePly and ply:Ping() > 5 then
-			finalPos = finalPos + finalVel * ply:GetVelocity():Length() * FrameTime()
-			weaponAng = angle
+			finalPos = finalPos + finalVel * FrameTime()
 			weaponPos = finalPos
+			weaponAng = angle
             SeamlessPortals.drawPlayerInView = true
 		else
 			finalPos = ply:EyePos()
-			weaponAng = angle
 			weaponPos = finalPos
+			weaponAng = angle
 		end
-        return {origin = finalPos, angles = angle}
+
+		return {origin = finalPos, angles = angle}
 	end)
 
     -- weapons sometimes glitch out a bit when you teleport, since the weapon angle is wrong
@@ -103,7 +105,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 				net.Send(ply)
 			else
 				ply:SetEyeAngles(editedEyeAng)
-				updateCalcViews(hitPortal, hitPortal:ExitPortal(), finalPos + (ply:EyePos() - ply:GetPos()), editedAng:Forward())	--fix viewmodel lerping for a tiny bit
+				updateCalcViews(hitPortal, hitPortal:ExitPortal(), finalPos + (ply:EyePos() - ply:GetPos()), editedAng:Forward() * ply:GetVelocity():Length())	--fix viewmodel lerping for a tiny bit
 				ply.PORTAL_TELEPORTING = true 
 				timer.Simple(0, function() 
                     ply.PORTAL_TELEPORTING = false 
