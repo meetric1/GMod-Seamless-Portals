@@ -36,7 +36,7 @@ function ENT:Initialize()
 	self:SetMoveType(MOVETYPE_VPHYSICS)
 	self:SetSolid(SOLID_VPHYSICS)
 	self:PhysWake()
-	self:SetMaterial("debug/debugempty")
+	self:SetMaterial("debug/debugempty")	-- missing texture
 	self:SetRenderMode(RENDERMODE_TRANSCOLOR)
 	self:GetPhysicsObject():EnableMotion(false)
 	self:SetCollisionGroup(COLLISION_GROUP_WORLD)
@@ -44,12 +44,25 @@ function ENT:Initialize()
 	print("Portal " .. tostring(self) .." was initialized")
 end
 
-function ENT:SpawnFunction()
-	return nil
+function ENT:SpawnFunction(ply, tr)
+	local portal1 = ents.Create("seamless_portal")
+	portal1:SetPos(tr.HitPos + tr.HitNormal * 150)
+	portal1:Spawn()
+
+	local portal2 = ents.Create("seamless_portal")
+	portal2:SetPos(tr.HitPos + tr.HitNormal * 50)
+	portal2:Spawn()
+
+	portal1:LinkPortal(portal2)
+	
+	return portal1
 end
 
 function ENT:OnRemove()
 	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex - 1
+	if SERVER then
+		SafeRemoveEntity(self:ExitPortal())
+	end
 end
 
 -- initialize doesn't run when an incoming client joins, so im just use think hook and make it run once
@@ -67,8 +80,84 @@ function ENT:Think()
 	end
 end
 
+
+local function DrawQuadEasier(e, multiplier, offset, rotate)
+	local right = e:GetRight() * multiplier.x
+	local forward = e:GetForward() * multiplier.y 
+	local up = e:GetUp() * multiplier.z 
+
+	local pos = e:GetPos() + e:GetRight() * offset.x + e:GetForward() * offset.y + e:GetUp() * offset.z
+	if !rotate then
+		render.DrawQuad(
+			pos + right - forward + up, 
+			pos - right - forward + up, 
+			pos - right + forward + up, 
+			pos + right + forward + up
+		)
+	elseif rotate == 1 then
+		render.DrawQuad(
+			pos + right + forward - up, 
+			pos - right + forward - up, 
+			pos - right + forward + up, 
+			pos + right + forward + up
+		)
+	else
+		render.DrawQuad(
+			pos + right - forward + up, 
+			pos + right - forward - up, 
+			pos + right + forward - up, 
+			pos + right + forward + up
+		)
+	end
+end
+
+local drawMat = Material("models/props_lab/cornerunit_cloud")
 function ENT:Draw()
-	
+	local backAmt = 3
+	local scalex = (self:OBBMaxs().x - self:OBBMins().x) * 0.5 - 1
+	local scaley = (self:OBBMaxs().y - self:OBBMins().y) * 0.5 - 1
+
+	render.SetMaterial(drawMat)
+
+	if drawPlayerInView or !self:ExitPortal() or !self:ExitPortal():IsValid() then
+		render.DrawBox(self:GetPos(), self:GetAngles(), Vector(-scaley, -scalex, -backAmt * 2), Vector(scaley, scalex, 0))
+		return
+	end
+
+	-- outer quads
+	DrawQuadEasier(self, Vector(scaley, -scalex, -backAmt), Vector(0, 0, -backAmt))
+	DrawQuadEasier(self, Vector(scaley, -scalex, backAmt), Vector(0, 0, -backAmt), 1)
+	DrawQuadEasier(self, Vector(scaley, scalex, -backAmt), Vector(0, 0, -backAmt), 1)
+	DrawQuadEasier(self, Vector(scaley, -scalex, backAmt), Vector(0, 0, -backAmt), 2)
+	DrawQuadEasier(self, Vector(-scaley, -scalex, -backAmt), Vector(0, 0, -backAmt), 2) 
+
+	-- do cursed stencil stuff
+	render.ClearStencil()
+	render.SetStencilEnable(true)
+	render.SetStencilWriteMask(1)
+	render.SetStencilTestMask(1)
+	render.SetStencilReferenceValue(1)
+	render.SetStencilFailOperation(STENCIL_KEEP)
+	render.SetStencilZFailOperation(STENCIL_KEEP)
+	render.SetStencilPassOperation(STENCIL_REPLACE)
+	render.SetStencilCompareFunction(STENCIL_EQUAL)
+	render.SetStencilCompareFunction(STENCIL_ALWAYS)
+
+	-- draw the quad that the 2d texture will be drawn on
+	-- weapon rendering causes flashing if the quad is drawn right next to the player, so we offset it
+	local plane = self:WorldToLocal(util.IntersectRayWithPlane(self:GetPos() - self:GetUp() * backAmt * 1.1, self:GetUp(), EyePos() - self:GetUp() * 2, -self:GetUp()) or self:GetPos())
+	DrawQuadEasier(self, Vector(scaley, scalex, math.Min(plane.z, backAmt)), Vector(0, 0, -backAmt))
+	DrawQuadEasier(self, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt), 1)
+	DrawQuadEasier(self, Vector(scaley, -scalex, -backAmt), Vector(0, 0, -backAmt), 1)
+	DrawQuadEasier(self, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt), 2)
+	DrawQuadEasier(self, Vector(-scaley, scalex, -backAmt), Vector(0, 0, -backAmt), 2)
+
+	-- draw the actual portal texture
+	render.SetMaterial(self.PORTAL_MATERIAL)
+	render.SetStencilCompareFunction(STENCIL_EQUAL)
+	render.DrawScreenQuad()
+
+	render.SetStencilEnable(false)
 end
 
 SeamlessPortals = SeamlessPortals or {} 

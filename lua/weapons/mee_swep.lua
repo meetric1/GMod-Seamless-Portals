@@ -45,7 +45,7 @@ end
 
 local function setPortalPlacement(owner, portal)
 	local tr = owner:GetEyeTrace()
-	local offset = math.abs(tr.HitNormal:Dot(Vector(0, 0, 1))) * 11
+	local offset = math.abs(tr.HitNormal:Dot(Vector(0, 0, 1))) * 10
 	local rotatedAng = tr.HitNormal:Angle() + Angle(90, 0, 0)
 
 	local elevationangle = VectorAngle(vector_up, tr.HitNormal)
@@ -53,7 +53,7 @@ local function setPortalPlacement(owner, portal)
 		rotatedAng.y = owner:EyeAngles().y + 180
 	end
 
-	portal:SetPos((tr.HitPos + tr.HitNormal * 18) + Vector(0, 0, offset))
+	portal:SetPos((tr.HitPos + tr.HitNormal * 20) + Vector(0, 0, offset))
 	portal:SetAngles(rotatedAng)
 end
 

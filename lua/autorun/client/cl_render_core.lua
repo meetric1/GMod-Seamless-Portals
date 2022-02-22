@@ -12,36 +12,6 @@ local renderViewTable = {
 	zfar = zfar,
 }
 
-local function DrawQuadEasier(e, multiplier, offset, rotate)
-	local right = e:GetRight() * multiplier.x
-	local forward = e:GetForward() * multiplier.y 
-	local up = e:GetUp() * multiplier.z 
-
-	local pos = e:GetPos() + e:GetRight() * offset.x + e:GetForward() * offset.y + e:GetUp() * offset.z
-	if !rotate then
-		render.DrawQuad(
-			pos + right - forward + up, 
-			pos - right - forward + up, 
-			pos - right + forward + up, 
-			pos + right + forward + up
-		)
-	elseif rotate == 1 then
-		render.DrawQuad(
-			pos + right + forward - up, 
-			pos - right + forward - up, 
-			pos - right + forward + up, 
-			pos + right + forward + up
-		)
-	else
-		render.DrawQuad(
-			pos + right - forward + up, 
-			pos + right - forward - up, 
-			pos + right + forward - up, 
-			pos + right + forward + up
-		)
-	end
-end
-
 -- sort the portals by distance since draw functions do not obey the z buffer
 local haloChanged = false
 timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
@@ -108,55 +78,5 @@ end)
 -- draw the quad on the portals
 local drawMat = Material("models/props_lab/cornerunit_cloud")
 hook.Add("PostDrawOpaqueRenderables", "seamless_portals_draw", function(_, _, sky)
-	if sky then return end
-	for k, v in ipairs(portals) do
-		if !v or !v:IsValid() then continue end
-		local backAmt = 3
-		local scalex = (v:OBBMaxs().x - v:OBBMins().x) * 0.5 - 1.1
-		local scaley = (v:OBBMaxs().y - v:OBBMins().y) * 0.5 - 1.1
-		render.SetMaterial(drawMat)
-
-
-		if drawPlayerInView then 
-			DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt))
-		end
-		
-
-		-- outer quads
-		DrawQuadEasier(v, Vector(scaley, -scalex, -backAmt), Vector(0, 0, -backAmt))
-		DrawQuadEasier(v, Vector(scaley, -scalex, backAmt), Vector(0, 0, -backAmt), 1)
-		DrawQuadEasier(v, Vector(scaley, scalex, -backAmt), Vector(0, 0, -backAmt), 1)
-		DrawQuadEasier(v, Vector(scaley, -scalex, backAmt), Vector(0, 0, -backAmt), 2)
-		DrawQuadEasier(v, Vector(-scaley, -scalex, -backAmt), Vector(0, 0, -backAmt), 2) 
-
-		-- do cursed stencil stuff
-		render.ClearStencil()
-		render.SetStencilEnable(true)
-		render.SetStencilWriteMask(1)
-		render.SetStencilTestMask(1)
-		render.SetStencilReferenceValue(1)
-		render.SetStencilFailOperation(STENCIL_KEEP)
-		render.SetStencilZFailOperation(STENCIL_KEEP)
-		render.SetStencilPassOperation(STENCIL_REPLACE)
-		render.SetStencilCompareFunction(STENCIL_EQUAL)
-		render.SetStencilCompareFunction(STENCIL_ALWAYS)
-	
-		-- draw the quad that the 2d texture will be drawn on
-		-- weapon rendering causes flashing if the quad is drawn right next to the player, so we offset it
-		local plane = v:WorldToLocal(util.IntersectRayWithPlane(v:GetPos() - v:GetUp() * backAmt * 1.1, v:GetUp(), EyePos() - v:GetUp() * 2, -v:GetUp()) or v:GetPos())
-		DrawQuadEasier(v, Vector(scaley, scalex, math.Min(plane.z, backAmt)), Vector(0, 0, -backAmt))
-		DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt), 1)
-		DrawQuadEasier(v, Vector(scaley, -scalex, -backAmt), Vector(0, 0, -backAmt), 1)
-		DrawQuadEasier(v, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt), 2)
-		DrawQuadEasier(v, Vector(-scaley, scalex, -backAmt), Vector(0, 0, -backAmt), 2)
-
-		if !v:ExitPortal() or !v:ExitPortal():IsValid() then continue end
-
-		-- draw the actual portal texture
-		render.SetMaterial(v.PORTAL_MATERIAL)
-		render.SetStencilCompareFunction(STENCIL_EQUAL)
-		render.DrawScreenQuad()
-
-		render.SetStencilEnable(false)
-	end
+	--if sky then return end
 end)
