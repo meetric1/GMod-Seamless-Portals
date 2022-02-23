@@ -5,7 +5,7 @@
 AddCSLuaFile()
 
 local freezePly = false
-local function updateCalcViews(portal1, portal2, finalPos, finalVel)
+local function updateCalcViews(finalPos, finalVel)
 	timer.Remove("portals_eye_fix_delay")	--just in case you enter the portal while the timer is running
 	
 	local weaponAng = LocalPlayer():EyeAngles()
@@ -53,7 +53,7 @@ if SERVER then
     util.AddNetworkString("PORTALS_FREEZE")
 else
     net.Receive("PORTALS_FREEZE", function()
-		if game.SinglePlayer() then updateCalcViews() end 	--singleplayer lerp fix
+		if game.SinglePlayer() then updateCalcViews(Vector(), Vector()) end 	--singleplayer lerp fix
         freezePly = false
     end)
 end
@@ -105,7 +105,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 				net.Send(ply)
 			else
 				ply:SetEyeAngles(editedEyeAng)
-				updateCalcViews(hitPortal, hitPortal:ExitPortal(), finalPos + (ply:EyePos() - ply:GetPos()), editedAng:Forward() * ply:GetVelocity():Length())	--fix viewmodel lerping for a tiny bit
+				updateCalcViews(finalPos + (ply:EyePos() - ply:GetPos()), editedAng:Forward() * ply:GetVelocity():Length())	--fix viewmodel lerping for a tiny bit
 				ply.PORTAL_TELEPORTING = true 
 				timer.Simple(0, function()
 					ply.PORTAL_TELEPORTING = false

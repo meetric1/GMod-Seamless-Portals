@@ -28,21 +28,40 @@ function ENT:LinkPortal(ent)
 	ent:SetNWEntity("EXIT_PORTAL", self)
 end
 
-function ENT:Initialize()
-	if CLIENT then return end
-	self:SetModel("models/hunter/plates/plate2x2.mdl")
-	self:SetAngles(self:GetAngles() + Angle(90, 0, 0))
-	self:PhysicsInit(SOLID_VPHYSICS)
-	self:SetMoveType(MOVETYPE_VPHYSICS)
-	self:SetSolid(SOLID_VPHYSICS)
-	self:PhysWake()
-	self:SetMaterial("debug/debugempty")	-- missing texture
-	self:SetRenderMode(RENDERMODE_TRANSCOLOR)
-	self:GetPhysicsObject():EnableMotion(false)
-	self:SetCollisionGroup(COLLISION_GROUP_WORLD)
-	self:DrawShadow(false)
-	print("Portal " .. tostring(self) .." was initialized")
+local function incrementPortal(ent)
+	ent.PORTAL_RT = GetRenderTarget("SeamlessPortal" .. SeamlessPortals.PortalIndex, ScrW(), ScrH())
+	ent.PORTAL_MATERIAL = CreateMaterial("SeamlessPortalsMaterial" .. SeamlessPortals.PortalIndex, "GMODScreenspace", {
+		["$basetexture"] = ent.PORTAL_RT:GetName(), 
+		["$model"] = "1"
+	})
+	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
 end
+
+function ENT:Initialize()
+	if CLIENT then
+		incrementPortal(self)
+	else
+		self:SetModel("models/hunter/plates/plate2x2.mdl")
+		self:SetAngles(self:GetAngles() + Angle(90, 0, 0))
+		self:PhysicsInit(SOLID_VPHYSICS)
+		self:SetMoveType(MOVETYPE_VPHYSICS)
+		self:SetSolid(SOLID_VPHYSICS)
+		self:PhysWake()
+		self:SetMaterial("debug/debugempty")	-- missing texture
+		self:SetRenderMode(RENDERMODE_TRANSCOLOR)
+		self:GetPhysicsObject():EnableMotion(false)
+		self:SetCollisionGroup(COLLISION_GROUP_WORLD)
+		self:DrawShadow(false)
+		print("Portal " .. tostring(self) .." was initialized")
+		SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
+	end
+end
+
+hook.Add("InitPostEntity", "seamless_portal_init", function()
+	for k, v in ipairs(ents.FindByClass("seamless_portal")) do
+		incrementPortal(v)
+	end
+end)
 
 function ENT:SpawnFunction(ply, tr)
 	local portal1 = ents.Create("seamless_portal")
@@ -62,21 +81,6 @@ function ENT:OnRemove()
 	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex - 1
 	if SERVER then
 		SafeRemoveEntity(self:ExitPortal())
-	end
-end
-
--- initialize doesn't run when an incoming client joins, so im just use think hook and make it run once
-function ENT:Think()
-	if !self.PORTAL_INITIALIZED then
-		if CLIENT then
-			self.PORTAL_RT = GetRenderTarget("SeamlessPortal" .. SeamlessPortals.PortalIndex, ScrW(), ScrH())
-			self.PORTAL_MATERIAL = CreateMaterial("SeamlessPortalsMaterial" .. SeamlessPortals.PortalIndex, "GMODScreenspace", {
-				["$basetexture"] = self.PORTAL_RT:GetName(), 
-				["$model"] = "1"
-			})
-		end
-		SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
-		self.PORTAL_INITIALIZED = true
 	end
 end
 
@@ -114,8 +118,8 @@ end
 local drawMat = Material("models/props_lab/cornerunit_cloud")
 function ENT:Draw()
 	local backAmt = 3
-	local scalex = (self:OBBMaxs().x - self:OBBMins().x) * 0.5 - 1
-	local scaley = (self:OBBMaxs().y - self:OBBMins().y) * 0.5 - 1
+	local scalex = (self:OBBMaxs().x - self:OBBMins().x) * 0.5 - 0.1
+	local scaley = (self:OBBMaxs().y - self:OBBMins().y) * 0.5 - 0.1
 
 	render.SetMaterial(drawMat)
 
@@ -160,6 +164,7 @@ function ENT:Draw()
 	render.SetStencilEnable(false)
 end
 
+-- create global table
 SeamlessPortals = SeamlessPortals or {} 
 SeamlessPortals.drawPlayerInView = false
 SeamlessPortals.PortalIndex = #ents.FindByClass("seamless_portal")	-- for hotreloading

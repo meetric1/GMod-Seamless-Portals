@@ -43,8 +43,13 @@ local function VectorAngle(vec1, vec2)
 	return math.deg(theta)
 end
 
+local seamless_check = function(e) return !(e:GetClass() == "seamless_portal" or e:GetClass() == "player") end 
 local function setPortalPlacement(owner, portal)
-	local tr = owner:GetEyeTrace()
+	local tr = util.TraceLine({
+		start = owner:GetShootPos(),
+		endpos = owner:GetShootPos() + owner:GetAimVector() * 99999,
+		filter = seamless_check,
+	})
 	local offset = math.abs(tr.HitNormal:Dot(Vector(0, 0, 1))) * 10
 	local rotatedAng = tr.HitNormal:Angle() + Angle(90, 0, 0)
 
