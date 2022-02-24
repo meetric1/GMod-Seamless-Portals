@@ -120,13 +120,17 @@ function ENT:Draw()
 	local backAmt = 3
 	local scalex = (self:OBBMaxs().x - self:OBBMins().x) * 0.5 - 0.1
 	local scaley = (self:OBBMaxs().y - self:OBBMins().y) * 0.5 - 0.1
+	local dotCheck = (EyePos() - self:GetPos()):Dot(self:GetUp()) < -10 
 
 	render.SetMaterial(drawMat)
 
-	if drawPlayerInView or !self:ExitPortal() or !self:ExitPortal():IsValid() then
+	-- holy shit lol this if statment
+	if drawPlayerInView or !self:ExitPortal() or !self:ExitPortal():IsValid() or dotCheck or halo.RenderedEntity() == self then 
 		render.DrawBox(self:GetPos(), self:GetAngles(), Vector(-scaley, -scalex, -backAmt * 2), Vector(scaley, scalex, 0))
 		return
 	end
+
+	self.PORTAL_SHOULDRENDER = 1 
 
 	-- outer quads
 	DrawQuadEasier(self, Vector(scaley, -scalex, -backAmt), Vector(0, 0, -backAmt))
@@ -149,8 +153,7 @@ function ENT:Draw()
 
 	-- draw the quad that the 2d texture will be drawn on
 	-- weapon rendering causes flashing if the quad is drawn right next to the player, so we offset it
-	local plane = self:WorldToLocal(util.IntersectRayWithPlane(self:GetPos() - self:GetUp() * backAmt * 1.1, self:GetUp(), EyePos() - self:GetUp() * 2, -self:GetUp()) or self:GetPos())
-	DrawQuadEasier(self, Vector(scaley, scalex, math.Min(plane.z, backAmt)), Vector(0, 0, -backAmt))
+	DrawQuadEasier(self, Vector(scaley, scalex, -backAmt), Vector(0, 0, -backAmt))
 	DrawQuadEasier(self, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt), 1)
 	DrawQuadEasier(self, Vector(scaley, -scalex, -backAmt), Vector(0, 0, -backAmt), 1)
 	DrawQuadEasier(self, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt), 2)
@@ -163,6 +166,7 @@ function ENT:Draw()
 
 	render.SetStencilEnable(false)
 end
+
 
 -- create global table
 SeamlessPortals = SeamlessPortals or {} 

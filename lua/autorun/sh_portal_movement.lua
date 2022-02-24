@@ -73,7 +73,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	local hitPortal = tr.Entity
 	if hitPortal:GetClass() == "seamless_portal" and hitPortal:ExitPortal() and hitPortal:ExitPortal():IsValid() then
 		if mv:GetVelocity():Dot(hitPortal:GetUp()) < 0 then
-			if CLIENT and ply.PORTAL_TELEPORTING then return false end
+			if ply.PORTAL_TELEPORTING then return false end
 
             -- wow look at all of this code just to teleport the player
 			local editedPos, editedAng = SeamlessPortals.TransformPortal(hitPortal, hitPortal:ExitPortal(), tr.HitPos, mv:GetVelocity():Angle())
@@ -106,11 +106,12 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			else
 				ply:SetEyeAngles(editedEyeAng)
 				updateCalcViews(finalPos + (ply:EyePos() - ply:GetPos()), editedAng:Forward() * ply:GetVelocity():Length())	--fix viewmodel lerping for a tiny bit
-				ply.PORTAL_TELEPORTING = true 
-				timer.Simple(0, function()
-					ply.PORTAL_TELEPORTING = false
-				end)
 			end
+
+			ply.PORTAL_TELEPORTING = true 
+			timer.Simple(0, function()
+				ply.PORTAL_TELEPORTING = false
+			end)
 
 			return true
 		end
