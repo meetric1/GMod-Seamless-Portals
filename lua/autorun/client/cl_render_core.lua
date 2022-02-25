@@ -110,22 +110,22 @@ local COLOR_WHITE = Color(255 ,255, 255)
 local drawsky = function(pos, ang, mins, maxs, color, materials)
 	-- BACK
 	render.SetMaterial(materials[1])
-	render.DrawQuadEasy(pos - Vector(maxs.x, 0, 0), -ang:Forward(), maxs.x - mins.x, maxs.y - mins.y, COLOR_WHITE, 0)
+	render.DrawQuadEasy(pos - Vector(0, maxs.y, 0), ang:Right(), maxs.x - mins.x, maxs.y - mins.y, COLOR_WHITE, 0)
 	-- DOWN
 	render.SetMaterial(materials[2])
-	render.DrawQuadEasy(pos - Vector(0, 0, mins.z), ang:Up(), maxs.x - mins.x, maxs.y - mins.y, COLOR_WHITE, 0)
+	render.DrawQuadEasy(pos - Vector(0, 0, mins.z), ang:Up(), maxs.x - mins.x, maxs.y - mins.y, COLOR_WHITE, 180)
 	-- FRONT
 	render.SetMaterial(materials[3])
-	render.DrawQuadEasy(pos - Vector(mins.x, 0, 0), ang:Forward(), maxs.x - mins.x, maxs.y - mins.y, COLOR_WHITE, 0)
+	render.DrawQuadEasy(pos - Vector(0, mins.y, 0), -ang:Right(), maxs.x - mins.x, maxs.y - mins.y, COLOR_WHITE, 0)
 	-- LEFT
 	render.SetMaterial(materials[4])
-	render.DrawQuadEasy(pos - Vector(0, mins.y, 0), -ang:Right(), maxs.x - mins.x, maxs.y - mins.y, COLOR_WHITE, 0)
+	render.DrawQuadEasy(pos - Vector(mins.x, 0, 0), ang:Forward(), maxs.x - mins.x, maxs.y - mins.y, COLOR_WHITE, 0)
 	-- RIGHT
 	render.SetMaterial(materials[5])
-	render.DrawQuadEasy(pos - Vector(0, maxs.y, 0), ang:Right(), maxs.x - mins.x, maxs.y - mins.y, COLOR_WHITE, 0)
+	render.DrawQuadEasy(pos - Vector(maxs.x, 0, 0), -ang:Forward(), maxs.x - mins.x, maxs.y - mins.y, COLOR_WHITE, 0)
 	-- UP
 	render.SetMaterial(materials[6])
-	render.DrawQuadEasy(pos - Vector(0, 0, -mins.z), -ang:Up(), maxs.x - mins.x, maxs.y - mins.y, COLOR_WHITE, 0)
+	render.DrawQuadEasy(pos - Vector(0, 0, -mins.z), -ang:Up(), maxs.x - mins.x, maxs.y - mins.y, COLOR_WHITE, 180)
 end
 
 hook.Add("PostDrawTranslucentRenderables", "seamless_portal_skybox", function(_, drawingSky)
@@ -134,7 +134,10 @@ hook.Add("PostDrawTranslucentRenderables", "seamless_portal_skybox", function(_,
 	for _, portal in ipairs(portals) do
 		-- using portal.rendering makes it so we only draw inside the portal and not the real world
 		if !portal.rendering or util.IsSkyboxVisibleFromPoint(renderViewTable.origin) then continue end
+
+		render.OverrideDepthEnable(true, false) -- Fixes drawing over map
 		drawsky(renderViewTable.origin, angle_zero, skysize, -skysize, COLOR_WHITE, sky_materials)
+		render.OverrideDepthEnable(false , false)
 	end
 end)
 
