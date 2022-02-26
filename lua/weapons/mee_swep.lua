@@ -72,6 +72,11 @@ function SWEP:PrimaryAttack()
 
 	setPortalPlacement(self.Owner, self.Portal)
 	self:SetNextPrimaryFire(1)
+
+	--walk through walls? (u crash tho)
+	--if SERVER then 
+	--	self.Owner:SetHull(Vector(16, 16, 0), Vector(-16, -16, 72))
+	--end
 end
 
 function SWEP:SecondaryAttack() 
