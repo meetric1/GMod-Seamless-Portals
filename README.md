@@ -10,7 +10,7 @@ This WILL become an addon on the workshop ONCE IT IS FINISHED!
 
 I plan to add:
 ```
--hopefully a fix for the black clipping plane
--scaling portals that resize players and props
--better prop clipping & collision through portals
+-hopefully a fix for the black clipping plane (fixed)
+-scaling portals that resize players and props (done)
+-better prop clipping & collision through portals (wip)
 ```
