@@ -61,7 +61,7 @@ timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
 end)
 
 -- update the rendertarget here since we cant do it in postdraw (cuz of infinite recursion)
-hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles)
+hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov)
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	drawPlayerInView = !SeamlessPortals.drawPlayerInView
 	for k, v in ipairs(portals) do
@@ -71,11 +71,14 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles)
 			if eyePos:DistToSqr(v:GetPos()) > 2500 * 2500 then continue end
 			if (eyePos - v:GetPos()):Dot(v:GetUp()) < -10 then continue end
 
+			
+
 			local exitPortal = v:ExitPortal()
 			local editedPos, editedAng = SeamlessPortals.TransformPortal(v, exitPortal, eyePos, Angle(eyeAngles[1], eyeAngles[2], eyeAngles[3]))
 
 			renderViewTable.origin = editedPos
 			renderViewTable.angles = editedAng
+			renderViewTable.fov = fov
 
 			-- render the scene
 			local oldClip = render.EnableClipping(true)

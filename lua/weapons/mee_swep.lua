@@ -58,7 +58,7 @@ local function setPortalPlacement(owner, portal)
 		rotatedAng.y = owner:EyeAngles().y + 180
 	end
 
-	portal:SetPos((tr.HitPos + tr.HitNormal * 20) + Vector(0, 0, offset))
+	portal:SetPos((tr.HitPos + tr.HitNormal * 20) + Vector(0, 0, offset))	--20
 	portal:SetAngles(rotatedAng)
 end
 
@@ -68,16 +68,17 @@ function SWEP:PrimaryAttack()
 		self.Portal:Spawn()
 		SafeRemoveEntity(self.Portal:ExitPortal())
 		self.Portal:LinkPortal(self.Portal2)
+		--self.Portal:SetExitSize(0.1)
 	end
 
 	setPortalPlacement(self.Owner, self.Portal)
 	self:SetNextPrimaryFire(1)
 
-	--walk through walls? (u crash tho)
-	--if SERVER then 
-	--	self.Owner:SetHull(Vector(16, 16, 0), Vector(-16, -16, 72))
-	--end
+	--walk through walls fix?
+	--ply:SetHull(Vector(0, 0, 56), Vector(0, 0, 80))
+	--ply:SetHullDuck(Vector(0, 0, 56), Vector(0, 0, 80))
 end
+
 
 function SWEP:SecondaryAttack() 
 	if !self.Portal2 or !self.Portal2:IsValid() then

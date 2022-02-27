@@ -13,27 +13,46 @@ ENT.Purpose			= ""
 ENT.Instructions	= ""
 ENT.Spawnable		= true
 
+-- get exit portal
 function ENT:ExitPortal()
 	if CLIENT then 
-		return self:GetNWEntity("EXIT_PORTAL")
+		return self:GetNWEntity("PORTAL_EXIT")
 	end
-	return self.EXIT_PORTAL
+	return self.PORTAL_EXIT
 end
 
 function ENT:LinkPortal(ent)
 	if !ent or !ent:IsValid() then return end
-	self.EXIT_PORTAL = ent
-	ent.EXIT_PORTAL = self
-	self:SetNWEntity("EXIT_PORTAL", ent)
-	ent:SetNWEntity("EXIT_PORTAL", self)
+	self.PORTAL_EXIT = ent
+	ent.PORTAL_EXIT = self
+	self:SetNWEntity("PORTAL_EXIT", ent)
+	ent:SetNWEntity("PORTAL_EXIT", self)
 end
 
+-- custom size for portal
+function ENT:SetExitSize(n)
+	self.PORTAL_SCALE = n
+	self:SetNWFloat("PORTAL_SCALE", n)
+	self:Activate()
+end
+
+function ENT:GetExitSize()
+	if CLIENT then 
+		return self:GetNWFloat("PORTAL_SCALE")
+	end
+	return self.PORTAL_SCALE
+end
+
+local COLOR_BLACK = Color(0, 0, 0, 255)
 local function incrementPortal(ent)
-	ent.PORTAL_RT = GetRenderTarget("SeamlessPortal" .. SeamlessPortals.PortalIndex, ScrW(), ScrH())
-	ent.PORTAL_MATERIAL = CreateMaterial("SeamlessPortalsMaterial" .. SeamlessPortals.PortalIndex, "GMODScreenspace", {
-		["$basetexture"] = ent.PORTAL_RT:GetName(), 
-		["$model"] = "1"
-	})
+	if CLIENT then
+		ent.PORTAL_RT = GetRenderTarget("SeamlessPortal" .. SeamlessPortals.PortalIndex, ScrW(), ScrH())
+		ent.PORTAL_MATERIAL = CreateMaterial("SeamlessPortalsMaterial" .. SeamlessPortals.PortalIndex, "GMODScreenspace", {
+			["$basetexture"] = ent.PORTAL_RT:GetName(), 
+			["$model"] = "1"
+		})
+		render.ClearRenderTarget(ent.PORTAL_RT, COLOR_BLACK)
+	end
 	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
 end
 
@@ -52,6 +71,7 @@ function ENT:Initialize()
 		self:GetPhysicsObject():EnableMotion(false)
 		self:SetCollisionGroup(COLLISION_GROUP_WORLD)
 		self:DrawShadow(false)
+		self:SetExitSize(1)
 		print("Portal " .. tostring(self) .." was initialized")
 		SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
 	end
@@ -83,7 +103,6 @@ function ENT:OnRemove()
 		SafeRemoveEntity(self:ExitPortal())
 	end
 end
-
 
 local function DrawQuadEasier(e, multiplier, offset, rotate)
 	local right = e:GetRight() * multiplier.x
@@ -117,7 +136,7 @@ end
 
 local drawMat = Material("models/props_lab/cornerunit_cloud")
 function ENT:Draw()
-	local backAmt = 3
+	local backAmt = 3 * self:GetExitSize()
 	local scalex = (self:OBBMaxs().x - self:OBBMins().x) * 0.5 - 0.1
 	local scaley = (self:OBBMaxs().y - self:OBBMins().y) * 0.5 - 0.1
 	local dotCheck = (EyePos() - self:GetPos()):Dot(self:GetUp()) < -10 
@@ -125,8 +144,8 @@ function ENT:Draw()
 	render.SetMaterial(drawMat)
 
 	-- holy shit lol this if statment
-	if drawPlayerInView or !self:ExitPortal() or !self:ExitPortal():IsValid() or dotCheck or halo.RenderedEntity() == self then 
-		render.DrawBox(self:GetPos(), self:GetAngles(), Vector(-scaley, -scalex, -backAmt * 2), Vector(scaley, scalex, 0))
+	if !self:ExitPortal() or !self:ExitPortal():IsValid() or dotCheck or halo.RenderedEntity() == self then 
+		render.DrawBox(self:GetPos(), self:GetAngles(), Vector(-scalex, -scaley, -backAmt * 2), Vector(scaley, scalex, 0))
 		return
 	end
 
@@ -148,7 +167,6 @@ function ENT:Draw()
 	render.SetStencilFailOperation(STENCIL_KEEP)
 	render.SetStencilZFailOperation(STENCIL_KEEP)
 	render.SetStencilPassOperation(STENCIL_REPLACE)
-	render.SetStencilCompareFunction(STENCIL_EQUAL)
 	render.SetStencilCompareFunction(STENCIL_ALWAYS)
 
 	-- draw the quad that the 2d texture will be drawn on
@@ -174,7 +192,7 @@ SeamlessPortals.drawPlayerInView = false
 SeamlessPortals.PortalIndex = #ents.FindByClass("seamless_portal")	-- for hotreloading
 SeamlessPortals.TransformPortal = function(a, b, pos, angle, mul)
 	if !b:IsValid() or !a:IsValid() then return Vector(), Angle() end
-	local editedPos = a:WorldToLocal(pos)-- * (b.PORTAL_SCALE or 1)
+	local editedPos = a:WorldToLocal(pos) * (b:GetExitSize() / a:GetExitSize())
 	editedPos = b:LocalToWorld(Vector(editedPos[1], -editedPos[2], -editedPos[3]))
 	editedPos = editedPos + b:GetUp() * (mul or 1)
 	

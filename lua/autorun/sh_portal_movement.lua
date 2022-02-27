@@ -5,10 +5,10 @@
 AddCSLuaFile()
 
 local freezePly = false
-local function updateCalcViews(finalPos, finalVel)
+local function updateCalcViews(finalPos, finalVel, finalSize)
 	timer.Remove("portals_eye_fix_delay")	--just in case you enter the portal while the timer is running
 	
-	local weaponAng = LocalPlayer():EyeAngles()
+	local weaponAng
 	local weaponPos = LocalPlayer():EyePos()
 	local addAngle = 1
 	finalPos = finalPos - finalVel * FrameTime() * 0.5	-- why does this work? idk but it feels nice, could be a source prediction thing
@@ -20,21 +20,22 @@ local function updateCalcViews(finalPos, finalVel)
 		-- position ping compensation
 		if freezePly and ply:Ping() > 5 then
 			finalPos = finalPos + finalVel * FrameTime()
-			weaponPos = finalPos
-			weaponAng = angle
             SeamlessPortals.drawPlayerInView = true
 		else
 			finalPos = ply:EyePos()
-			weaponPos = finalPos
-			weaponAng = angle
 		end
+
+		weaponAng = angle
+		weaponPos = finalPos
 
 		return {origin = finalPos, angles = angle}
 	end)
 
     -- weapons sometimes glitch out a bit when you teleport, since the weapon angle is wrong
 	hook.Add("CalcViewModelView", "seamless_portals_fix", function(wep, vm, oldPos, oldAng, pos, ang)
-		return weaponPos, weaponAng
+		if weaponAng then
+			return weaponPos, weaponAng
+		end
 	end)
 
     -- finish eyeangle lerp
@@ -64,8 +65,8 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
     if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	local plyPos = ply:EyePos()
 	local tr = util.TraceLine({
-		start = plyPos - mv:GetVelocity() * 0.02, 
-		endpos = plyPos + mv:GetVelocity() * 0.02, 
+		start = plyPos - mv:GetVelocity() * 0.02 * (ply.SCALE_MULTIPLIER or 1), 
+		endpos = plyPos + mv:GetVelocity() * 0.02 * (ply.SCALE_MULTIPLIER or 1), 
 		filter = ply
 	})
 	
@@ -81,7 +82,6 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			newEyeAngle:RotateAroundAxis(hitPortal:GetForward(), 180)
 			local editedEyeAng = hitPortal:ExitPortal():LocalToWorldAngles(hitPortal:WorldToLocalAngles(newEyeAngle))
 			local max = math.Max(mv:GetVelocity():Length(), hitPortal:ExitPortal():GetUp():Dot(-physenv.GetGravity() / 3))
-			mv:SetVelocity(editedAng:Forward() * max)
 
 			--ground can fluxuate depending on how the user places the portals, so we need to make sure we're not going to teleport into the ground
 			local editedPos = editedPos - (ply:EyePos() - ply:GetPos())
@@ -91,21 +91,36 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 				filter = seamless_check
 			})
 
-			local finalPos = editedPos - (editedPos - floor_trace.HitPos) + Vector(0, 0, 0.1)	--tiny offset so we arent in the floor
 			freezePly = true
 
+			-- scaling part
+			local finalPos = editedPos
+			local exitSize = (hitPortal:ExitPortal():GetExitSize() / hitPortal:GetExitSize())
+			if ply.SCALE_MULTIPLIER then
+				ply:ConCommand("scale_multiplier " .. (ply.SCALE_MULTIPLIER * exitSize))
+				ply.SCALE_MULTIPLIER = math.Clamp(ply.SCALE_MULTIPLIER * exitSize, 0.01, 10)
+			end
+
+			finalPos = finalPos + ((ply:EyePos() - ply:GetPos()) - (ply:EyePos() - ply:GetPos()) * exitSize)
+			finalPos = finalPos - (editedPos - floor_trace.HitPos) * exitSize + Vector(0, 0, 0.1)	-- small offset so we arent in the floor
+
+			-- apply final velocity
+			mv:SetVelocity(editedAng:Forward() * max * exitSize)
+
+			-- lerp fix for singleplayer
 			if game.SinglePlayer() then
 				ply:SetPos(finalPos)
 				ply:SetEyeAngles(editedEyeAng)
 			end
 
+			-- send the client the new position
 			if SERVER then 
 				mv:SetOrigin(finalPos)
 				net.Start("PORTALS_FREEZE")
 				net.Send(ply)
 			else
+				updateCalcViews(finalPos + (ply:EyePos() - ply:GetPos()), editedAng:Forward() * max * exitSize, (ply.SCALE_MULTIPLIER or 1) * exitSize)	--fix viewmodel lerping for a tiny bit
 				ply:SetEyeAngles(editedEyeAng)
-				updateCalcViews(finalPos + (ply:EyePos() - ply:GetPos()), editedAng:Forward() * ply:GetVelocity():Length())	--fix viewmodel lerping for a tiny bit
 			end
 
 			ply.PORTAL_TELEPORTING = true 
