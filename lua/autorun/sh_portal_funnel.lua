@@ -10,6 +10,8 @@ local attractionRadius = 480
 // of the portal, then do not funnel. We wouldn't want to funnel a player
 // into a portal that they are not expressing any intent to enter.
 local angleRange = math.pi / 4
+// currently uncapped. the option is there
+local speedCap = -1
 hook.Add("Move", "sp_portal_funnel", function(ply, move)
 
 	local vel = move:GetVelocity()
@@ -38,6 +40,9 @@ hook.Add("Move", "sp_portal_funnel", function(ply, move)
 			local towards = (portal:GetPos() - ply:GetPos()):GetNormalized() * mag
 			local power = attractionPower
 			if (move:GetSideSpeed() > 0) then power = attractionPowerStrafing end
+			if (speedCap > 0) then
+				power = math.min(power, speedCap / mag)
+			end
 			local newVel = vel * (1 - power) + towards * power
 			move:SetVelocity(newVel)
 		end
