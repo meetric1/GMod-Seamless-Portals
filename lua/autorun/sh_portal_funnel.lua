@@ -3,6 +3,7 @@
 
 // what percentage of the speed to convert into funneling
 local attractionPower = 0.2
+local attractionPowerStrafing = 0.02
 // at what distance to stop looking for portals to funnel into
 local attractionRadius = 480
 // if the current direction is this much offset from the inward direction
@@ -35,7 +36,9 @@ hook.Add("Move", "sp_portal_funnel", function(ply, move)
 			// Crucially, we are not adding any energy here. Magnitude stays
 			// the same before and after.
 			local towards = (portal:GetPos() - ply:GetPos()):GetNormalized() * mag
-			local newVel = vel * (1 - attractionPower) + towards * attractionPower
+			local power = attractionPower
+			if (move:GetSideSpeed() > 0) then power = attractionPowerStrafing end
+			local newVel = vel * (1 - power) + towards * power
 			move:SetVelocity(newVel)
 		end
 	end
