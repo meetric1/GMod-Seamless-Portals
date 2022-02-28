@@ -1,11 +1,39 @@
+local skins = {
+	[0] = {
+		["viewModel"] = "models/weapons/c_irifle.mdl",
+		["worldModel"] = "models/weapons/w_irifle.mdl",
+		["useHands"] = true,
+		["shootPrimarySound"] = "Weapon_AR2.Single",
+		["shootSecondarySound"] = "Weapon_AR2.Single"
+	},
+	[1] = {
+		["viewModel"] = "models/weapons/v_portalgun.mdl",
+		["worldModel"] = "models/weapons/w_portalgun.mdl",
+		["useHands"] = false,
+		["shootPrimarySound"] = "weapons/portalgun/portalgun_shoot_red1.wav",
+		["shootSecondarySound"] = "weapons/portalgun/portalgun_shoot_blue1.wav"
+	},
+	[2] = {
+		["viewModel"] = "models/weapons/v_portalgun.mdl",
+		["worldModel"] = "models/weapons/w_portalgun.mdl",
+		["useHands"] = false,
+		["shootPrimarySound"] = { "weapons/portalgun/portalgun_shoot_blue1.wav", "weapons/portalgun/wpn_portal_gun_fire_blue_01.wav", "weapons/portalgun/wpn_portal_gun_fire_blue_02.wav","weapons/portalgun/wpn_portal_gun_fire_blue_03.wav" },
+		["shootSecondarySound"] = { "weapons/portalgun/portalgun_shoot_red1.wav", "weapons/portalgun/wpn_portal_gun_fire_red_01.wav", "weapons/portalgun/wpn_portal_gun_fire_red_02.wav","weapons/portalgun/wpn_portal_gun_fire_red_03.wav" }
+	}
+}
+
+local skn = IsMounted("portal2") and 2 or (IsMounted("portal") and 1 or 0)
+
+SWEP.Skin = skn
+
 SWEP.Base = "weapon_base"
 SWEP.PrintName = "Portal Gun"
 
-SWEP.ViewModel = "models/weapons/c_irifle.mdl"
+SWEP.ViewModel = skins[skn]["viewModel"]
 SWEP.ViewModelFlip = false
-SWEP.UseHands = false
+SWEP.UseHands = skins[skn]["useHands"]
 
-SWEP.WorldModel = "models/weapons/w_irifle.mdl"
+SWEP.WorldModel = skins[skn]["worldModel"]
 SWEP.SetHoldType = "pistol"
 
 SWEP.Weight = 5
@@ -32,9 +60,7 @@ SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Ammo = "none"
 SWEP.Secondary.Automatic = false
 
-
 --language.Add("#weapon_mee", "MEE'S WAPON")
-if CLIENT then return end
 
 -- from portal gun addon
 local function VectorAngle(vec1, vec2)
@@ -62,11 +88,29 @@ local function setPortalPlacement(owner, portal)
 	portal:SetAngles(rotatedAng)
 end
 
+SWEP.RandSalt = 0
+function SWEP:ShootFX(primary)
+	if (IsFirstTimePredicted()) then
+		self.RandSalt = self.RandSalt + 1
+	end
+	local snd = skins[self.Skin][primary and "shootPrimarySound" or "shootSecondarySound"]
+	if (istable(snd)) then
+		local key = math.floor(util.SharedRandom("mee_swep_rand", 0, #snd, self.RandSalt)) + 1
+		snd = snd[ key ]
+	end
+	self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
+	self.Owner:SetAnimation(PLAYER_ATTACK1)
+	self.Owner:EmitSound(snd)
+end
+
 function SWEP:PrimaryAttack()
+	self:ShootFX(true)
+	if CLIENT then return end
+
 	if !self.Portal or !self.Portal:IsValid() then
 		self.Portal = ents.Create("seamless_portal")
 		self.Portal:Spawn()
-		SafeRemoveEntity(self.Portal:ExitPortal())
+		SafeRemoveEntity(self.Portal:ExitPortal()) -- is this necessary? it should only have an exit portal if it was spawned in the Q menu
 		self.Portal:LinkPortal(self.Portal2)
 		--self.Portal:SetExitSize(0.1)
 	end
@@ -81,6 +125,9 @@ end
 
 
 function SWEP:SecondaryAttack() 
+	self:ShootFX(false)
+	if CLIENT then return end
+
 	if !self.Portal2 or !self.Portal2:IsValid() then
 		self.Portal2 = ents.Create("seamless_portal")
 		self.Portal2:Spawn()
@@ -93,11 +140,13 @@ function SWEP:SecondaryAttack()
 end
 
 function SWEP:OnRemove()
+	if CLIENT then return end
 	SafeRemoveEntity(self.Portal)
 	SafeRemoveEntity(self.Portal2)
 end
 
 function SWEP:Reload() 
+	if CLIENT then return end
 	SafeRemoveEntity(self.Portal)
 	SafeRemoveEntity(self.Portal2)
 end
