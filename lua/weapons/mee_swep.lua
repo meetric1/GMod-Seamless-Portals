@@ -76,7 +76,8 @@ local function setPortalPlacement(owner, portal)
 		endpos = owner:GetShootPos() + owner:GetAimVector() * 99999,
 		filter = seamless_check,
 	})
-	local offset = math.abs(tr.HitNormal:Dot(Vector(0, 0, 1))) * 10
+	local offset = tr.HitNormal:Dot(Vector(0, 0, 1)) * 23
+	if offset < 0 then offset = offset * 0.1 end
 	local rotatedAng = tr.HitNormal:Angle() + Angle(90, 0, 0)
 
 	local elevationangle = VectorAngle(vector_up, tr.HitNormal)
@@ -84,7 +85,7 @@ local function setPortalPlacement(owner, portal)
 		rotatedAng.y = owner:EyeAngles().y + 180
 	end
 
-	portal:SetPos((tr.HitPos + tr.HitNormal * 20) + Vector(0, 0, offset))	--20
+	portal:SetPos((tr.HitPos + tr.HitNormal * 6.5) + Vector(0, 0, offset, 0))	--20
 	portal:SetAngles(rotatedAng)
 end
 

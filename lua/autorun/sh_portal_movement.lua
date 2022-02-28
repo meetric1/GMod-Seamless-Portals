@@ -59,22 +59,52 @@ else
     end)
 end
 
--- teleport players
+
 local seamless_check = function(e) return !(e:GetClass() == "seamless_portal" or e:GetClass() == "player") end    -- for traces
+
+-- 'no collide' the player with the wall by shrinking the player's collision box
+local traceTable = {}
+local function editPlayerCollision(ply)
+	traceTable.start = ply:GetPos()
+	traceTable.endpos = traceTable.start
+	traceTable.mins = Vector(-16, -16, 0)
+	traceTable.maxs = Vector(16, 16, 72)
+	traceTable.ignoreworld = true
+	traceTable.filter = ply
+	local tr = util.TraceHull(traceTable)
+	traceTable.ignoreworld = false
+
+	if tr.Hit and tr.Entity:GetClass() == "seamless_portal" and !ply.PORTAL_ISSTUCK then
+		--if tr.Entity:GetUp():Dot(Vector(0, 0, 1)) > 0.9 then
+			--offset = 0
+		--end
+		ply:SetHull(Vector(-4, -4, 0), Vector(4, 4, 72))
+		ply:SetHullDuck(Vector(-4, -4, 0), Vector(4, 4, 36))
+		ply.PORTAL_ISSTUCK = true
+	elseif ply.PORTAL_ISSTUCK and !util.TraceHull(traceTable).Hit then
+		ply:ResetHull()
+		ply.PORTAL_ISSTUCK = nil
+	end
+end
+
+-- teleport players
 hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
     if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
+
 	local plyPos = ply:EyePos()
-	local tr = util.TraceLine({
-		start = plyPos - mv:GetVelocity() * 0.02 * (ply.SCALE_MULTIPLIER or 1), 
-		endpos = plyPos + mv:GetVelocity() * 0.02 * (ply.SCALE_MULTIPLIER or 1), 
-		filter = ply
-	})
+	traceTable.start = plyPos - mv:GetVelocity() * 0.015 * (ply.SCALE_MULTIPLIER or 1)
+	traceTable.endpos = plyPos + mv:GetVelocity() * 0.015 * (ply.SCALE_MULTIPLIER or 1)
+	traceTable.filter = ply
+	local tr = util.TraceLine(traceTable)
+
+	editPlayerCollision(ply)
 	
 	if !tr.Hit then return end
 	local hitPortal = tr.Entity
 	if hitPortal:GetClass() == "seamless_portal" and hitPortal:ExitPortal() and hitPortal:ExitPortal():IsValid() then
 		if mv:GetVelocity():Dot(hitPortal:GetUp()) < 0 then
 			if ply.PORTAL_TELEPORTING then return false end
+			freezePly = true
 
             -- wow look at all of this code just to teleport the player
 			local editedPos, editedAng = SeamlessPortals.TransformPortal(hitPortal, hitPortal:ExitPortal(), tr.HitPos, mv:GetVelocity():Angle())
@@ -85,13 +115,10 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 
 			--ground can fluxuate depending on how the user places the portals, so we need to make sure we're not going to teleport into the ground
 			local editedPos = editedPos - (ply:EyePos() - ply:GetPos())
-			local floor_trace = util.TraceLine({
-				start = editedPos + (ply:EyePos() - ply:GetPos()),
-				endpos = editedPos - Vector(0, 0, 0.1),
-				filter = seamless_check
-			})
-
-			freezePly = true
+			traceTable.start = editedPos + (ply:EyePos() - ply:GetPos())
+			traceTable.endpos = editedPos - Vector(0, 0, 0.1)
+			traceTable.filter = seamless_check
+			local floor_trace = util.TraceLine(traceTable)
 
 			-- scaling part
 			local finalPos = editedPos
@@ -101,8 +128,14 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 				ply.SCALE_MULTIPLIER = math.Clamp(ply.SCALE_MULTIPLIER * exitSize, 0.01, 10)
 			end
 
+			local offset
+			if ply:GetMoveType() != MOVETYPE_NOCLIP then
+				offset = floor_trace.HitPos
+			else
+				offset = editedPos
+			end
 			finalPos = finalPos + ((ply:EyePos() - ply:GetPos()) - (ply:EyePos() - ply:GetPos()) * exitSize)
-			finalPos = finalPos - (editedPos - floor_trace.HitPos) * exitSize + Vector(0, 0, 0.1)	-- small offset so we arent in the floor
+			finalPos = finalPos - (editedPos - offset) * exitSize + Vector(0, 0, 0.1)	-- small offset so we arent in the floor
 
 			-- apply final velocity
 			mv:SetVelocity(editedAng:Forward() * max * exitSize)
@@ -121,6 +154,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			else
 				updateCalcViews(finalPos + (ply:EyePos() - ply:GetPos()), editedAng:Forward() * max * exitSize, (ply.SCALE_MULTIPLIER or 1) * exitSize)	--fix viewmodel lerping for a tiny bit
 				ply:SetEyeAngles(editedEyeAng)
+				--print(editedEyeAng)
 			end
 
 			ply.PORTAL_TELEPORTING = true 
