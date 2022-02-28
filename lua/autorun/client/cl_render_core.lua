@@ -64,6 +64,7 @@ end)
 hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov)
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	drawPlayerInView = !SeamlessPortals.drawPlayerInView
+	SeamlessPortals.Rendering = true
 	for k, v in ipairs(portals) do
 		if !v:IsValid() or !v:ExitPortal():IsValid() then continue end
 		if timesRendered < 6 and v.PORTAL_SHOULDRENDER == 1 then
@@ -97,6 +98,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov
 
 	drawPlayerInView = false
 	SeamlessPortals.drawPlayerInView = false
+	SeamlessPortals.Rendering = false
 	timesRendered = 0
 end)
 

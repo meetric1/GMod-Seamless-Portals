@@ -136,16 +136,17 @@ end
 
 local drawMat = Material("models/props_lab/cornerunit_cloud")
 function ENT:Draw()
-	local backAmt = 3 * self:GetExitSize()
+	local backAmt = 3.1 * self:GetExitSize()
+	local backAmt_2 = backAmt * 0.5
 	local scalex = (self:OBBMaxs().x - self:OBBMins().x) * 0.5 - 0.1
 	local scaley = (self:OBBMaxs().y - self:OBBMins().y) * 0.5 - 0.1
-	local dotCheck = (EyePos() - self:GetPos()):Dot(self:GetUp()) < -10 
+	local dotCheck = (EyePos() - self:GetPos()):Dot(self:GetUp()) < -50 
 
 	render.SetMaterial(drawMat)
 
 	-- holy shit lol this if statment
-	if !self:ExitPortal() or !self:ExitPortal():IsValid() or dotCheck or halo.RenderedEntity() == self then 
-		render.DrawBox(self:GetPos(), self:GetAngles(), Vector(-scalex, -scaley, -backAmt * 2), Vector(scaley, scalex, 0))
+	if SeamlessPortals.Rendering or !self:ExitPortal() or !self:ExitPortal():IsValid() or dotCheck or halo.RenderedEntity() == self then 
+		render.DrawBox(self:GetPos(), self:LocalToWorldAngles(Angle(0, 90, 0)), Vector(-scaley, -scalex, -backAmt * 2), Vector(scaley, scalex, 0))
 		return
 	end
 
