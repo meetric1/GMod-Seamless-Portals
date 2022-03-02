@@ -19,7 +19,6 @@ hook.Add("Think", "seamless_portal_teleport", function()
         end
         if !prop:GetPhysicsObject():IsValid() then continue end
         if prop:GetVelocity() == Vector(0, 0, 0) then continue end
-        if prop:IsPlayerHolding() then continue end
 
         -- puts fake prop in the other portal
         local realPos = prop:GetPos()
@@ -33,14 +32,14 @@ hook.Add("Think", "seamless_portal_teleport", function()
             end
         end
 
-        --[[
+        
         if closestPortalDist > 10000 then 
             destroyPortalEnt(prop)
             continue 
         end
 
         -- create the fake ent on the other side of the portal
-        if !prop.PORTAL_ENTITY then
+        if !prop.PORTAL_ENTITY or !prop.PORTAL_ENTITY:IsValid() then
             prop.PORTAL_ENTITY = ents.Create(prop:GetClass())
             prop.PORTAL_ENTITY:SetPos(Vector())
             prop.PORTAL_ENTITY:SetAngles(Angle())
@@ -51,20 +50,19 @@ hook.Add("Think", "seamless_portal_teleport", function()
             prop.PORTAL_ENTITY:SetMaterial(prop:GetMaterial())
             prop.PORTAL_ENTITY:SetRenderMode(prop:GetRenderMode())
             prop.PORTAL_ENTITY:SetRenderFX(prop:GetRenderFX())
-            prop.PORTAL_ENTITY:GetPhysicsObject():Wake()
-            prop.PORTAL_ENTITY:SetPersistent(true)
+            prop.PORTAL_ENTITY:GetPhysicsObject():EnableMotion(false)
+            --prop.PORTAL_ENTITY:SetNotSolid(true)
             prop.PORTAL_ENTITY.PORTAL_PARENT_ENTITY = prop
-            prop.PORTAL_TOGGLE = true
         else
             -- set its position and angle
-            prop.PORTAL_TOGGLE = !prop.PORTAL_TOGGLE
-            if 
             local editedPos, editedAng = SeamlessPortals.TransformPortal(closestPortal, closestPortal:ExitPortal(), realPos, prop:GetAngles())
             prop.PORTAL_ENTITY:SetPos(editedPos)
             prop.PORTAL_ENTITY:SetAngles(editedAng)
+            prop.PORTAL_ENTITY:GetPhysicsObject():EnableMotion(false)
         end
 
-        if (realPos - closestPortal:GetPos()):Dot(closestPortal:GetUp()) < 0 then continue end]]
+        if (realPos - closestPortal:GetPos()):Dot(closestPortal:GetUp()) < 0 then continue end
+        if prop:IsPlayerHolding() then continue end
         
         -- can it go through the portal?
         local tr = util.TraceLine({
@@ -98,4 +96,11 @@ hook.Add("Think", "seamless_portal_teleport", function()
             end
         end
     end
+end)
+
+
+hook.Add("PhysgunPickup", "seamless_portal_disable_pickup", function(ply, ent)
+	if ent.PORTAL_PARENT_ENTITY then
+		return false
+	end
 end)

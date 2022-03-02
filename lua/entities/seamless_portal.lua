@@ -51,7 +51,11 @@ local function incrementPortal(ent)
 			["$basetexture"] = ent.PORTAL_RT:GetName(), 
 			["$model"] = "1"
 		})
+
 		render.ClearRenderTarget(ent.PORTAL_RT, COLOR_BLACK)
+
+		local bounding1, bounding2 = ent:GetRenderBounds()
+		ent:SetRenderBounds(bounding1 * 3, bounding2 * 3)		-- for some reason this fixes a black flash when going backwards through a portal
 	end
 	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
 end
@@ -136,11 +140,11 @@ end
 
 local drawMat = Material("models/props_lab/cornerunit_cloud")
 function ENT:Draw()
-	local backAmt = 3.1 * self:GetExitSize()
+	local backAmt = 3.3 * self:GetExitSize()
 	local backAmt_2 = backAmt * 0.5
 	local scalex = (self:OBBMaxs().x - self:OBBMins().x) * 0.5 - 0.1
 	local scaley = (self:OBBMaxs().y - self:OBBMins().y) * 0.5 - 0.1
-	local dotCheck = (EyePos() - self:GetPos()):Dot(self:GetUp()) < -50 
+	local dotCheck = (EyePos() - self:GetPos()):Dot(self:GetUp()) < -50
 
 	render.SetMaterial(drawMat)
 
@@ -171,7 +175,7 @@ function ENT:Draw()
 	render.SetStencilCompareFunction(STENCIL_ALWAYS)
 
 	-- draw the quad that the 2d texture will be drawn on
-	-- weapon rendering causes flashing if the quad is drawn right next to the player, so we offset it
+	-- teleporting causes flashing if the quad is drawn right next to the player, so we offset it
 	DrawQuadEasier(self, Vector(scaley, scalex, -backAmt), Vector(0, 0, -backAmt))
 	DrawQuadEasier(self, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt), 1)
 	DrawQuadEasier(self, Vector(scaley, -scalex, -backAmt), Vector(0, 0, -backAmt), 1)
