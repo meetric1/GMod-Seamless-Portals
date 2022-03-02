@@ -75,8 +75,7 @@ local function editPlayerCollision(mv, ply)
 		traceTable.ignoreworld = true
 	else
 		-- extrusion in case the player enables non-ground collision and manages to clip outside of the portal while they are falling (rare case)
-		local tr = util.TraceLine({start = ply:EyePos(), endpos = ply:EyePos() - Vector(0, 0, 1), filter = ply})
-		if tr.Hit then 
+		if ply.PORTAL_STUCK_OFFSET != 0 and util.TraceLine({start = ply:EyePos(), endpos = ply:EyePos() - Vector(0, 0, 1), filter = ply}).Hit then 
 			ply.PORTAL_STUCK_OFFSET = nil
 			mv:SetOrigin(ply:GetPos() + Vector(0, 0, 72))
 			ply:ResetHull()
