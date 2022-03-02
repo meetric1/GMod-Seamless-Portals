@@ -115,7 +115,13 @@ end
 
 -- teleport players
 hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
-    if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
+    if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then 
+		if ply.PORTAL_STUCK_OFFSET then
+			ply:ResetHull()
+			ply.PORTAL_STUCK_OFFSET = nil
+		end
+		return 
+	end
 
 	local plyPos = ply:EyePos()
 	traceTable.start = plyPos - mv:GetVelocity() * 0.02 * (ply.SCALE_MULTIPLIER or 1)
