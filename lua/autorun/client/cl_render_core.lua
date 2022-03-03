@@ -72,8 +72,6 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov
 			if eyePos:DistToSqr(v:GetPos()) > 2500 * 2500 then continue end
 			if (eyePos - v:GetPos()):Dot(v:GetUp()) < -10 then continue end
 
-			
-
 			local exitPortal = v:ExitPortal()
 			local editedPos, editedAng = SeamlessPortals.TransformPortal(v, exitPortal, eyePos, Angle(eyeAngles[1], eyeAngles[2], eyeAngles[3]))
 
