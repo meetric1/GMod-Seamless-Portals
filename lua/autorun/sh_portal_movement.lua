@@ -75,9 +75,11 @@ local function editPlayerCollision(mv, ply)
 		traceTable.ignoreworld = true
 	else
 		-- extrusion in case the player enables non-ground collision and manages to clip outside of the portal while they are falling (rare case)
-		if ply.PORTAL_STUCK_OFFSET != 0 and util.TraceLine({start = ply:EyePos(), endpos = ply:EyePos() - Vector(0, 0, 1), filter = ply}).Hit then 
+		if ply.PORTAL_STUCK_OFFSET == 0 then return end
+		local tr = util.TraceLine({start = ply:EyePos(), endpos = ply:EyePos() - Vector(0, 0, 64), filter = ply})
+		if tr.Hit and tr.Entity:GetClass() != "seamless_portal" then
 			ply.PORTAL_STUCK_OFFSET = nil
-			mv:SetOrigin(ply:GetPos() + Vector(0, 0, 72))
+			mv:SetOrigin(tr.HitPos)
 			ply:ResetHull()
 			return 
 		end
@@ -86,8 +88,8 @@ local function editPlayerCollision(mv, ply)
 	local tr = util.TraceHull(traceTable)
 
 	-- getting this to work on the ground was a FUCKING headache
-	if !ply.PORTAL_STUCK_OFFSET and tr.Hit and tr.Entity:GetClass() == "seamless_portal" and tr.Entity:ExitPortal() and tr.Entity:ExitPortal():IsValid() then
-		if tr.Entity:GetUp():Dot(Vector(0, 0, 1)) > 0.9 then		-- the portal is on the ground
+	if !ply.PORTAL_STUCK_OFFSET and tr.Hit and tr.Entity:GetClass() == "seamless_portal" and tr.Entity.ExitPortal and tr.Entity:ExitPortal() and tr.Entity:ExitPortal():IsValid() then
+		if tr.Entity:GetUp():Dot(Vector(0, 0, 1)) > 0.95 then		-- the portal is on the ground
 			traceTable.mins = Vector(0, 0, 0)
 			traceTable.maxs = Vector(0, 0, 72)
 
@@ -97,7 +99,9 @@ local function editPlayerCollision(mv, ply)
 			end
 
 			ply.PORTAL_STUCK_OFFSET = 71
-		else	
+		elseif tr.Entity:GetUp():Dot(Vector(0, 0, 1)) < -0.95 then 
+			return 
+		else
 			ply.PORTAL_STUCK_OFFSET = 0		-- the portal is not on the ground
 		end
 
@@ -132,7 +136,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	
 	if !tr.Hit then return end
 	local hitPortal = tr.Entity
-	if hitPortal:GetClass() == "seamless_portal" and hitPortal:ExitPortal() and hitPortal:ExitPortal():IsValid() then
+	if hitPortal:GetClass() == "seamless_portal" and hitPortal.ExitPortal and hitPortal:ExitPortal() and hitPortal:ExitPortal():IsValid() then
 		if mv:GetVelocity():Dot(hitPortal:GetUp()) < 0 then
 			if ply.PORTAL_TELEPORTING then return end
 			freezePly = true

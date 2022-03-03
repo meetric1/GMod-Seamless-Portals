@@ -32,7 +32,7 @@ hook.Add("Think", "seamless_portal_teleport", function()
             end
         end
 
-        
+        --[[
         if closestPortalDist > 10000 then 
             destroyPortalEnt(prop)
             continue 
@@ -61,7 +61,7 @@ hook.Add("Think", "seamless_portal_teleport", function()
             prop.PORTAL_ENTITY:GetPhysicsObject():EnableMotion(false)
         end
 
-        if (realPos - closestPortal:GetPos()):Dot(closestPortal:GetUp()) < 0 then continue end
+        if (realPos - closestPortal:GetPos()):Dot(closestPortal:GetUp()) < 0 then continue end]]
         if prop:IsPlayerHolding() then continue end
         
         -- can it go through the portal?

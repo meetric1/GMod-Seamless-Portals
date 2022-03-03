@@ -60,7 +60,7 @@ local function incrementPortal(ent)
 		render.ClearRenderTarget(ent.PORTAL_RT, COLOR_BLACK)
 
 		local bounding1, bounding2 = ent:GetRenderBounds()
-		ent:SetRenderBounds(bounding1 * 3, bounding2 * 3)		-- for some reason this fixes a black flash when going backwards through a portal
+		ent:SetRenderBounds(bounding1 * 100, bounding2 * 100)		-- for some reason this fixes a black flash when going backwards through a portal
 	end
 	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
 end
@@ -149,7 +149,7 @@ function ENT:Draw()
 	local backAmt_2 = backAmt * 0.5
 	local scalex = (self:OBBMaxs().x - self:OBBMins().x) * 0.5 - 0.1
 	local scaley = (self:OBBMaxs().y - self:OBBMins().y) * 0.5 - 0.1
-	local dotCheck = (EyePos() - self:GetPos()):Dot(self:GetUp()) < -50
+	local dotCheck = (EyePos() - self:GetPos()):Dot(self:GetUp()) < -100
 
 	render.SetMaterial(drawMat)
 
