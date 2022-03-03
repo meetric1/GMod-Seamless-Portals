@@ -22,7 +22,7 @@ hook.Add("Think", "seamless_portal_teleport", function()
 
         -- puts fake prop in the other portal
         local realPos = prop:GetPos()
-        local closestPortalDist = 0
+        local closestPortalDist = -1
         local closestPortal = nil
         for k, portal in ipairs(ents.FindByClass("seamless_portal")) do 
             local dist = realPos:DistToSqr(portal:GetPos())
@@ -33,7 +33,7 @@ hook.Add("Think", "seamless_portal_teleport", function()
         end
 
         
-        if closestPortalDist > 10000 then 
+        if closestPortalDist > 10000 or closestPortalDist == -1 then 
             destroyPortalEnt(prop)
             continue 
         end
@@ -54,6 +54,9 @@ hook.Add("Think", "seamless_portal_teleport", function()
             --prop.PORTAL_ENTITY:SetNotSolid(true)
             prop.PORTAL_ENTITY.PORTAL_PARENT_ENTITY = prop
         else
+            -- should this be in an else case? seems okay to execute regardless
+            -- of the condition
+            --
             -- set its position and angle
             local editedPos, editedAng = SeamlessPortals.TransformPortal(closestPortal, closestPortal:ExitPortal(), realPos, prop:GetAngles())
             prop.PORTAL_ENTITY:SetPos(editedPos)
