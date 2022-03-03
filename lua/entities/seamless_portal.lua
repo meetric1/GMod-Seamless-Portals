@@ -13,10 +13,15 @@ ENT.Purpose			= ""
 ENT.Instructions	= ""
 ENT.Spawnable		= true
 
+function ENT:SetupDataTables()
+	self:NetworkVar("Entity", 0, "PortalExit")
+	self:NetworkVar("Float", 0, "PortalScale")
+end
+
 -- get exit portal
 function ENT:ExitPortal()
 	if CLIENT then 
-		return self:GetNWEntity("PORTAL_EXIT")
+		return self:GetPortalExit()
 	end
 	return self.PORTAL_EXIT
 end
@@ -25,20 +30,20 @@ function ENT:LinkPortal(ent)
 	if !ent or !ent:IsValid() then return end
 	self.PORTAL_EXIT = ent
 	ent.PORTAL_EXIT = self
-	self:SetNWEntity("PORTAL_EXIT", ent)
-	ent:SetNWEntity("PORTAL_EXIT", self)
+	self:SetPortalExit(ent)
+	ent:SetPortalExit(self)
 end
 
 -- custom size for portal
 function ENT:SetExitSize(n)
 	self.PORTAL_SCALE = n
-	self:SetNWFloat("PORTAL_SCALE", n)
+	self:SetPortalScale(n)
 	self:Activate()
 end
 
 function ENT:GetExitSize()
 	if CLIENT then 
-		return self:GetNWFloat("PORTAL_SCALE")
+		return self:GetPortalScale()
 	end
 	return self.PORTAL_SCALE
 end
