@@ -54,11 +54,12 @@ SWEP.Primary.ClipSize = 0
 SWEP.Primary.DefaultClip = 0
 SWEP.Primary.Ammo = "smg1"
 SWEP.Primary.Delay = 1
+SWEP.Primary.Automatic = true
 
 SWEP.Secondary.ClipSize = -1
 SWEP.Secondary.DefaultClip = -1 
 SWEP.Secondary.Ammo = "none"
-SWEP.Secondary.Automatic = false
+SWEP.Secondary.Automatic = true
 
 --language.Add("#weapon_mee", "MEE'S WAPON")
 
@@ -95,7 +96,7 @@ function SWEP:ShootFX(primary)
 	end
 	local snd = skins[self.Skin][primary and "shootPrimarySound" or "shootSecondarySound"]
 	if (istable(snd)) then
-		local key = math.floor(util.SharedRandom("mee_swep_rand", 0, #snd, self.RandSalt)) + 1
+		local key = math.floor(util.SharedRandom("portal_gun_rand", 0, #snd, self.RandSalt)) + 1
 		snd = snd[ key ]
 	end
 	self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
@@ -112,11 +113,11 @@ function SWEP:PrimaryAttack()
 		self.Portal:Spawn()
 		SafeRemoveEntity(self.Portal:ExitPortal()) -- is this necessary? it should only have an exit portal if it was spawned in the Q menu
 		self.Portal:LinkPortal(self.Portal2)
-		--self.Portal:SetExitSize(0.1)
+		self.Portal:SetExitSize(Vector(1, 0.6, 1))
 	end
 
 	setPortalPlacement(self.Owner, self.Portal)
-	self:SetNextPrimaryFire(1)
+	self:SetNextPrimaryFire(CurTime() + 0.5)
 
 	--walk through walls fix?
 	--ply:SetHull(Vector(0, 0, 56), Vector(0, 0, 80))
@@ -133,10 +134,11 @@ function SWEP:SecondaryAttack()
 		self.Portal2:Spawn()
 		SafeRemoveEntity(self.Portal2:ExitPortal())
 		self.Portal2:LinkPortal(self.Portal)
+		self.Portal2:SetExitSize(Vector(1, 0.6, 1))
 	end
 
 	setPortalPlacement(self.Owner, self.Portal2)
-	self:SetNextSecondaryFire(1)
+	self:SetNextSecondaryFire(CurTime() + 0.5)
 end
 
 function SWEP:OnRemove()

@@ -32,20 +32,6 @@ timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
 		return a:GetPos():DistToSqr(EyePos()) < b:GetPos():DistToSqr(EyePos())
 	end)
 
-	if SeamlessPortals.PortalIndex < 1 then		-- black halo fix
-		if haloChanged then
-			LocalPlayer():ConCommand("physgun_halo 1")	-- sorry animators, but we need to turn this back on
-			LocalPlayer():ConCommand("effects_freeze 1")
-			LocalPlayer():ConCommand("effects_unfreeze 1")
-			haloChanged = false
-		end
-	else
-		haloChanged = true
-		LocalPlayer():ConCommand("physgun_halo 0")
-		LocalPlayer():ConCommand("effects_freeze 0")
-		LocalPlayer():ConCommand("effects_unfreeze 0")
-	end
-
 	-- update sky material (I guess it can change?)
 	if sky_name != sky_cvar:GetString() then
 		sky_name = sky_cvar:GetString()
@@ -61,6 +47,7 @@ timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
 end)
 
 -- update the rendertarget here since we cant do it in postdraw (cuz of infinite recursion)
+local physgun_halo = GetConVar("physgun_halo")
 hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov)
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	drawPlayerInView = !SeamlessPortals.drawPlayerInView
@@ -83,7 +70,14 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov
 			local oldClip = render.EnableClipping(true)
 			render.PushRenderTarget(v.PORTAL_RT)
 			render.PushCustomClipPlane(exitPortal:GetUp(), exitPortal:GetUp():Dot(exitPortal:GetPos() + exitPortal:GetUp() * 0.1))
+
+			-- black halo clipping plane fix (Thanks to homonovus)
+			physgun_halo = physgun_halo or GetConVar("physgun_halo")
+			local oldHalo = physgun_halo:GetInt()
+			physgun_halo:SetInt(0)
 			render.RenderView(renderViewTable)
+			physgun_halo:SetInt(oldHalo)
+
 			render.PopCustomClipPlane()
 			render.EnableClipping(oldClip)
 			render.PopRenderTarget()

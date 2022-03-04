@@ -87,7 +87,7 @@ local function editPlayerCollision(mv, ply)
 	end
 
 	local tr = util.TraceHull(traceTable)
-	
+
 	-- getting this to work on the ground was a FUCKING headache
 	if !ply.PORTAL_STUCK_OFFSET and tr.Hit and tr.Entity:GetClass() == "seamless_portal" and tr.Entity.ExitPortal and tr.Entity:ExitPortal() and tr.Entity:ExitPortal():IsValid() then
 		if tr.Entity:GetUp():Dot(Vector(0, 0, 1)) > 0.95 then		-- the portal is on the ground
@@ -99,7 +99,7 @@ local function editPlayerCollision(mv, ply)
 				return -- we accomplished nothing :DDDD
 			end
 
-			ply.PORTAL_STUCK_OFFSET = 71
+			ply.PORTAL_STUCK_OFFSET = 72
 		elseif tr.Entity:GetUp():Dot(Vector(0, 0, 1)) < -0.95 then 
 			return 
 		else
@@ -128,8 +128,8 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	end
 
 	local plyPos = ply:EyePos()
-	traceTable.start = plyPos - mv:GetVelocity() * 0.02 * (ply.SCALE_MULTIPLIER or 1)
-	traceTable.endpos = plyPos + mv:GetVelocity() * 0.02 * (ply.SCALE_MULTIPLIER or 1)
+	traceTable.start = plyPos - mv:GetVelocity() * 0.02
+	traceTable.endpos = plyPos + mv:GetVelocity() * 0.02
 	traceTable.filter = ply
 	local tr = util.TraceLine(traceTable)
 
@@ -167,7 +167,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 				offset = editedPos
 			end
 
-			local exitSize = (hitPortal:ExitPortal():GetExitSize() / hitPortal:GetExitSize())
+			local exitSize = (hitPortal:ExitPortal():GetExitSize()[1] / hitPortal:GetExitSize()[1])
 			if ply.SCALE_MULTIPLIER then
 				ply:ConCommand("scale_multiplier " .. (ply.SCALE_MULTIPLIER * exitSize))
 				ply.SCALE_MULTIPLIER = math.Clamp(ply.SCALE_MULTIPLIER * exitSize, 0.01, 10)
@@ -196,8 +196,9 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			end
 
 			ply.PORTAL_TELEPORTING = true 
-			ply.PORTAL_STUCK_OFFSET = nil
-			ply:ResetHull()
+			ply.PORTAL_STUCK_OFFSET = 0
+			ply:SetHull(Vector(-4, -4, 0), Vector(4, 4, 72))
+			ply:SetHullDuck(Vector(-4, -4, 0), Vector(4, 4, 36))
 
 			timer.Simple(0, function()
 				ply.PORTAL_TELEPORTING = false
