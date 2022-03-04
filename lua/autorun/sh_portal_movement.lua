@@ -76,7 +76,7 @@ local function editPlayerCollision(mv, ply)
 	else
 		-- extrusion in case the player enables non-ground collision and manages to clip outside of the portal while they are falling (rare case)
 		if ply.PORTAL_STUCK_OFFSET != 0 then
-			local tr = util.TraceLine({start = ply:EyePos(), endpos = ply:EyePos() - Vector(0, 0, 64), filter = ply})
+			local tr = util.TraceLine({start = ply:EyePos(), endpos = ply:EyePos() - Vector(0, 0, 64), filter = ply, noDetour = true})
 			if tr.Hit and tr.Entity:GetClass() != "seamless_portal" then
 				ply.PORTAL_STUCK_OFFSET = nil
 				mv:SetOrigin(tr.HitPos)
@@ -131,6 +131,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	traceTable.start = plyPos - mv:GetVelocity() * 0.02
 	traceTable.endpos = plyPos + mv:GetVelocity() * 0.02
 	traceTable.filter = ply
+	traceTable.noDetour = true
 	local tr = util.TraceLine(traceTable)
 
 	editPlayerCollision(mv, ply)

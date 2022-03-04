@@ -5,6 +5,7 @@ local rLimit = 4
 
 local function traceLine(data)
 	local tr = oldTraceLine(data)
+	if data["noDetour"] then return tr end
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return tr end
 	if (rLayer >= rLimit) then return tr end
 	if tr.Fraction >= 1 then return tr end
