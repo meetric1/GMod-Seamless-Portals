@@ -60,7 +60,14 @@ local function incrementPortal(ent)
 
 		local bounding1, bounding2 = ent:GetRenderBounds()
 		ent:SetRenderBounds(bounding1 * 100, bounding2 * 100)		-- for some reason this fixes a black flash when going backwards through a portal
-		ent:UpdatePhysmesh()
+		if ent.UpdatePhysmesh then
+			ent:UpdatePhysmesh()
+		else
+			timer.Create("seamless_portal_init" .. SeamlessPortals.PortalIndex, 1, 10, function()
+				ent:UpdatePhysmesh()
+				timer.Remove("seamless_portal_init" .. SeamlessPortals.PortalIndex)
+			end)
+		end
 	end
 	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
 end
@@ -221,7 +228,9 @@ if CLIENT then
 	end
 
 	hook.Add("InitPostEntity", "seamless_portal_init", function()
+		print("Initializing seamless portal")
 		for k, v in ipairs(ents.FindByClass("seamless_portal")) do
+			print("Initializing portal " .. v:EntIndex())
 			incrementPortal(v)
 		end
 	end)

@@ -75,7 +75,7 @@ hook.Add("Think", "seamless_portal_teleport", function()
 
         if !tr.Hit then continue end
         local hitPortal = tr.Entity
-        if hitPortal:GetClass() == "seamless_portal" and hitPortal:ExitPortal():IsValid() then
+        if hitPortal and hitPortal:GetClass() == "seamless_portal" and hitPortal:ExitPortal():IsValid() then
             if prop:GetVelocity():Dot(hitPortal:GetUp()) < 0 then
                 --local propsToTeleport = prop.Constraints
                 --table.insert(propsToTeleport, prop)

@@ -128,8 +128,8 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	end
 
 	local plyPos = ply:EyePos()
-	traceTable.start = plyPos - mv:GetVelocity() * 0.02 * (ply.SCALE_MULTIPLIER or 1)
-	traceTable.endpos = plyPos + mv:GetVelocity() * 0.02 * (ply.SCALE_MULTIPLIER or 1)
+	traceTable.start = plyPos - mv:GetVelocity() * 0.02
+	traceTable.endpos = plyPos + mv:GetVelocity() * 0.02
 	traceTable.filter = ply
 	local tr = util.TraceLine(traceTable)
 
