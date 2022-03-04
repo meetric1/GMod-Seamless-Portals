@@ -32,6 +32,8 @@ hook.Add("Think", "seamless_portal_teleport", function()
             end
         end
 
+        if !closestPortal or !closestPortal:ExitPortal() or !closestPortal:ExitPortal():IsValid() then continue end
+        
         --[[
         if closestPortalDist > 10000 then 
             destroyPortalEnt(prop)
