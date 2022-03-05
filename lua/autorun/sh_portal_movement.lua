@@ -90,7 +90,8 @@ local function editPlayerCollision(mv, ply)
 
 	-- getting this to work on the ground was a FUCKING headache
 	if !ply.PORTAL_STUCK_OFFSET and tr.Hit and tr.Entity:GetClass() == "seamless_portal" and tr.Entity.ExitPortal and tr.Entity:ExitPortal() and tr.Entity:ExitPortal():IsValid() then
-		if tr.Entity:GetUp():Dot(Vector(0, 0, 1)) > 0.95 then		-- the portal is on the ground
+		local secondaryOffset = 0
+		if tr.Entity:GetUp():Dot(Vector(0, 0, 1)) > 0.9 then		-- the portal is on the ground
 			traceTable.mins = Vector(0, 0, 0)
 			traceTable.maxs = Vector(0, 0, 72)
 
@@ -99,15 +100,20 @@ local function editPlayerCollision(mv, ply)
 				return -- we accomplished nothing :DDDD
 			end
 
-			ply.PORTAL_STUCK_OFFSET = 72
-		elseif tr.Entity:GetUp():Dot(Vector(0, 0, 1)) < -0.95 then 
+			if tr.Entity:GetUp():Dot(Vector(0, 0, 1)) > 0.999 then
+				ply.PORTAL_STUCK_OFFSET = 72
+			else
+				ply.PORTAL_STUCK_OFFSET = 72
+				secondaryOffset = 36
+			end
+		elseif tr.Entity:GetUp():Dot(Vector(0, 0, 1)) < -0.9 then 
 			return 
 		else
 			ply.PORTAL_STUCK_OFFSET = 0		-- the portal is not on the ground
 		end
 
-		ply:SetHull(Vector(-4, -4, 0 + ply.PORTAL_STUCK_OFFSET), Vector(4, 4, 72))
-		ply:SetHullDuck(Vector(-4, -4, 0 + ply.PORTAL_STUCK_OFFSET), Vector(4, 4, 36))
+		ply:SetHull(Vector(-4, -4, 0 + ply.PORTAL_STUCK_OFFSET), Vector(4, 4, 72 + secondaryOffset))
+		ply:SetHullDuck(Vector(-4, -4, 0 + ply.PORTAL_STUCK_OFFSET), Vector(4, 4, 36 + secondaryOffset))
 
 	elseif ply.PORTAL_STUCK_OFFSET and !tr.Hit then
 		ply:ResetHull()

@@ -63,7 +63,10 @@ local function incrementPortal(ent)
 		if ent.UpdatePhysmesh then
 			ent:UpdatePhysmesh()
 		else
-			timer.Create("seamless_portal_init" .. SeamlessPortals.PortalIndex, 1, 10, function()
+			timer.Create("seamless_portal_init" .. SeamlessPortals.PortalIndex, 1, 1000, function()
+				if !ent or !ent:IsValid() then timer.Remove("seamless_portal_init" .. SeamlessPortals.PortalIndex) end
+				if !ent.UpdatePhysmesh then return end
+
 				ent:UpdatePhysmesh()
 				timer.Remove("seamless_portal_init" .. SeamlessPortals.PortalIndex)
 			end)
@@ -145,7 +148,7 @@ end
 
 local drawMat = Material("models/props_combine/combine_interface_disp")
 function ENT:Draw()
-	local backAmt = 3.3 * self:GetExitSize()[3]
+	local backAmt = 3 * self:GetExitSize()[3]
 	local backAmt_2 = backAmt * 0.5
 	local scalex = (self:OBBMaxs().x - self:OBBMins().x) * 0.5 - 0.1
 	local scaley = (self:OBBMaxs().y - self:OBBMins().y) * 0.5 - 0.1
@@ -208,6 +211,7 @@ function ENT:UpdatePhysmesh()
 		self:EnableCustomCollisions(true)
 		self:GetPhysicsObject():EnableMotion(false)
 		self:GetPhysicsObject():SetMaterial("glass")
+		self:GetPhysicsObject():SetMass(250)
 	else
 		self:PhysicsDestroy()
 		self:EnableCustomCollisions(false)
