@@ -107,13 +107,14 @@ function ENT:SpawnFunction(ply, tr)
 	if CPPI then portal2:CPPISetOwner(ply) end
 
 	portal1:LinkPortal(portal2)
+	portal1.PORTAL_REMOVE_EXIT = true
 	
 	return portal1
 end
 
 function ENT:OnRemove()
 	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex - 1
-	if SERVER then
+	if SERVER and self.PORTAL_REMOVE_EXIT then
 		SafeRemoveEntity(self:ExitPortal())
 	end
 end

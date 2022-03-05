@@ -76,6 +76,7 @@ local seamless_check = function(e) return !(e:GetClass() == "seamless_portal" or
 
 -- 'no collide' the player with the wall by shrinking the player's collision box
 local traceTable = {}
+traceTable.noDetour = true
 local function editPlayerCollision(mv, ply)
 	traceTable.start = ply:GetPos() + ply:GetVelocity() * 0.02
 	traceTable.endpos = traceTable.start
@@ -149,7 +150,6 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	traceTable.start = plyPos - mv:GetVelocity() * 0.02
 	traceTable.endpos = plyPos + mv:GetVelocity() * 0.02
 	traceTable.filter = ply
-	traceTable.noDetour = true
 	local tr = util.TraceLine(traceTable)
 
 	editPlayerCollision(mv, ply)

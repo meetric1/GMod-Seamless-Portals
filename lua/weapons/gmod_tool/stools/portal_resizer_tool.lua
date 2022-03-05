@@ -43,6 +43,7 @@ end
 
 function TOOL:LeftClick(trace)
 	if !trace.Entity or trace.Entity:GetClass() != "seamless_portal" then return false end
+	if CPPI and SERVER then if !trace.Entity:CPPICanTool(self:GetOwner(), "remover") then return false end end
 	local sizex = self:GetOwner():GetInfoNum("seamless_portal_size_x", 1)
 	local sizey = self:GetOwner():GetInfoNum("seamless_portal_size_y", 1)
 	trace.Entity:SetExitSize(Vector(sizex, sizey, sizex))
@@ -51,6 +52,7 @@ end
 
 function TOOL:RightClick(trace)
 	if !trace.Entity or trace.Entity:GetClass() != "seamless_portal" then return false end
+	if CPPI and SERVER then if !trace.Entity:CPPICanTool(self:GetOwner(), "remover") then return false end end
 	trace.Entity:SetExitSize(Vector(1, 1, 1))
 	return true
 end

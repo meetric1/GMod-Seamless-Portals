@@ -22,10 +22,9 @@ SWEP.DrawChrosshair = true
 SWEP.Spawnable = true
 SWEP.AdminSpawnable = false
 
-SWEP.Primary.ClipSize = 0
-SWEP.Primary.DefaultClip = 0
-SWEP.Primary.Ammo = "smg1"
-SWEP.Primary.Delay = 1
+SWEP.Primary.ClipSize = -1
+SWEP.Primary.DefaultClip = -1
+SWEP.Primary.Ammo = "none"
 SWEP.Primary.Automatic = false
 
 SWEP.Secondary.ClipSize = -1
