@@ -101,7 +101,7 @@ hook.Add("ShouldDrawLocalPlayer", "seamless_portal_drawplayer", function()
 	end
 end)
 
--- draw the skybox
+-- draw the 2d skybox in place of the black (Thanks to Fafy2801)
 local drawsky = function(pos, ang, size, size_2, color, materials)
 	-- BACK
 	render.SetMaterial(materials[1])

@@ -4,6 +4,18 @@
 
 AddCSLuaFile()
 
+local function updateScale(ply, scale)
+    ply:SetModelScale(scale)
+    ply:SetViewOffset(Vector(0, 0, 64 * scale))
+    ply:SetViewOffsetDucked(Vector(0, 0, 64 * scale / 2))
+
+    if scale < 0.11 then
+        ply:SetCrouchedWalkSpeed(0.83)
+    else
+        ply:SetCrouchedWalkSpeed(0.3)
+    end
+end
+
 local freezePly = false
 local function updateCalcViews(finalPos, finalVel, finalSize)
 	timer.Remove("portals_eye_fix_delay")	--just in case you enter the portal while the timer is running
@@ -175,9 +187,11 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 
 			local exitSize = (hitPortal:ExitPortal():GetExitSize()[1] / hitPortal:GetExitSize()[1])
 			if ply.SCALE_MULTIPLIER then
-				ply:ConCommand("scale_multiplier " .. (ply.SCALE_MULTIPLIER * exitSize))
-				ply.SCALE_MULTIPLIER = math.Clamp(ply.SCALE_MULTIPLIER * exitSize, 0.01, 10)
-				finalPos = finalPos + ((ply:EyePos() - ply:GetPos()) - (ply:EyePos() - ply:GetPos()) * exitSize)
+				if ply.SCALE_MULTIPLIER * exitSize != exitSize then
+					ply.SCALE_MULTIPLIER = math.Clamp(ply.SCALE_MULTIPLIER * exitSize, 0.01, 10)
+					finalPos = finalPos + ((ply:EyePos() - ply:GetPos()) - (ply:EyePos() - ply:GetPos()) * exitSize)
+					updateScale(ply, ply.SCALE_MULTIPLIER)
+				end
 			end
 
 			finalPos = finalPos - (editedPos - offset) * exitSize + Vector(0, 0, 0.1)	-- small offset so we arent in the floor

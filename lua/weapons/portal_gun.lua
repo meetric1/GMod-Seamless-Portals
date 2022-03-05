@@ -57,6 +57,7 @@ local function setPortalPlacement(owner, portal)
 
 	portal:SetPos((tr.HitPos + tr.HitNormal * 10))	--20
 	portal:SetAngles(rotatedAng)
+	if CPPI then portal:CPPISetOwner(owner) end
 end
 
 function SWEP:ShootFX(primary)

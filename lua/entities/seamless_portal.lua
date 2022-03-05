@@ -104,6 +104,8 @@ function ENT:SpawnFunction(ply, tr)
 	portal2:SetPos(tr.HitPos + tr.HitNormal * 50)
 	portal2:Spawn()
 
+	if CPPI then portal2:CPPISetOwner(ply) end
+
 	portal1:LinkPortal(portal2)
 	
 	return portal1
