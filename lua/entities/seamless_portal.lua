@@ -11,7 +11,9 @@ ENT.PrintName		= "Seamless Portal"
 ENT.Author			= "Mee"
 ENT.Purpose			= ""
 ENT.Instructions	= ""
-ENT.Spawnable		= true
+// Spawnable can't be set to true, because the category is manually overwritten in
+// lua/autorun/sh_portal_spawnmenu.lua
+ENT.Spawnable		= false
 
 function ENT:SetupDataTables()
 	self:NetworkVar("Entity", 0, "PortalExit")
