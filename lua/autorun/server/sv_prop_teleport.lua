@@ -70,7 +70,8 @@ hook.Add("Think", "seamless_portal_teleport", function()
         local tr = util.TraceLine({
             start = realPos - prop:GetVelocity() * 0.01, 
             endpos = realPos + prop:GetVelocity() * 0.01, 
-            filter = seamless_check
+            filter = seamless_check,
+            noDetour = true,
         })
 
         if !tr.Hit then continue end

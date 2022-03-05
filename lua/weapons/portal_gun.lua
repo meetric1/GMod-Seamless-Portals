@@ -46,6 +46,7 @@ local function setPortalPlacement(owner, portal)
 		start = owner:GetShootPos(),
 		endpos = owner:GetShootPos() + owner:GetAimVector() * 99999,
 		filter = seamless_check,
+		noDetour = true,
 	})
 
 	local rotatedAng = tr.HitNormal:Angle() + Angle(90, 0, 0)
