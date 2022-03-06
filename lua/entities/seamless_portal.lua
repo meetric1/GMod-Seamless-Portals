@@ -59,11 +59,11 @@ local function incrementPortal(ent)
 		render.ClearRenderTarget(ent.PORTAL_RT, Color(0, 0, 0, 255))
 
 		local bounding1, bounding2 = ent:GetRenderBounds()
-		ent:SetRenderBounds(bounding1 * 100, bounding2 * 100)		-- for some reason this fixes a black flash when going backwards through a portal
+		ent:SetRenderBounds(bounding1 * 16384, bounding2 * 16384)		-- for some reason this fixes a black flash when going backwards through a portal
 		if ent.UpdatePhysmesh then
 			ent:UpdatePhysmesh()
 		else
-			timer.Create("seamless_portal_init" .. SeamlessPortals.PortalIndex, 1, 1000, function()
+			timer.Create("seamless_portal_init" .. SeamlessPortals.PortalIndex, 1, 600, function()
 				if !ent or !ent:IsValid() then timer.Remove("seamless_portal_init" .. SeamlessPortals.PortalIndex) end
 				if !ent.UpdatePhysmesh then return end
 
