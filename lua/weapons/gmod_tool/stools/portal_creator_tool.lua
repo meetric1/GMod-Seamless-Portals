@@ -97,7 +97,7 @@ elseif ( SERVER ) then
 
 	function TOOL:LeftClick(trace)
 		local pos, angles = self:GetPlacementPosition(trace)
-		if not pos then return end
+		if not pos then return false end
 		local ent = ents.Create("seamless_portal")
 		ent:SetPos(pos)
 		ent:SetAngles(angles + Angle(270, 0, 0))
@@ -108,23 +108,24 @@ elseif ( SERVER ) then
 		local sizey = self:GetOwner():GetInfoNum("seamless_portal_size_y", 1)
 		ent:SetExitSize(Vector(sizex, sizey, 1))
 		cleanup.Add(self:GetOwner(), "props", ent)
+		return true
 	end
 
 end
 
-function TOOL:RightClick(trace)
-	if not trace.Hit then
-		self:SetStage(1)
-		return
-	end
+function TOOL:GetTarget(trace)
+	if not trace.Hit then return NULL end
 	local ent = trace.Entity
-	if not ent then
+	if not ent then return NULL end
+	if ent:GetClass() ~= "seamless_portal" then return NULL end
+	return ent
+end
+
+function TOOL:RightClick(trace)
+	local ent = self:GetTarget(trace)
+	if not IsValid(ent) then
 		self:SetStage(1)
-		return
-	end
-	if ent:GetClass() ~= "seamless_portal" then
-		self:SetStage(1)
-		return
+		return false
 	end
 
 	local stage = self:GetStage()
@@ -134,10 +135,11 @@ function TOOL:RightClick(trace)
 	else
 		if (ent:EntIndex() == self.LinkTarget:EntIndex()) then
 			self:SetStage(1)
-			return
+			return false
 		end
 		-- LinkPortal already contains an IsValid check
 		ent:LinkPortal(self.LinkTarget)
 		self:SetStage(1)
 	end
+	return true
 end
