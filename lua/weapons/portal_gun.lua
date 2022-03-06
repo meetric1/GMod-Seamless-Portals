@@ -66,8 +66,6 @@ function SWEP:ShootFX(primary)
 	
 	if CLIENT then 
 		EmitSound("NPC_Vortigaunt.Shoot", self:GetPos(), self:EntIndex(), CHAN_AUTO, 0.25)	-- quieter for client
-	else
-		self:EmitSound("NPC_Vortigaunt.Shoot")
 	end
 end
 

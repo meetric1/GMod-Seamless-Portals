@@ -1,19 +1,26 @@
 -- this is the code that teleports entities like props
 -- it only works for things with physics since I dont want to add support to other wacked entities that dont have physics
 
-local seamless_check = function(e) return e:GetClass() == "seamless_portal" end    -- for traces
-hook.Add("Think", "seamless_portal_teleport", function()
-    if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
-    for _, prop in ipairs(ents.GetAll()) do
-        if prop:GetClass() == "player" or prop:GetClass() == "seamless_portal" then continue end
-        if !prop:GetPhysicsObject():IsValid() then continue end
-        if prop:GetVelocity() == Vector(0, 0, 0) then continue end
+local allEnts
+local portals
+timer.Create("portals_ent_update", 1, 0, function()
+    portals = ents.FindByClass("seamless_portal")
+    allEnts = ents.GetAll()
+end)
 
-        -- puts fake prop in the other portal
+local seamless_check = function(e) return e:GetClass() == "seamless_portal" end    -- for traces
+hook.Add("Tick", "seamless_portal_teleport", function()
+    if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 or !allEnts then return end
+    for _, prop in ipairs(allEnts) do
+        if !prop:IsValid() then continue end
+        if prop:GetVelocity() == Vector(0, 0, 0) then continue end
+        if prop:GetClass() == "player" or prop:GetClass() == "seamless_portal" then continue end
+
         local realPos = prop:GetPos()
         local closestPortalDist = 0
         local closestPortal = nil
-        for k, portal in ipairs(ents.FindByClass("seamless_portal")) do 
+        for k, portal in ipairs(portals) do
+            if !portal:IsValid() then continue end
             local dist = realPos:DistToSqr(portal:GetPos())
             if (dist < closestPortalDist or k == 1) and portal:ExitPortal() and portal:ExitPortal():IsValid() then
                 closestPortalDist = dist
@@ -21,12 +28,14 @@ hook.Add("Think", "seamless_portal_teleport", function()
             end
         end
 
-        if !closestPortal or !closestPortal:ExitPortal() or !closestPortal:ExitPortal():IsValid() then continue end
-    
+
+        if !closestPortal or closestPortalDist > 10000 * closestPortal:GetExitSize()[3] then continue end     --over 100 units away from the portal, dont bother checking
+        if (closestPortal:GetPos() - realPos):Dot(closestPortal:GetUp()) > 0 then continue end     --behind the portal, dont bother checking
+
         -- can it go through the portal?
         local tr = util.TraceLine({
-            start = realPos - prop:GetVelocity() * 0.01, 
-            endpos = realPos + prop:GetVelocity() * 0.01, 
+            start = realPos - prop:GetVelocity() * 0.02, 
+            endpos = realPos + prop:GetVelocity() * 0.02, 
             filter = seamless_check,
             noDetour = true,
         })
@@ -48,7 +57,9 @@ hook.Add("Think", "seamless_portal_teleport", function()
                     local editedPropAng = hitPortal:ExitPortal():LocalToWorldAngles(hitPortal:WorldToLocalAngles(newPropAng))
                     local max = math.Max(prop:GetVelocity():Length(), hitPortal:ExitPortal():GetUp():Dot(-physenv.GetGravity() / 3))
                     prop:ForcePlayerDrop()
-                    prop:GetPhysicsObject():SetVelocity(editedAng:Forward() * max)
+                    if prop:GetPhysicsObject():IsValid() then 
+                        prop:GetPhysicsObject():SetVelocity(editedAng:Forward() * max) 
+                    end
                     prop:SetAngles(editedPropAng)
                     prop:SetPos(editedPos)
                 --end
