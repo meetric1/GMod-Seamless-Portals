@@ -258,3 +258,4 @@ SeamlessPortals.TransformPortal = function(a, b, pos, angle, mul)
 
 	return editedPos, editedAng
 end
+
