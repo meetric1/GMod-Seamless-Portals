@@ -63,7 +63,12 @@ end
 function SWEP:ShootFX(primary)
 	self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
 	self.Owner:SetAnimation(PLAYER_ATTACK1)
-	self.Owner:EmitSound("NPC_Vortigaunt.Shoot")
+	
+	if CLIENT then 
+		EmitSound("NPC_Vortigaunt.Shoot", self:GetPos(), self:EntIndex(), CHAN_AUTO, 0.25)	-- quieter for client
+	else
+		self:EmitSound("NPC_Vortigaunt.Shoot")
+	end
 end
 
 function SWEP:PrimaryAttack()

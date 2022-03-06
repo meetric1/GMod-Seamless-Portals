@@ -61,11 +61,11 @@ local function incrementPortal(ent)
 		render.ClearRenderTarget(ent.PORTAL_RT, Color(0, 0, 0, 255))
 
 		local bounding1, bounding2 = ent:GetRenderBounds()
-		ent:SetRenderBounds(bounding1 * 100, bounding2 * 100)		-- for some reason this fixes a black flash when going backwards through a portal
+		ent:SetRenderBounds(bounding1 * 16384, bounding2 * 16384)		-- for some reason this fixes a black flash when going backwards through a portal
 		if ent.UpdatePhysmesh then
 			ent:UpdatePhysmesh()
 		else
-			timer.Create("seamless_portal_init" .. SeamlessPortals.PortalIndex, 1, 1000, function()
+			timer.Create("seamless_portal_init" .. SeamlessPortals.PortalIndex, 1, 600, function()
 				if !ent or !ent:IsValid() then timer.Remove("seamless_portal_init" .. SeamlessPortals.PortalIndex) end
 				if !ent.UpdatePhysmesh then return end
 
@@ -92,7 +92,6 @@ function ENT:Initialize()
 		self:SetCollisionGroup(COLLISION_GROUP_WORLD)
 		self:DrawShadow(false)
 		self:SetExitSize(Vector(1, 1, 1))
-		print("Portal " .. tostring(self) .." initialized")
 		SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
 	end
 end
@@ -237,13 +236,13 @@ if CLIENT then
 	end
 
 	hook.Add("InitPostEntity", "seamless_portal_init", function()
-		print("Initializing seamless portal")
 		for k, v in ipairs(ents.FindByClass("seamless_portal")) do
 			print("Initializing portal " .. v:EntIndex())
 			incrementPortal(v)
 		end
 	end)
 end
+
 
 
 -- create global table
@@ -261,3 +260,4 @@ SeamlessPortals.TransformPortal = function(a, b, pos, angle, mul)
 
 	return editedPos, editedAng
 end
+

@@ -5,12 +5,5 @@ To install this addon, download and unzip the contents and put it in your garrys
 
 BEST RESULTS ARE IN A LOCAL SERVER BECAUSE I CANT DO PREDICTION IN SINGLEPLAYER!
 
-This WILL become an addon on the workshop ONCE IT IS FINISHED!
-
-
-I plan to add:
-```
--hopefully a fix for the black clipping plane (fixed)
--scaling portals that resize players (done)
--better prop clipping & collision through portals (wip)
-```
+This is now an addon on the workshop:
+https://steamcommunity.com/sharedfiles/filedetails/?id=2773737445
