@@ -104,7 +104,7 @@ local function editPlayerCollision(mv, ply)
 	-- getting this to work on the ground was a FUCKING headache
 	if !ply.PORTAL_STUCK_OFFSET and tr.Hit and tr.Entity:GetClass() == "seamless_portal" and tr.Entity.ExitPortal and tr.Entity:ExitPortal() and tr.Entity:ExitPortal():IsValid() then
 		local secondaryOffset = 0
-		if tr.Entity:GetUp():Dot(Vector(0, 0, 1)) > 0.9 then		-- the portal is on the ground
+		if tr.Entity:GetUp():Dot(Vector(0, 0, 1)) > 0.5 then		-- the portal is on the ground
 			traceTable.mins = Vector(0, 0, 0)
 			traceTable.maxs = Vector(0, 0, 72)
 
@@ -188,7 +188,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 
 			local exitSize = (hitPortal:ExitPortal():GetExitSize()[1] / hitPortal:GetExitSize()[1])
 			if ply.SCALE_MULTIPLIER then
-				if ply.SCALE_MULTIPLIER * exitSize != exitSize then
+				if ply.SCALE_MULTIPLIER * exitSize != ply.SCALE_MULTIPLIER then
 					ply.SCALE_MULTIPLIER = math.Clamp(ply.SCALE_MULTIPLIER * exitSize, 0.01, 10)
 					finalPos = finalPos + ((ply:EyePos() - ply:GetPos()) - (ply:EyePos() - ply:GetPos()) * exitSize)
 					updateScale(ply, ply.SCALE_MULTIPLIER)

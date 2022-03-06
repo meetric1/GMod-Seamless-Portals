@@ -90,7 +90,6 @@ function ENT:Initialize()
 		self:SetCollisionGroup(COLLISION_GROUP_WORLD)
 		self:DrawShadow(false)
 		self:SetExitSize(Vector(1, 1, 1))
-		print("Portal " .. tostring(self) .." initialized")
 		SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
 	end
 end
@@ -235,13 +234,13 @@ if CLIENT then
 	end
 
 	hook.Add("InitPostEntity", "seamless_portal_init", function()
-		print("Initializing seamless portal")
 		for k, v in ipairs(ents.FindByClass("seamless_portal")) do
 			print("Initializing portal " .. v:EntIndex())
 			incrementPortal(v)
 		end
 	end)
 end
+
 
 
 -- create global table
