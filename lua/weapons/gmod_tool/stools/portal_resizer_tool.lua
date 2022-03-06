@@ -27,7 +27,10 @@ if CLIENT then
 
 	local COLOR_GREEN = Color(0, 255, 0, 50)
 	function TOOL:DrawHUD()
-		local trace = self.Owner:GetEyeTrace()
+		local traceTable = util.GetPlayerTrace(self:GetOwner())
+		traceTable.noDetour = true
+		local trace = util.TraceLine(traceTable)
+		
 		if !trace.Entity or trace.Entity:GetClass() != "seamless_portal" then return end	-- dont draw the world or else u crash lol
 
 		local mins, maxs = trace.Entity:OBBMins(), trace.Entity:OBBMaxs()
@@ -42,6 +45,10 @@ if CLIENT then
 end
 
 function TOOL:LeftClick(trace)
+	local traceTable = util.GetPlayerTrace(self:GetOwner())
+	traceTable.noDetour = true
+	local trace = util.TraceLine(traceTable)
+
 	if !trace.Entity or trace.Entity:GetClass() != "seamless_portal" then return false end
 	if CPPI and SERVER then if !trace.Entity:CPPICanTool(self:GetOwner(), "remover") then return false end end
 	local sizex = self:GetOwner():GetInfoNum("seamless_portal_size_x", 1)
@@ -51,6 +58,10 @@ function TOOL:LeftClick(trace)
 end
 
 function TOOL:RightClick(trace)
+	local traceTable = util.GetPlayerTrace(self:GetOwner())
+	traceTable.noDetour = true
+	local trace = util.TraceLine(traceTable)
+
 	if !trace.Entity or trace.Entity:GetClass() != "seamless_portal" then return false end
 	if CPPI and SERVER then if !trace.Entity:CPPICanTool(self:GetOwner(), "remover") then return false end end
 	trace.Entity:SetExitSize(Vector(1, 1, 1))
