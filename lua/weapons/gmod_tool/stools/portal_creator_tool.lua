@@ -118,6 +118,15 @@ function TOOL:GetTarget(trace)
 	local ent = trace.Entity
 	if not ent then return NULL end
 	if ent:GetClass() ~= "seamless_portal" then return NULL end
+	if CPPI then
+		if ( SERVER ) then
+			if not ent:CPPICanTool(self:GetOwner(), "portal_creator_tool") then return NULL end
+		elseif ( CLIENT ) then
+			local own = ent:CPPIGetOwner()
+			local owner = self:GetOwner()
+			if (owner ~= own and owner:UniqueID() ~= own) then return NULL end
+		end
+	end
 	return ent
 end
 
