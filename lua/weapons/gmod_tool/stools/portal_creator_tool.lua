@@ -87,7 +87,9 @@ if ( CLIENT ) then
 		cam.End3D()
 	end
 
-	function TOOL:LeftClick() end
+	function TOOL:LeftClick()
+		return true
+	end
 
 elseif ( SERVER ) then
 
