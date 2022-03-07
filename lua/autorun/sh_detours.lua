@@ -22,7 +22,8 @@ hook.Add("EntityFireBullets", "seamless_portal_detour_bullet", function(entity, 
 end)
 
 -- effect detour (Thanks to WasabiThumb)
-local oldUtilEffect = util.Effect
+util._SeamlessPortals_OldEffect = util._SeamlessPortals_OldEffect or util.Effect
+local oldUtilEffect = util._SeamlessPortals_OldEffect
 local function effect(name, b, c, d)
      if SeamlessPortals.PortalIndex > 0 and (name == "phys_freeze" or name == "phys_unfreeze") then return end
      oldUtilEffect(name, b, c, d)
@@ -30,7 +31,8 @@ end
 util.Effect = effect
 
 -- traceline detour (Thanks to WasabiThumb)
-local oldTraceLine = util.TraceLine
+util._SeamlessPortals_OldTraceLine = util._SeamlessPortals_OldTraceLine or util.TraceLine
+local oldTraceLine = util._SeamlessPortals_OldTraceLine
 local rLayer = 0
 local rLimit = 2
 local function traceLine(data)
