@@ -6,15 +6,13 @@ local portals
 timer.Create("portals_ent_update", 1, 0, function()
     portals = ents.FindByClass("seamless_portal")
     allEnts = ents.GetAll()
-end)
 
-local seamless_check = function(e) return e:GetClass() == "seamless_portal" end    -- for traces
-hook.Add("Tick", "seamless_portal_teleport", function()
-    if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 or !allEnts then return end
-    for _, prop in ipairs(allEnts) do
-        if !prop:IsValid() then continue end
-        if prop:GetVelocity() == Vector(0, 0, 0) then continue end
-        if prop:GetClass() == "player" or prop:GetClass() == "seamless_portal" then continue end
+    for i = #allEnts, 1, -1 do 
+        local prop = allEnts[i]
+        local removeEnt = false
+        if !prop:IsValid() or !prop:GetPhysicsObject():IsValid() then table.remove(allEnts, i) continue end
+        if prop:GetVelocity() == Vector(0, 0, 0) then table.remove(allEnts, i) continue end
+        if prop:GetClass() == "player" or prop:GetClass() == "seamless_portal" then table.remove(allEnts, i) continue end
 
         local realPos = prop:GetPos()
         local closestPortalDist = 0
@@ -28,9 +26,17 @@ hook.Add("Tick", "seamless_portal_teleport", function()
             end
         end
 
+        if !closestPortal or closestPortalDist > 10000 * closestPortal:GetExitSize()[3] then table.remove(allEnts, i) continue end     --over 100 units away from the portal, dont bother checking
+        if (closestPortal:GetPos() - realPos):Dot(closestPortal:GetUp()) > 0 then table.remove(allEnts, i) continue end     --behind the portal, dont bother checking
+    end
+end)
 
-        if !closestPortal or closestPortalDist > 10000 * closestPortal:GetExitSize()[3] then continue end     --over 100 units away from the portal, dont bother checking
-        if (closestPortal:GetPos() - realPos):Dot(closestPortal:GetUp()) > 0 then continue end     --behind the portal, dont bother checking
+local seamless_check = function(e) return e:GetClass() == "seamless_portal" end    -- for traces
+hook.Add("Tick", "seamless_portal_teleport", function()
+    if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 or !allEnts then return end
+    for _, prop in ipairs(allEnts) do
+        if !prop:IsValid() then continue end
+        local realPos = prop:GetPos()
 
         -- can it go through the portal?
         local tr = util.TraceLine({

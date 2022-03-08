@@ -16,7 +16,6 @@ local timesRendered = 0
 
 local skysize = 16384	--2^14, default zfar limit
 local angle_zero = Angle(0, 0, 0)
-local COLOR_WHITE = Color(255, 255, 255)
 
 local renderViewTable = {
 	origin = Vector(),
@@ -50,16 +49,11 @@ end)
 local physgun_halo = GetConVar("physgun_halo")
 hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov)
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
-	drawPlayerInView = !SeamlessPortals.drawPlayerInView
+	drawPlayerInView = true
 	SeamlessPortals.Rendering = true
 	for k, v in ipairs(portals) do
 		if !v:IsValid() or !v:ExitPortal():IsValid() then continue end
-		if timesRendered < 6 and v.PORTAL_SHOULDRENDER == 1 then
-			-- optimization checks
-			if eyePos:DistToSqr(v:GetPos()) > 2500 * 2500 * v:GetExitSize()[3] then continue end
-			if (eyePos - v:GetPos()):Dot(v:GetUp()) < -10 * v:GetExitSize()[3] then continue end
-			if eyeAngles:Forward():Dot(v:GetUp()) >= 0.6 * v:GetExitSize()[3] then continue end
-
+		if timesRendered < SeamlessPortals.MaxRTs and v.PORTAL_SHOULDRENDER then
 			local exitPortal = v:ExitPortal()
 			local editedPos, editedAng = SeamlessPortals.TransformPortal(v, exitPortal, eyePos, Angle(eyeAngles[1], eyeAngles[2], eyeAngles[3]))
 
@@ -67,9 +61,11 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov
 			renderViewTable.angles = editedAng
 			renderViewTable.fov = fov
 
+			v.PORTAL_RT_NUMBER = timesRendered + 1	-- the number index of the rendertarget it will use in rendering
+
 			-- render the scene
 			local oldClip = render.EnableClipping(true)
-			render.PushRenderTarget(v.PORTAL_RT)
+			render.PushRenderTarget(SeamlessPortals.PortalRTs[timesRendered + 1])
 			render.PushCustomClipPlane(exitPortal:GetUp(), exitPortal:GetUp():Dot(exitPortal:GetPos() + exitPortal:GetUp() * 0.1))
 
 			-- black halo clipping plane fix (Thanks to homonovus)
@@ -85,12 +81,11 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov
 
 			timesRendered = timesRendered + 1
 		end
-		
-		v.PORTAL_SHOULDRENDER = 0
+
+		if timesRendered >= SeamlessPortals.MaxRTs then break end
 	end
 
 	drawPlayerInView = false
-	SeamlessPortals.drawPlayerInView = false
 	SeamlessPortals.Rendering = false
 	timesRendered = 0
 end)
@@ -102,8 +97,9 @@ hook.Add("ShouldDrawLocalPlayer", "seamless_portal_drawplayer", function()
 	end
 end)
 
+-- (REWRITE THIS!)
 -- draw the 2d skybox in place of the black (Thanks to Fafy2801)
-local drawsky = function(pos, ang, size, size_2, color, materials)
+local function drawsky(pos, ang, size, size_2, color, materials)
 	-- BACK
 	render.SetMaterial(materials[1])
 	render.DrawQuadEasy(pos + Vector(0, size, 0), ang:Right(), size_2, size_2, color, 0)
@@ -128,11 +124,6 @@ hook.Add("PostDrawTranslucentRenderables", "seamless_portal_skybox", function()
 	if !drawPlayerInView or util.IsSkyboxVisibleFromPoint(renderViewTable.origin) then return end
 
 	render.OverrideDepthEnable(true, false) -- Fixes drawing over map
-	drawsky(renderViewTable.origin, angle_zero, skysize, -skysize * 2, COLOR_WHITE, sky_materials)
+	drawsky(renderViewTable.origin, angle_zero, skysize, -skysize * 2, color_white, sky_materials)
 	render.OverrideDepthEnable(false , false)
 end)
-
-print("-------------------------------------")
-print("Successfully loaded Seamless Portals!")
-print("Made by Mee, do not reupload!")
-print("-------------------------------------")

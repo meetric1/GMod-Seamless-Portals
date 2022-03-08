@@ -50,20 +50,13 @@ end
 
 local function incrementPortal(ent)
 	if CLIENT then
-		ent.PORTAL_RT = GetRenderTarget("SeamlessPortal" .. ent:EntIndex(), ScrW(), ScrH())
-		ent.PORTAL_MATERIAL = CreateMaterial("SeamlessPortalsMaterial" .. ent:EntIndex(), "GMODScreenspace", {
-			["$basetexture"] = ent.PORTAL_RT:GetName(), 
-			["$model"] = "1"
-		})
-
-		render.ClearRenderTarget(ent.PORTAL_RT, Color(0, 0, 0, 255))
-
 		local bounding1, bounding2 = ent:GetRenderBounds()
 		ent:SetRenderBounds(bounding1 * 16384, bounding2 * 16384)		-- for some reason this fixes a black flash when going backwards through a portal
 		if ent.UpdatePhysmesh then
 			ent:UpdatePhysmesh()
 		else
-			timer.Create("seamless_portal_init" .. SeamlessPortals.PortalIndex, 1, 600, function()
+			-- takes a minute to try and find the portal, if it cant, oh well...
+			timer.Create("seamless_portal_init" .. SeamlessPortals.PortalIndex, 1, 60, function()
 				if !ent or !ent:IsValid() then timer.Remove("seamless_portal_init" .. SeamlessPortals.PortalIndex) end
 				if !ent.UpdatePhysmesh then return end
 
@@ -154,17 +147,26 @@ function ENT:Draw()
 	local backAmt_2 = backAmt * 0.5
 	local scalex = (self:OBBMaxs().x - self:OBBMins().x) * 0.5 - 0.1
 	local scaley = (self:OBBMaxs().y - self:OBBMins().y) * 0.5 - 0.1
-	local dotCheck = (EyePos() - self:GetPos()):Dot(self:GetUp()) < -100 * self:GetExitSize()[3]
+
+	-- optimization checks
+	local behindPortal = (EyePos() - self:GetPos()):Dot(self:GetUp()) < -10 * self:GetExitSize()[3]		-- true if behind the portal, false otherwise
+	local distPortal = EyePos():DistToSqr(self:GetPos()) > 2500 * 2500 * self:GetExitSize()[3]			-- too far away (make this a convar later!)
+	local lookingPortal = EyeAngles():Forward():Dot(self:GetUp()) >= 0.6 * self:GetExitSize()[3] 		-- looking away from the portal
+
+	local shouldRenderPortal = behindPortal or distPortal or lookingPortal
 
 	render.SetMaterial(drawMat)
 
 	-- holy shit lol this if statment
-	if SeamlessPortals.Rendering or !self:ExitPortal() or !self:ExitPortal():IsValid() or dotCheck or halo.RenderedEntity() == self then 
+	if SeamlessPortals.Rendering or !self:ExitPortal() or !self:ExitPortal():IsValid() or shouldRenderPortal or halo.RenderedEntity() == self then 
 		render.DrawBox(self:GetPos(), self:LocalToWorldAngles(Angle(0, 90, 0)), Vector(-scaley, -scalex, -backAmt * 2), Vector(scaley, scalex, 0))
+		if !SeamlessPortals.Rendering then
+			self.PORTAL_SHOULDRENDER = !shouldRenderPortal
+		end
 		return
 	end
 
-	self.PORTAL_SHOULDRENDER = 1
+	self.PORTAL_SHOULDRENDER = true
 
 	-- outer quads
 	DrawQuadEasier(self, Vector(scaley, -scalex, -backAmt), Vector(0, 0, -backAmt))
@@ -193,7 +195,7 @@ function ENT:Draw()
 	DrawQuadEasier(self, Vector(-scaley, scalex, -backAmt), Vector(0, 0, -backAmt), 2)
 
 	-- draw the actual portal texture
-	render.SetMaterial(self.PORTAL_MATERIAL)
+	render.SetMaterial(SeamlessPortals.PortalMaterials[self.PORTAL_RT_NUMBER or 1])
 	render.SetStencilCompareFunction(STENCIL_EQUAL)
 	render.DrawScreenQuad()
 
@@ -221,6 +223,22 @@ function ENT:UpdatePhysmesh()
 	end
 end
 
+-- create global table
+SeamlessPortals = SeamlessPortals or {} 
+SeamlessPortals.PortalIndex = #ents.FindByClass("seamless_portal")	-- for hotreloading
+SeamlessPortals.MaxRTs = 6
+SeamlessPortals.TransformPortal = function(a, b, pos, angle, mul)
+	if !b:IsValid() or !a:IsValid() then return Vector(), Angle() end
+	local editedPos = a:WorldToLocal(pos) * (b:GetExitSize()[1] / a:GetExitSize()[1])
+	editedPos = b:LocalToWorld(Vector(editedPos[1], -editedPos[2], -editedPos[3]))
+	editedPos = editedPos + b:GetUp() * (mul or 1)
+	
+	angle:RotateAroundAxis(a:GetForward(), 180)
+	local editedAng = b:LocalToWorldAngles(a:WorldToLocalAngles(angle))
+
+	return editedPos, editedAng
+end
+
 -- set physmesh pos on client
 if CLIENT then
 	function ENT:Think()
@@ -238,24 +256,17 @@ if CLIENT then
 			print("Initializing portal " .. v:EntIndex())
 			incrementPortal(v)
 		end
+
+		-- this code creates the rendertargets to be used for the portals
+		SeamlessPortals.PortalRTs = {}
+		SeamlessPortals.PortalMaterials = {}
+
+		for i = 1, SeamlessPortals.MaxRTs do 
+			SeamlessPortals.PortalRTs[i] = GetRenderTarget("SeamlessPortal" .. i, ScrW(), ScrH())
+			SeamlessPortals.PortalMaterials[i] = CreateMaterial("SeamlessPortalsMaterial" .. i, "GMODScreenspace", {
+				["$basetexture"] = SeamlessPortals.PortalRTs[i]:GetName(), 
+				["$model"] = "1"
+			})
+		end
 	end)
 end
-
-
-
--- create global table
-SeamlessPortals = SeamlessPortals or {} 
-SeamlessPortals.drawPlayerInView = false
-SeamlessPortals.PortalIndex = #ents.FindByClass("seamless_portal")	-- for hotreloading
-SeamlessPortals.TransformPortal = function(a, b, pos, angle, mul)
-	if !b:IsValid() or !a:IsValid() then return Vector(), Angle() end
-	local editedPos = a:WorldToLocal(pos) * (b:GetExitSize()[1] / a:GetExitSize()[1])
-	editedPos = b:LocalToWorld(Vector(editedPos[1], -editedPos[2], -editedPos[3]))
-	editedPos = editedPos + b:GetUp() * (mul or 1)
-	
-	angle:RotateAroundAxis(a:GetForward(), 180)
-	local editedAng = b:LocalToWorldAngles(a:WorldToLocalAngles(angle))
-
-	return editedPos, editedAng
-end
-

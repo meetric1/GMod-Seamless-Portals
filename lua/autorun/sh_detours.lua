@@ -30,6 +30,7 @@ end
 util.Effect = effect
 
 -- traceline detour (Thanks to WasabiThumb)
+-- (REWRITE THIS!)
 local oldTraceLine = util.TraceLine
 local rLayer = 0
 local rLimit = 2
