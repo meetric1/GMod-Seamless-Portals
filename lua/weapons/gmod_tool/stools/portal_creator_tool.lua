@@ -31,6 +31,14 @@ function TOOL:GetPlacementPosition(tr)
 	return (tr.HitPos + tr.HitNormal * 10), rotatedAng
 end
 
+function TOOL:GetLinkTarget()
+	if ( SERVER ) then
+		return self.LinkTarget
+	else
+		return self:GetOwner():GetNWEntity("pct_linkTarget")
+	end
+end
+
 if ( CLIENT ) then
 
 	local green = Color(0, 255, 0, 50)
@@ -60,8 +68,9 @@ if ( CLIENT ) then
 		--
 		cam.Start3D()
 			if self:GetStage() == 2 then
-				if IsValid(self.LinkTarget) then
-					local from = self.LinkTarget:GetPos()
+				local target = self:GetLinkTarget()
+				if IsValid(target) then
+					local from = target:GetPos()
 					local to = pos
 					local tr = self.Owner:GetEyeTrace()
 					-- the tower of if statements
@@ -69,7 +78,7 @@ if ( CLIENT ) then
 						local ent = tr.Entity
 						if IsValid(ent) then
 							if ent:GetClass() == "seamless_portal" then
-								if ent:EntIndex() ~= self.LinkTarget:EntIndex() then
+								if ent:EntIndex() ~= target:EntIndex() then
 									to = ent:GetPos()
 								end
 							end
@@ -77,17 +86,22 @@ if ( CLIENT ) then
 					end
 					render.SetMaterial(beamMat)
 					render.DrawBeam(from, to, 3, 0, 1)
+					cam.End3D()
+					return
 				end
-			else
-				local xScale = xVar:GetFloat()
-				local yScale = yVar:GetFloat()
-				render.SetColorMaterial()
-				render.DrawBox(pos, angles, Vector(-47.45 * xScale, -47.45 * yScale, -1.5), Vector(47.45 * xScale, 47.45 * yScale, 1.5), green)
 			end
+			local xScale = xVar:GetFloat()
+			local yScale = yVar:GetFloat()
+			render.SetColorMaterial()
+			render.DrawBox(pos, angles, Vector(-47.45 * xScale, -47.45 * yScale, -1.5), Vector(47.45 * xScale, 47.45 * yScale, 1.5), green)
 		cam.End3D()
 	end
 
 	function TOOL:LeftClick()
+		return true
+	end
+	
+	function TOOL:RightClick()
 		return true
 	end
 
@@ -113,44 +127,43 @@ elseif ( SERVER ) then
 		return true
 	end
 
-end
-
-function TOOL:GetTarget(trace)
-	if not trace.Hit then return NULL end
-	local ent = trace.Entity
-	if not ent then return NULL end
-	if ent:GetClass() ~= "seamless_portal" then return NULL end
-	if CPPI then
-		if ( SERVER ) then
-			if not ent:CPPICanTool(self:GetOwner(), "portal_creator_tool") then return NULL end
-		elseif ( CLIENT ) then
-			local own = ent:CPPIGetOwner()
-			local owner = self:GetOwner()
-			if (owner ~= own and owner:UniqueID() ~= own) then return NULL end
-		end
-	end
-	return ent
-end
-
-function TOOL:RightClick(trace)
-	local ent = self:GetTarget(trace)
-	if not IsValid(ent) then
-		self:SetStage(1)
-		return false
-	end
-
-	local stage = self:GetStage()
-	if (stage <= 1) then
+	function TOOL:SetLinkTarget(ent)
 		self.LinkTarget = ent
-		self:SetStage(2)
-	else
-		if (ent:EntIndex() == self.LinkTarget:EntIndex()) then
+		self:GetOwner():SetNWEntity("pct_linkTarget", ent)
+	end
+	
+	function TOOL:GetTarget(trace)
+		if not trace.Hit then return NULL end
+		local ent = trace.Entity
+		if not ent then return NULL end
+		if ent:GetClass() ~= "seamless_portal" then return NULL end
+		if CPPI then
+			if not ent:CPPICanTool(self:GetOwner(), "portal_creator_tool") then return NULL end
+		end
+		return ent
+	end
+
+	function TOOL:RightClick(trace)
+		local ent = self:GetTarget(trace)
+		if not IsValid(ent) then
 			self:SetStage(1)
 			return false
 		end
-		-- LinkPortal already contains an IsValid check
-		ent:LinkPortal(self.LinkTarget)
-		self:SetStage(1)
+		local stage = self:GetStage()
+		if (stage <= 1) then
+			self:SetLinkTarget(ent)
+			self:SetStage(2)
+		else
+			local linkTarget = self:GetLinkTarget()
+			if (ent:EntIndex() == linkTarget:EntIndex()) then
+				self:SetStage(1)
+				return false
+			end
+			-- LinkPortal already contains an IsValid check
+			ent:LinkPortal(linkTarget)
+			self:SetStage(1)
+		end
+		return true
 	end
-	return true
+	
 end
