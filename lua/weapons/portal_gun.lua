@@ -46,7 +46,7 @@ local function getSurfaceAngle(owner, norm)
 	return fwd:AngleEx(norm)
 end
 
-local gtSeamless =
+local gtCheck =
 {
 	["player"]          = true,
 	["seamless_portal"] = true
@@ -54,7 +54,7 @@ local gtSeamless =
 
 local function checkSeamless(e)
 	if(!IsValid(e)) then return false end
-	return !gtSeamless[e:GetClass()]
+	return !gtCheck[e:GetClass()]
 end
 
 local function setPortalPlacement(owner, portal)
@@ -125,6 +125,6 @@ end
 
 -- Index the global table
 SeamlessPortals = SeamlessPortals or {}
-SeamlessPortals.isSeamless = isSeamless
+SeamlessPortals.checkSeamless = checkSeamless
 SeamlessPortals.getSurfaceAngle = getSurfaceAngle
 SeamlessPortals.setPortalPlacement = setPortalPlacement
