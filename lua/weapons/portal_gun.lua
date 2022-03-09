@@ -69,7 +69,7 @@ local function setPortalPlacement(owner, portal)
 	})
 
 	-- Align portals on 45 degree surfaces
-	if tr.HitNormal:Dot(ang:Up()) < 0.71 then
+	if math.abs(tr.HitNormal:Dot(ang:Up())) < 0.71 then
 		ang:Set(tr.HitNormal:Angle())
 		ang:RotateAroundAxis(ang:Right(), -90)
 		ang:RotateAroundAxis(ang:Up(), 180)
