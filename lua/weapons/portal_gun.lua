@@ -32,8 +32,16 @@ SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Ammo = "none"
 SWEP.Secondary.Automatic = false
 
--- Calculate surface normal angle
--- This is faster than using trigonometry
+--[[
+ * Calculate surface normal angle as using cross product:
+ * Angle Z axis is equal to the surface normal vexctor
+ * Angle X and Y axes are tangent to the surface point and orthogonal to each other
+ * Angle X axis is the direction the player is looking at dotted with the surface forward
+ * This will enable the SWEP to place portals on any sureface and angle
+ * You can rotate the angle how you like after being sefined by the hit surface
+ * owner > The player that does the trace
+ * norm  > The trace hit surface normal vector
+]]
 local function getSurfaceAngle(owner, norm)
   local fwd = owner:GetAimVector()
   local rgh = fwd:Cross(norm); fwd:Set(norm:Cross(rgh))
@@ -49,12 +57,7 @@ local function setPortalPlacement(owner, portal)
 		noDetour = true,
 	})
 
-	local rotatedAng = tr.HitNormal:Angle() + Angle(90, 0, 0)
-
-	local elevationangle = getSurfaceAngle(owner, tr.HitNormal)
-	if elevationangle < 1 or (elevationangle > 179 and elevationangle < 181) then 
-		rotatedAng.y = owner:EyeAngles().y + 180
-	end
+	local rotatedAng = getSurfaceAngle(owner, tr.HitNormal)
 
 	portal:SetPos((tr.HitPos + tr.HitNormal * 10 * portal:GetExitSize()[3]))	--20
 	portal:SetAngles(rotatedAng)
