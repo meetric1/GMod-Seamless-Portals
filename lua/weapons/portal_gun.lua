@@ -33,14 +33,12 @@ SWEP.Secondary.Ammo = "none"
 SWEP.Secondary.Automatic = false
 
 --[[
- * Calculate surface normal angle as using cross product:
- * Angle Z axis is equal to the surface normal vexctor
- * Angle X and Y axes are tangent to the surface point and orthogonal to each other
- * Angle X axis is the direction the player is looking at dotted with the surface forward
+ * Calculate surface normal angle by using cross products instead of trig
  * This will enable the SWEP to place portals on any sureface and angle
  * You can rotate the angle how you like after being sefined by the hit surface
  * owner > The player that does the trace
  * norm  > The trace hit surface normal vector
+ * Returns the angle being tangent to the surface at trace hit position
 ]]
 local function getSurfaceAngle(owner, norm)
   local fwd = owner:GetAimVector()
@@ -48,12 +46,21 @@ local function getSurfaceAngle(owner, norm)
   return fwd:AngleEx(norm)
 end
 
-local seamless_check = function(e) return !(e:GetClass() == "seamless_portal" or e:GetClass() == "player") end 
+local gtSeamless = 
+{
+  ["player"]          = true,
+  ["seamless_portal"] = true
+}
+
+local function isSeamless(e)
+  return !gtSeamless[e:GetClass()]
+end 
+ 
 local function setPortalPlacement(owner, portal)
 	local tr = util.TraceLine({
 		start = owner:GetShootPos(),
 		endpos = owner:GetShootPos() + owner:GetAimVector() * 99999,
-		filter = seamless_check,
+		filter = isSeamless,
 		noDetour = true,
 	})
 
@@ -115,3 +122,8 @@ function SWEP:Reload()
 	SafeRemoveEntity(self.Portal2)
 end
 
+-- Index the global table
+SeamlessPortals = SeamlessPortals or {} 
+SeamlessPortals.isSeamless = isSeamless
+SeamlessPortals.getSurfaceAngle = getSurfaceAngle
+SeamlessPortals.setPortalPlacement = setPortalPlacement
