@@ -52,7 +52,7 @@ local gtCheck =
 	["seamless_portal"] = true
 }
 
-local function checkSeamless(e)
+local function seamlessCheck(e)
 	if(!IsValid(e)) then return false end
 	return !gtCheck[e:GetClass()]
 end
@@ -61,7 +61,7 @@ local function setPortalPlacement(owner, portal)
 	local tr = util.TraceLine({
 		start = owner:GetShootPos(),
 		endpos = owner:GetShootPos() + owner:GetAimVector() * 99999,
-		filter = checkSeamless,
+		filter = seamlessCheck,
 		noDetour = true,
 	})
 
@@ -125,6 +125,6 @@ end
 
 -- Index the global table
 SeamlessPortals = SeamlessPortals or {}
-SeamlessPortals.checkSeamless = checkSeamless
-SeamlessPortals.getSurfaceAngle = getSurfaceAngle
-SeamlessPortals.setPortalPlacement = setPortalPlacement
+SeamlessPortals.SeamlessCheck = seamlessCheck
+SeamlessPortals.GetSurfaceAngle = getSurfaceAngle
+SeamlessPortals.SetPortalPlacement = setPortalPlacement
