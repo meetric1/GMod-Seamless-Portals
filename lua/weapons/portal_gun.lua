@@ -51,23 +51,34 @@ local gtCheck =
 }
 
 local function seamlessCheck(e)
-	if(!IsValid(e)) then return false end
+	if(!IsValid(e)) then return end
 	return !gtCheck[e:GetClass()]
 end
 
 local function setPortalPlacement(owner, portal)
+	local ang = Angle() -- The portal angle
+	local pos = owner:GetShootPos()
+	local aim = owner:GetAimVector()
+	local mul = 10 * portal:GetExitSize()[3]
+
 	local tr = util.TraceLine({
-		start = owner:GetShootPos(),
-		endpos = owner:GetShootPos() + owner:GetAimVector() * 99999,
+		start = pos,
+		endpos = pos + aim * 99999,
 		filter = seamlessCheck,
 		noDetour = true,
 	})
 
-	-- This will enable the SWEP to place portals on any surface and angle
-	local rotatedAng = getSurfaceAngle(owner, tr.HitNormal)
+	-- Align portals on 45 degree surfaces
+	if tr.HitNormal:Dot(ang:Up()) < 0.71 then
+		ang:Set(tr.HitNormal:Angle())
+		ang:RotateAroundAxis(ang:Right(), -90)
+		ang:RotateAroundAxis(ang:Up(), 180)
+	else -- Place portals on any surface and angle
+		ang:Set(getSurfaceAngle(owner, tr.HitNormal))
+	end
 
-	portal:SetPos((tr.HitPos + tr.HitNormal * 10 * portal:GetExitSize()[3]))	--20
-	portal:SetAngles(rotatedAng)
+	portal:SetPos((tr.HitPos + mul * tr.HitNormal))	--20
+	portal:SetAngles(ang)
 	if CPPI then portal:CPPISetOwner(owner) end
 end
 
