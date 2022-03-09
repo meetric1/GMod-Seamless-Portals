@@ -28,7 +28,7 @@ SWEP.Primary.Ammo = "none"
 SWEP.Primary.Automatic = false
 
 SWEP.Secondary.ClipSize = -1
-SWEP.Secondary.DefaultClip = -1 
+SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Ammo = "none"
 SWEP.Secondary.Automatic = false
 
@@ -41,26 +41,27 @@ SWEP.Secondary.Automatic = false
  * Returns the angle being tangent to the surface at trace hit position
 ]]
 local function getSurfaceAngle(owner, norm)
-  local fwd = owner:GetAimVector()
-  local rgh = fwd:Cross(norm); fwd:Set(norm:Cross(rgh))
-  return fwd:AngleEx(norm)
+	local fwd = owner:GetAimVector()
+	local rgh = fwd:Cross(norm); fwd:Set(norm:Cross(rgh))
+	return fwd:AngleEx(norm)
 end
 
-local gtSeamless = 
+local gtSeamless =
 {
-  ["player"]          = true,
-  ["seamless_portal"] = true
+	["player"]          = true,
+	["seamless_portal"] = true
 }
 
-local function isSeamless(e)
-  return !gtSeamless[e:GetClass()]
-end 
- 
+local function checkSeamless(e)
+	if(!IsValid(e)) then return false end
+	return !gtSeamless[e:GetClass()]
+end
+
 local function setPortalPlacement(owner, portal)
 	local tr = util.TraceLine({
 		start = owner:GetShootPos(),
 		endpos = owner:GetShootPos() + owner:GetAimVector() * 99999,
-		filter = isSeamless,
+		filter = checkSeamless,
 		noDetour = true,
 	})
 
@@ -74,8 +75,8 @@ end
 function SWEP:ShootFX(primary)
 	self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
 	self.Owner:SetAnimation(PLAYER_ATTACK1)
-	
-	if CLIENT then 
+
+	if CLIENT then
 		EmitSound("NPC_Vortigaunt.Shoot", self:GetPos(), self:EntIndex(), CHAN_AUTO, 0.25)	-- quieter for client
 	end
 end
@@ -95,7 +96,7 @@ function SWEP:PrimaryAttack()
 	self:SetNextPrimaryFire(CurTime() + 0.1)
 end
 
-function SWEP:SecondaryAttack() 
+function SWEP:SecondaryAttack()
 	self:ShootFX(true)
 	if CLIENT then return end
 
@@ -116,14 +117,14 @@ function SWEP:OnRemove()
 	SafeRemoveEntity(self.Portal2)
 end
 
-function SWEP:Reload() 
+function SWEP:Reload()
 	if CLIENT then return end
 	SafeRemoveEntity(self.Portal)
 	SafeRemoveEntity(self.Portal2)
 end
 
 -- Index the global table
-SeamlessPortals = SeamlessPortals or {} 
+SeamlessPortals = SeamlessPortals or {}
 SeamlessPortals.isSeamless = isSeamless
 SeamlessPortals.getSurfaceAngle = getSurfaceAngle
 SeamlessPortals.setPortalPlacement = setPortalPlacement
