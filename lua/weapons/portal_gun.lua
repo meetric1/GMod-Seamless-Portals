@@ -32,11 +32,12 @@ SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Ammo = "none"
 SWEP.Secondary.Automatic = false
 
--- from portal gun addon
-local function VectorAngle(vec1, vec2)
-	local costheta = vec1:Dot(vec2) / (vec1:Length() * vec2:Length())
-	local theta = math.acos(costheta)
-	return math.deg(theta)
+-- Calculate surface normal angle
+-- This is faster than using trigonometry
+local function getSurfaceAngle(owner, norm)
+  local fwd = owner:GetAimVector()
+  local rgh = fwd:Cross(norm); fwd:Set(norm:Cross(rgh))
+  return fwd:AngleEx(norm)
 end
 
 local seamless_check = function(e) return !(e:GetClass() == "seamless_portal" or e:GetClass() == "player") end 
@@ -50,7 +51,7 @@ local function setPortalPlacement(owner, portal)
 
 	local rotatedAng = tr.HitNormal:Angle() + Angle(90, 0, 0)
 
-	local elevationangle = VectorAngle(vector_up, tr.HitNormal)
+	local elevationangle = getSurfaceAngle(owner, tr.HitNormal)
 	if elevationangle < 1 or (elevationangle > 179 and elevationangle < 181) then 
 		rotatedAng.y = owner:EyeAngles().y + 180
 	end
