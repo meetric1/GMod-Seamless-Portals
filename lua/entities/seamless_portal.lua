@@ -51,14 +51,13 @@ end
 local function incrementPortal(ent)
 	if CLIENT then
 		local bounding1, bounding2 = ent:GetRenderBounds()
-		ent:SetRenderBounds(bounding1 * 16384, bounding2 * 16384)		-- for some reason this fixes a black flash when going backwards through a portal
+		ent:SetRenderBounds(bounding1 * 1024, bounding2 * 1024)		-- for some reason this fixes a black flash when going backwards through a portal
 		if ent.UpdatePhysmesh then
 			ent:UpdatePhysmesh()
 		else
 			-- takes a minute to try and find the portal, if it cant, oh well...
 			timer.Create("seamless_portal_init" .. SeamlessPortals.PortalIndex, 1, 60, function()
-				if !ent or !ent:IsValid() then timer.Remove("seamless_portal_init" .. SeamlessPortals.PortalIndex) end
-				if !ent.UpdatePhysmesh then return end
+				if !ent or !ent:IsValid() or !ent.UpdatePhysmesh then return end
 
 				ent:UpdatePhysmesh()
 				timer.Remove("seamless_portal_init" .. SeamlessPortals.PortalIndex)
@@ -149,24 +148,26 @@ function ENT:Draw()
 	local scaley = (self:OBBMaxs().y - self:OBBMins().y) * 0.5 - 0.1
 
 	-- optimization checks
-	local behindPortal = (EyePos() - self:GetPos()):Dot(self:GetUp()) < -10 * self:GetExitSize()[3]		-- true if behind the portal, false otherwise
-	local distPortal = EyePos():DistToSqr(self:GetPos()) > 2500 * 2500 * self:GetExitSize()[3]			-- too far away (make this a convar later!)
-	local lookingPortal = EyeAngles():Forward():Dot(self:GetUp()) >= 0.6 * self:GetExitSize()[3] 		-- looking away from the portal
+	local exitInvalid = !self:ExitPortal() or !self:ExitPortal():IsValid()
+	local shouldRenderPortal = false
+	if !SeamlessPortals.Rendering and !exitInvalid then
+		local behindPortal = (EyePos() - self:GetPos()):Dot(self:GetUp()) < -10 * self:GetExitSize()[3]		-- true if behind the portal, false otherwise
+		local distPortal = EyePos():DistToSqr(self:GetPos()) > 2500 * 2500 * self:GetExitSize()[3]			-- too far away (make this a convar later!)
+		local lookingPortal = EyeAngles():Forward():Dot(self:GetUp()) >= 0.6 * self:GetExitSize()[3] 		-- looking away from the portal
 
-	local shouldRenderPortal = behindPortal or distPortal or lookingPortal
+		shouldRenderPortal = behindPortal or distPortal or lookingPortal
+	end
 
 	render.SetMaterial(drawMat)
 
 	-- holy shit lol this if statment
-	if SeamlessPortals.Rendering or !self:ExitPortal() or !self:ExitPortal():IsValid() or shouldRenderPortal or halo.RenderedEntity() == self then 
+	if SeamlessPortals.Rendering or exitInvalid or shouldRenderPortal or halo.RenderedEntity() == self then 
 		render.DrawBox(self:GetPos(), self:LocalToWorldAngles(Angle(0, 90, 0)), Vector(-scaley, -scalex, -backAmt * 2), Vector(scaley, scalex, 0))
 		if !SeamlessPortals.Rendering then
 			self.PORTAL_SHOULDRENDER = !shouldRenderPortal
 		end
 		return
 	end
-
-	self.PORTAL_SHOULDRENDER = true
 
 	-- outer quads
 	DrawQuadEasier(self, Vector(scaley, -scalex, -backAmt), Vector(0, 0, -backAmt))
@@ -198,8 +199,9 @@ function ENT:Draw()
 	render.SetMaterial(SeamlessPortals.PortalMaterials[self.PORTAL_RT_NUMBER or 1])
 	render.SetStencilCompareFunction(STENCIL_EQUAL)
 	render.DrawScreenQuad()
-
 	render.SetStencilEnable(false)
+
+	self.PORTAL_SHOULDRENDER = true
 end
 
 -- scale the physmesh
@@ -227,14 +229,22 @@ end
 SeamlessPortals = SeamlessPortals or {} 
 SeamlessPortals.PortalIndex = #ents.FindByClass("seamless_portal")	-- for hotreloading
 SeamlessPortals.MaxRTs = 6
-SeamlessPortals.TransformPortal = function(a, b, pos, angle, mul)
-	if !b:IsValid() or !a:IsValid() then return Vector(), Angle() end
-	local editedPos = a:WorldToLocal(pos) * (b:GetExitSize()[1] / a:GetExitSize()[1])
-	editedPos = b:LocalToWorld(Vector(editedPos[1], -editedPos[2], -editedPos[3]))
-	editedPos = editedPos + b:GetUp() * (mul or 1)
+SeamlessPortals.TransformPortal = function(a, b, pos, ang)
+	if !a or !b or !b:IsValid() or !a:IsValid() then return Vector(), Angle() end
+	local editedPos = Vector()
+	local editedAng = Angle()
+
+	if pos then
+		editedPos = a:WorldToLocal(pos) * (b:GetExitSize()[1] / a:GetExitSize()[1])
+		editedPos = b:LocalToWorld(Vector(editedPos[1], -editedPos[2], -editedPos[3]))
+		editedPos = editedPos + b:GetUp()
+	end
 	
-	angle:RotateAroundAxis(a:GetForward(), 180)
-	local editedAng = b:LocalToWorldAngles(a:WorldToLocalAngles(angle))
+	if ang then
+		local clonedAngle = Angle(ang[1], ang[2], ang[3]) 	-- rotatearoundaxis modifies original variable
+		clonedAngle:RotateAroundAxis(a:GetForward(), 180)
+		editedAng = b:LocalToWorldAngles(a:WorldToLocalAngles(clonedAngle))
+	end
 
 	return editedPos, editedAng
 end
@@ -243,7 +253,7 @@ end
 if CLIENT then
 	function ENT:Think()
 		local phys = self:GetPhysicsObject()
-		if phys:IsValid() then
+		if phys:IsValid() and phys:GetPos() != self:GetPos() then
 			phys:EnableMotion(false)
 			phys:SetMaterial("glass")
 			phys:SetPos(self:GetPos())

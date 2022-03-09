@@ -55,7 +55,7 @@ local function setPortalPlacement(owner, portal)
 		rotatedAng.y = owner:EyeAngles().y + 180
 	end
 
-	portal:SetPos((tr.HitPos + tr.HitNormal * 10))	--20
+	portal:SetPos((tr.HitPos + tr.HitNormal * 10 * portal:GetExitSize()[3]))	--20
 	portal:SetAngles(rotatedAng)
 	if CPPI then portal:CPPISetOwner(owner) end
 end

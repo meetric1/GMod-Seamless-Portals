@@ -21,7 +21,6 @@ local renderViewTable = {
 	origin = Vector(),
 	angles = Angle(),
 	drawviewmodel = false,
-	zfar = zfar,
 }
 
 -- sort the portals by distance since draw functions do not obey the z buffer
@@ -48,14 +47,20 @@ end)
 -- update the rendertarget here since we cant do it in postdraw (cuz of infinite recursion)
 local physgun_halo = GetConVar("physgun_halo")
 hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov)
-	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
+	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 or SeamlessPortals.Rendering then return end
 	drawPlayerInView = true
 	SeamlessPortals.Rendering = true
+
+	-- black halo clipping plane fix (Thanks to homonovus)
+	physgun_halo = physgun_halo or GetConVar("physgun_halo")
+	local oldHalo = physgun_halo:GetInt()
+	physgun_halo:SetInt(0)
+
 	for k, v in ipairs(portals) do
 		if !v:IsValid() or !v:ExitPortal():IsValid() then continue end
 		if timesRendered < SeamlessPortals.MaxRTs and v.PORTAL_SHOULDRENDER then
 			local exitPortal = v:ExitPortal()
-			local editedPos, editedAng = SeamlessPortals.TransformPortal(v, exitPortal, eyePos, Angle(eyeAngles[1], eyeAngles[2], eyeAngles[3]))
+			local editedPos, editedAng = SeamlessPortals.TransformPortal(v, exitPortal, eyePos, eyeAngles)
 
 			renderViewTable.origin = editedPos
 			renderViewTable.angles = editedAng
@@ -67,14 +72,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov
 			local oldClip = render.EnableClipping(true)
 			render.PushRenderTarget(SeamlessPortals.PortalRTs[timesRendered + 1])
 			render.PushCustomClipPlane(exitPortal:GetUp(), exitPortal:GetUp():Dot(exitPortal:GetPos() + exitPortal:GetUp() * 0.1))
-
-			-- black halo clipping plane fix (Thanks to homonovus)
-			physgun_halo = physgun_halo or GetConVar("physgun_halo")
-			local oldHalo = physgun_halo:GetInt()
-			physgun_halo:SetInt(0)
 			render.RenderView(renderViewTable)
-			physgun_halo:SetInt(oldHalo)
-
 			render.PopCustomClipPlane()
 			render.EnableClipping(oldClip)
 			render.PopRenderTarget()
@@ -84,6 +82,8 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov
 
 		if timesRendered >= SeamlessPortals.MaxRTs then break end
 	end
+
+	physgun_halo:SetInt(oldHalo)
 
 	drawPlayerInView = false
 	SeamlessPortals.Rendering = false
@@ -122,8 +122,5 @@ end
 
 hook.Add("PostDrawTranslucentRenderables", "seamless_portal_skybox", function()
 	if !drawPlayerInView or util.IsSkyboxVisibleFromPoint(renderViewTable.origin) then return end
-
-	render.OverrideDepthEnable(true, false) -- Fixes drawing over map
 	drawsky(renderViewTable.origin, angle_zero, skysize, -skysize * 2, color_white, sky_materials)
-	render.OverrideDepthEnable(false , false)
 end)
