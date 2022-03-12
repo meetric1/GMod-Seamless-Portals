@@ -1,4 +1,3 @@
- 
 TOOL.Category = "Seamless Portals"
 TOOL.Name = "#Tool.portal_creator_tool.name"
 
@@ -28,7 +27,7 @@ function TOOL:GetPlacementPosition(tr)
 		rotatedAng.y = self:GetOwner():EyeAngles().y + 180
 	end
 	--
-	return (tr.HitPos + tr.HitNormal * 10), rotatedAng
+	return (tr.HitPos + tr.HitNormal * self:GetOwner():GetInfoNum("seamless_portal_size_x", 1) * 6.1), rotatedAng
 end
 
 function TOOL:GetLinkTarget()
@@ -93,14 +92,14 @@ if ( CLIENT ) then
 			local xScale = xVar:GetFloat()
 			local yScale = yVar:GetFloat()
 			render.SetColorMaterial()
-			render.DrawBox(pos, angles, Vector(-47.45 * xScale, -47.45 * yScale, -1.5), Vector(47.45 * xScale, 47.45 * yScale, 1.5), green)
+			render.DrawBox(pos, angles, Vector(-47.45 * xScale, -47.45 * yScale, -xScale * 6.1), Vector(47.45 * xScale, 47.45 * yScale, 0), green)
 		cam.End3D()
 	end
 
 	function TOOL:LeftClick()
 		return true
 	end
-	
+
 	function TOOL:RightClick()
 		return true
 	end
@@ -122,8 +121,12 @@ elseif ( SERVER ) then
 		-- yoink! smiley
 		local sizex = self:GetOwner():GetInfoNum("seamless_portal_size_x", 1)
 		local sizey = self:GetOwner():GetInfoNum("seamless_portal_size_y", 1)
-		ent:SetExitSize(Vector(sizex, sizey, 1))
+		ent:SetExitSize(Vector(sizex, sizey, sizex))
 		cleanup.Add(self:GetOwner(), "props", ent)
+        undo.Create("Seamless Portal")
+            undo.AddEntity(ent)
+            undo.SetPlayer(self:GetOwner())
+        undo.Finish()
 		return true
 	end
 
@@ -131,7 +134,7 @@ elseif ( SERVER ) then
 		self.LinkTarget = ent
 		self:GetOwner():SetNWEntity("pct_linkTarget", ent)
 	end
-	
+
 	function TOOL:GetTarget(trace)
 		if not trace.Hit then return NULL end
 		local ent = trace.Entity
@@ -165,5 +168,5 @@ elseif ( SERVER ) then
 		end
 		return true
 	end
-	
+
 end

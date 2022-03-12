@@ -82,7 +82,7 @@ local function setPortalPlacement(owner, portal)
 	if CPPI then portal:CPPISetOwner(owner) end
 end
 
-function SWEP:ShootFX(primary)
+function SWEP:ShootFX()
 	self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
 	self.Owner:SetAnimation(PLAYER_ATTACK1)
 
@@ -92,7 +92,7 @@ function SWEP:ShootFX(primary)
 end
 
 function SWEP:PrimaryAttack()
-	self:ShootFX(true)
+	self:ShootFX()
 	if CLIENT then return end
 
 	if !self.Portal or !self.Portal:IsValid() then
@@ -107,7 +107,7 @@ function SWEP:PrimaryAttack()
 end
 
 function SWEP:SecondaryAttack()
-	self:ShootFX(true)
+	self:ShootFX()
 	if CLIENT then return end
 
 	if !self.Portal2 or !self.Portal2:IsValid() then
