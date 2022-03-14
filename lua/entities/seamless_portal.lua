@@ -13,6 +13,12 @@ ENT.Purpose      = ""
 ENT.Instructions = ""
 ENT.Spawnable    = true
 
+
+local gbSvFlag = bit.bor(FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_PRINTABLEONLY, FCVAR_REPLICATED)
+-- create global table
+SeamlessPortals = SeamlessPortals or {}
+SeamlessPortals.VarDrawDistance = CreateConVar("seamless_portal_drwdist", 2500, gbSvFlag, "Ditance margin for portlas being drawn", 0, 5000)
+
 function ENT:SetupDataTables()
 	self:NetworkVar("Entity", 0, "PortalExit")
 	self:NetworkVar("Vector", 0, "PortalScale")
@@ -116,8 +122,8 @@ local function DrawQuadEasier(e, multiplier, offset, rotate)
 	local mx = ey * multiplier.x
 	local my = ex * multiplier.y
 	local mz = ez * multiplier.z
-	local ox = ey * offset.x -- Currently zero
-	local oy = ex * offset.y -- Currently zero
+	local ox = ey * offset.x -- currently zero
+	local oy = ex * offset.y -- currently zero
 	local oz = ez * offset.z
 
 	local pos = e:GetPos() + ox + oy + oz
@@ -160,8 +166,9 @@ function ENT:Draw()
 	local exitInvalid = !self:ExitPortal() or !self:ExitPortal():IsValid()
 	local shouldRenderPortal = false
 	if !SeamlessPortals.Rendering and !exitInvalid then
+	  local margnPortal = SeamlessPortals.VarDrawDistance:GetFloat()^2
 		local behindPortal = (epos - spos):Dot(vup) < (-10 * exsize) -- true if behind the portal, false otherwise
-		local distPortal = epos:DistToSqr(spos) > (2500 * 2500 * exsize) -- too far away (make this a convar later!)
+		local distPortal = epos:DistToSqr(spos) > (margnPortal * exsize) -- too far away (make this a convar later!)
 		local lookingPortal = EyeAngles():Forward():Dot(vup) >= (0.6 * exsize) -- looking away from the portal
 
 		shouldRenderPortal = behindPortal or distPortal or lookingPortal
@@ -171,7 +178,7 @@ function ENT:Draw()
 
 	-- holy shit lol this if statment
 	if SeamlessPortals.Rendering or exitInvalid or shouldRenderPortal or halo.RenderedEntity() == self then
-		render.DrawBox(self:GetPos(), self:LocalToWorldAngles(Angle(0, 90, 0)), Vector(-scaley, -scalex, -backAmt * 2), Vector(scaley, scalex, 0))
+		render.DrawBox(spos, self:LocalToWorldAngles(Angle(0, 90, 0)), Vector(-scaley, -scalex, -backAmt * 2), Vector(scaley, scalex, 0))
 		if !SeamlessPortals.Rendering then
 			self.PORTAL_SHOULDRENDER = !shouldRenderPortal
 		end
@@ -234,8 +241,6 @@ function ENT:UpdatePhysmesh()
 	end
 end
 
--- create global table
-SeamlessPortals = SeamlessPortals or {}
 SeamlessPortals.PortalIndex = #ents.FindByClass("seamless_portal") -- for hotreloading
 SeamlessPortals.MaxRTs = 6
 SeamlessPortals.TransformPortal = function(a, b, pos, ang)
