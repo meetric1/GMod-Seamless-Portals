@@ -6,12 +6,12 @@ AddCSLuaFile()
 ENT.Type = "anim"
 ENT.Base = "base_gmodentity"
 
-ENT.Category		= "Seamless Portals"
-ENT.PrintName		= "Seamless Portal"
-ENT.Author			= "Mee"
-ENT.Purpose			= ""
-ENT.Instructions	= ""
-ENT.Spawnable		= true
+ENT.Category     = "Seamless Portals"
+ENT.PrintName    = "Seamless Portal"
+ENT.Author       = "Mee"
+ENT.Purpose      = ""
+ENT.Instructions = ""
+ENT.Spawnable    = true
 
 function ENT:SetupDataTables()
 	self:NetworkVar("Entity", 0, "PortalExit")
@@ -20,7 +20,7 @@ end
 
 -- get exit portal
 function ENT:ExitPortal()
-	if CLIENT then 
+	if CLIENT then
 		return self:GetPortalExit()
 	end
 	return self.PORTAL_EXIT
@@ -42,7 +42,7 @@ function ENT:SetExitSize(n)
 end
 
 function ENT:GetExitSize()
-	if CLIENT then 
+	if CLIENT then
 		return self:GetPortalScale()
 	end
 	return self.PORTAL_SCALE
@@ -99,7 +99,7 @@ function ENT:SpawnFunction(ply, tr)
 
 	portal1:LinkPortal(portal2)
 	portal1.PORTAL_REMOVE_EXIT = true
-	
+
 	return portal1
 end
 
@@ -111,39 +111,48 @@ function ENT:OnRemove()
 end
 
 local function DrawQuadEasier(e, multiplier, offset, rotate)
-	local right = e:GetRight() * multiplier.x
-	local forward = e:GetForward() * multiplier.y 
-	local up = e:GetUp() * multiplier.z 
+	local ex, ey, ez = e:GetForward(), e:GetRight(), e:GetUp()
+  local rotate = (tonumber(rotate) or 0)
+	local mx = ey * multiplier.x
+	local my = ex * multiplier.y
+	local mz = ez * multiplier.z
+  local ox = ey * offset.x -- Currently zero
+  local oy = ex * offset.y -- Currently zero
+  local oz = ez * offset.z
 
-	local pos = e:GetPos() + e:GetRight() * offset.x + e:GetForward() * offset.y + e:GetUp() * offset.z
-	if !rotate then
+	local pos = e:GetPos() + ox + oy + oz
+	if rotate == 0 then
 		render.DrawQuad(
-			pos + right - forward + up, 
-			pos - right - forward + up, 
-			pos - right + forward + up, 
-			pos + right + forward + up
+			pos + mx - my + mz,
+			pos - mx - my + mz,
+			pos - mx + my + mz,
+			pos + mx + my + mz
 		)
 	elseif rotate == 1 then
 		render.DrawQuad(
-			pos + right + forward - up, 
-			pos - right + forward - up, 
-			pos - right + forward + up, 
-			pos + right + forward + up
+			pos + mx + my - mz,
+			pos - mx + my - mz,
+			pos - mx + my + mz,
+			pos + mx + my + mz
 		)
-	else
+	elseif rotate == 2 then
 		render.DrawQuad(
-			pos + right - forward + up, 
-			pos + right - forward - up, 
-			pos + right + forward - up, 
-			pos + right + forward + up
+			pos + mx - my + mz,
+			pos + mx - my - mz,
+			pos + mx + my - mz,
+			pos + mx + my + mz
 		)
+  else
+    print("Failed processing rotation:", tostring(rotate))
 	end
 end
 
 local drawMat = Material("models/props_combine/combine_interface_disp")
 function ENT:Draw()
-	local backAmt = 3 * self:GetExitSize()[3]
-	local backAmt_2 = backAmt * 0.5
+  local exsize = self:GetExitSize()[3]
+	local backAmt = 3 * exsize
+  local backVec = Vector(0, 0, -backAmt)
+  local epos, spos, vup = EyePos(), self:GetPos(), self:GetUp()
 	local scalex = (self:OBBMaxs().x - self:OBBMins().x) * 0.5 - 0.1
 	local scaley = (self:OBBMaxs().y - self:OBBMins().y) * 0.5 - 0.1
 
@@ -151,9 +160,9 @@ function ENT:Draw()
 	local exitInvalid = !self:ExitPortal() or !self:ExitPortal():IsValid()
 	local shouldRenderPortal = false
 	if !SeamlessPortals.Rendering and !exitInvalid then
-		local behindPortal = (EyePos() - self:GetPos()):Dot(self:GetUp()) < -10 * self:GetExitSize()[3]		-- true if behind the portal, false otherwise
-		local distPortal = EyePos():DistToSqr(self:GetPos()) > 2500 * 2500 * self:GetExitSize()[3]			-- too far away (make this a convar later!)
-		local lookingPortal = EyeAngles():Forward():Dot(self:GetUp()) >= 0.6 * self:GetExitSize()[3] 		-- looking away from the portal
+		local behindPortal = (epos - spos):Dot(vup) < (-10 * exsize) -- true if behind the portal, false otherwise
+		local distPortal = epos:DistToSqr(spos) > (2500 * 2500 * exsize) -- too far away (make this a convar later!)
+		local lookingPortal = EyeAngles():Forward():Dot(vup) >= (0.6 * exsize) -- looking away from the portal
 
 		shouldRenderPortal = behindPortal or distPortal or lookingPortal
 	end
@@ -161,7 +170,7 @@ function ENT:Draw()
 	render.SetMaterial(drawMat)
 
 	-- holy shit lol this if statment
-	if SeamlessPortals.Rendering or exitInvalid or shouldRenderPortal or halo.RenderedEntity() == self then 
+	if SeamlessPortals.Rendering or exitInvalid or shouldRenderPortal or halo.RenderedEntity() == self then
 		render.DrawBox(self:GetPos(), self:LocalToWorldAngles(Angle(0, 90, 0)), Vector(-scaley, -scalex, -backAmt * 2), Vector(scaley, scalex, 0))
 		if !SeamlessPortals.Rendering then
 			self.PORTAL_SHOULDRENDER = !shouldRenderPortal
@@ -170,11 +179,11 @@ function ENT:Draw()
 	end
 
 	-- outer quads
-	DrawQuadEasier(self, Vector(scaley, -scalex, -backAmt), Vector(0, 0, -backAmt))
-	DrawQuadEasier(self, Vector(scaley, -scalex, backAmt), Vector(0, 0, -backAmt), 1)
-	DrawQuadEasier(self, Vector(scaley, scalex, -backAmt), Vector(0, 0, -backAmt), 1)
-	DrawQuadEasier(self, Vector(scaley, -scalex, backAmt), Vector(0, 0, -backAmt), 2)
-	DrawQuadEasier(self, Vector(-scaley, -scalex, -backAmt), Vector(0, 0, -backAmt), 2) 
+	DrawQuadEasier(self, Vector( scaley, -scalex, -backAmt), backVec)
+	DrawQuadEasier(self, Vector( scaley, -scalex,  backAmt), backVec, 1)
+	DrawQuadEasier(self, Vector( scaley,  scalex, -backAmt), backVec, 1)
+	DrawQuadEasier(self, Vector( scaley, -scalex,  backAmt), backVec, 2)
+	DrawQuadEasier(self, Vector(-scaley, -scalex, -backAmt), backVec, 2)
 
 	-- do cursed stencil stuff
 	render.ClearStencil()
@@ -189,11 +198,11 @@ function ENT:Draw()
 
 	-- draw the quad that the 2d texture will be drawn on
 	-- teleporting causes flashing if the quad is drawn right next to the player, so we offset it
-	DrawQuadEasier(self, Vector(scaley, scalex, -backAmt), Vector(0, 0, -backAmt))
-	DrawQuadEasier(self, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt), 1)
-	DrawQuadEasier(self, Vector(scaley, -scalex, -backAmt), Vector(0, 0, -backAmt), 1)
-	DrawQuadEasier(self, Vector(scaley, scalex, backAmt), Vector(0, 0, -backAmt), 2)
-	DrawQuadEasier(self, Vector(-scaley, scalex, -backAmt), Vector(0, 0, -backAmt), 2)
+	DrawQuadEasier(self, Vector( scaley,  scalex, -backAmt), backVec)
+	DrawQuadEasier(self, Vector( scaley,  scalex,  backAmt), backVec, 1)
+	DrawQuadEasier(self, Vector( scaley, -scalex, -backAmt), backVec, 1)
+	DrawQuadEasier(self, Vector( scaley,  scalex,  backAmt), backVec, 2)
+	DrawQuadEasier(self, Vector(-scaley,  scalex, -backAmt), backVec, 2)
 
 	-- draw the actual portal texture
 	render.SetMaterial(SeamlessPortals.PortalMaterials[self.PORTAL_RT_NUMBER or 1])
@@ -226,8 +235,8 @@ function ENT:UpdatePhysmesh()
 end
 
 -- create global table
-SeamlessPortals = SeamlessPortals or {} 
-SeamlessPortals.PortalIndex = #ents.FindByClass("seamless_portal")	-- for hotreloading
+SeamlessPortals = SeamlessPortals or {}
+SeamlessPortals.PortalIndex = #ents.FindByClass("seamless_portal") -- for hotreloading
 SeamlessPortals.MaxRTs = 6
 SeamlessPortals.TransformPortal = function(a, b, pos, ang)
 	if !a or !b or !b:IsValid() or !a:IsValid() then return Vector(), Angle() end
@@ -239,9 +248,9 @@ SeamlessPortals.TransformPortal = function(a, b, pos, ang)
 		editedPos = b:LocalToWorld(Vector(editedPos[1], -editedPos[2], -editedPos[3]))
 		editedPos = editedPos + b:GetUp()
 	end
-	
+
 	if ang then
-		local clonedAngle = Angle(ang[1], ang[2], ang[3]) 	-- rotatearoundaxis modifies original variable
+		local clonedAngle = Angle(ang[1], ang[2], ang[3]) -- rotatearoundaxis modifies original variable
 		clonedAngle:RotateAroundAxis(a:GetForward(), 180)
 		editedAng = b:LocalToWorldAngles(a:WorldToLocalAngles(clonedAngle))
 	end
@@ -271,10 +280,10 @@ if CLIENT then
 		SeamlessPortals.PortalRTs = {}
 		SeamlessPortals.PortalMaterials = {}
 
-		for i = 1, SeamlessPortals.MaxRTs do 
+		for i = 1, SeamlessPortals.MaxRTs do
 			SeamlessPortals.PortalRTs[i] = GetRenderTarget("SeamlessPortal" .. i, ScrW(), ScrH())
 			SeamlessPortals.PortalMaterials[i] = CreateMaterial("SeamlessPortalsMaterial" .. i, "GMODScreenspace", {
-				["$basetexture"] = SeamlessPortals.PortalRTs[i]:GetName(), 
+				["$basetexture"] = SeamlessPortals.PortalRTs[i]:GetName(),
 				["$model"] = "1"
 			})
 		end
