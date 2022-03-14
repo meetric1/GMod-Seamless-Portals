@@ -112,13 +112,13 @@ end
 
 local function DrawQuadEasier(e, multiplier, offset, rotate)
 	local ex, ey, ez = e:GetForward(), e:GetRight(), e:GetUp()
-  local rotate = (tonumber(rotate) or 0)
+	local rotate = (tonumber(rotate) or 0)
 	local mx = ey * multiplier.x
 	local my = ex * multiplier.y
 	local mz = ez * multiplier.z
-  local ox = ey * offset.x -- Currently zero
-  local oy = ex * offset.y -- Currently zero
-  local oz = ez * offset.z
+	local ox = ey * offset.x -- Currently zero
+	local oy = ex * offset.y -- Currently zero
+	local oz = ez * offset.z
 
 	local pos = e:GetPos() + ox + oy + oz
 	if rotate == 0 then
@@ -142,17 +142,17 @@ local function DrawQuadEasier(e, multiplier, offset, rotate)
 			pos + mx + my - mz,
 			pos + mx + my + mz
 		)
-  else
-    print("Failed processing rotation:", tostring(rotate))
+	else
+		print("Failed processing rotation:", tostring(rotate))
 	end
 end
 
 local drawMat = Material("models/props_combine/combine_interface_disp")
 function ENT:Draw()
-  local exsize = self:GetExitSize()[3]
+	local exsize = self:GetExitSize()[3]
 	local backAmt = 3 * exsize
-  local backVec = Vector(0, 0, -backAmt)
-  local epos, spos, vup = EyePos(), self:GetPos(), self:GetUp()
+	local backVec = Vector(0, 0, -backAmt)
+	local epos, spos, vup = EyePos(), self:GetPos(), self:GetUp()
 	local scalex = (self:OBBMaxs().x - self:OBBMins().x) * 0.5 - 0.1
 	local scaley = (self:OBBMaxs().y - self:OBBMins().y) * 0.5 - 0.1
 
