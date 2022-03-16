@@ -41,14 +41,14 @@ end
 e2function void entity:setPortalSize(vector2 size)
 	if not IsValid(this) or not this:GetClass() == "seamless_portal" then return end 
 	if (this.owner == nil or this.owner == self.player) or E2Lib.isFriend(this.owner, self.player) then
-		this:SetExitSize(Vector(math.Clamp(size[1],0.1,10), math.Clamp(size[2],0.1,10), 1))
+		this:SetExitSize(Vector(math.Clamp(size[1],0.01,10), math.Clamp(size[2],0.01,10), 1))
 	end
 end
 
 e2function void entity:setPortalExitSize(vector2 size)
 	if (not (IsValid(this) or not this:GetClass() == "seamless_portal") and IsValid(this.PORTAL_EXIT)) then return end
 	if (this.owner == nil or this.owner == self.player) or E2Lib.isFriend(this.owner, self.player) then
-		this.PORTAL_EXIT:SetExitSize(Vector(math.Clamp(size[1],0.1,10), math.Clamp(size[2],0.1,10), 1))
+		this.PORTAL_EXIT:SetExitSize(Vector(math.Clamp(size[1],0.01,10), math.Clamp(size[2],0.01,10), 1))
 	end
 end
 
