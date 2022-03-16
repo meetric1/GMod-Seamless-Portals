@@ -8,8 +8,6 @@ e2function array createPortalPair(vector pos1, angle ang1, vector pos2, angle an
 	local portal1 = ents.Create("seamless_portal")
 	local portal2 = ents.Create("seamless_portal")
 
-	print(self.player)
-
 	portal1:Spawn()
 	portal1:SetPos(Vector(pos1[1],pos1[2],pos1[3]))
 	portal1:SetAngles(Angle(ang1[1], ang1[2], ang1[3]) + Angle(90, 0, 0))
