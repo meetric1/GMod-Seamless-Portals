@@ -13,18 +13,23 @@ ENT.Purpose      = ""
 ENT.Instructions = ""
 ENT.Spawnable    = true
 
-
-local gbSvFlag = bit.bor(FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_PRINTABLEONLY, FCVAR_REPLICATED)
--- create global table
+-- Create global table
 SeamlessPortals = SeamlessPortals or {}
-SeamlessPortals.VarDrawDistance = CreateConVar("seamless_portal_drwdist", 2500, gbSvFlag, "Ditance margin for portlas being drawn", 0, 5000)
+-- Server tells all clients what value must be used
+SeamlessPortals.FlagVarSC = bit.bor(FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_PRINTABLEONLY, FCVAR_REPLICATED)
+-- Server and all the clients use separate indipendent values
+SeamlessPortals.FlagVarIV = bit.bor(FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_PRINTABLEONLY)
+-- Store material here so it can be used in other files
+SeamlessPortals.PortalDrawMat = Material("models/props_combine/combine_interface_disp")
+-- Put dedicated convears here
+SeamlessPortals.VarDrawDistance = CreateConVar("seamless_portal_drwdist", 2500, SeamlessPortals.FlagVarSC, "Ditance margin for portlas being drawn", 0, 5000)
 
 function ENT:SetupDataTables()
 	self:NetworkVar("Entity", 0, "PortalExit")
 	self:NetworkVar("Vector", 0, "PortalScale")
 end
 
--- get exit portal
+-- Get exit portal
 function ENT:ExitPortal()
 	if CLIENT then
 		return self:GetPortalExit()
@@ -40,7 +45,7 @@ function ENT:LinkPortal(ent)
 	ent:SetPortalExit(self)
 end
 
--- custom size for portal
+-- Custom size for portal
 function ENT:SetExitSize(n)
 	self.PORTAL_SCALE = n
 	self:SetPortalScale(n)
@@ -57,11 +62,12 @@ end
 local function incrementPortal(ent)
 	if CLIENT then
 		local bounding1, bounding2 = ent:GetRenderBounds()
-		ent:SetRenderBounds(bounding1 * 1024, bounding2 * 1024)		-- for some reason this fixes a black flash when going backwards through a portal
+		-- For some reason this fixes a black flash when going backwards through a portal
+		ent:SetRenderBounds(bounding1 * 1024, bounding2 * 1024)
 		if ent.UpdatePhysmesh then
 			ent:UpdatePhysmesh()
 		else
-			-- takes a minute to try and find the portal, if it cant, oh well...
+			-- Takes a minute to try and find the portal, if it cant, oh well...
 			timer.Create("seamless_portal_init" .. SeamlessPortals.PortalIndex, 1, 60, function()
 				if !ent or !ent:IsValid() or !ent.UpdatePhysmesh then return end
 
@@ -83,7 +89,7 @@ function ENT:Initialize()
 		self:SetMoveType(MOVETYPE_VPHYSICS)
 		self:SetSolid(SOLID_VPHYSICS)
 		self:PhysWake()
-		self:SetMaterial("debug/debugempty")	-- missing texture
+		self:SetMaterial("debug/debugempty")	-- Missing texture
 		self:SetRenderMode(RENDERMODE_TRANSCOLOR)
 		self:SetCollisionGroup(COLLISION_GROUP_WORLD)
 		self:DrawShadow(false)
@@ -122,8 +128,8 @@ local function DrawQuadEasier(e, multiplier, offset, rotate)
 	local mx = ey * multiplier.x
 	local my = ex * multiplier.y
 	local mz = ez * multiplier.z
-	local ox = ey * offset.x -- currently zero
-	local oy = ex * offset.y -- currently zero
+	local ox = ey * offset.x -- Currently zero
+	local oy = ex * offset.y -- Currently zero
 	local oz = ez * offset.z
 
 	local pos = e:GetPos() + ox + oy + oz
@@ -153,7 +159,6 @@ local function DrawQuadEasier(e, multiplier, offset, rotate)
 	end
 end
 
-local drawMat = Material("models/props_combine/combine_interface_disp")
 function ENT:Draw()
 	local exsize = self:GetExitSize()[3]
 	local backAmt = 3 * exsize
@@ -162,21 +167,21 @@ function ENT:Draw()
 	local scalex = (self:OBBMaxs().x - self:OBBMins().x) * 0.5 - 0.1
 	local scaley = (self:OBBMaxs().y - self:OBBMins().y) * 0.5 - 0.1
 
-	-- optimization checks
+	-- Optimization checks
 	local exitInvalid = !self:ExitPortal() or !self:ExitPortal():IsValid()
 	local shouldRenderPortal = false
 	if !SeamlessPortals.Rendering and !exitInvalid then
 	  local margnPortal = SeamlessPortals.VarDrawDistance:GetFloat()^2
-		local behindPortal = (epos - spos):Dot(vup) < (-10 * exsize) -- true if behind the portal, false otherwise
-		local distPortal = epos:DistToSqr(spos) > (margnPortal * exsize) -- too far away (make this a convar later!)
-		local lookingPortal = EyeAngles():Forward():Dot(vup) >= (0.6 * exsize) -- looking away from the portal
+		local behindPortal = (epos - spos):Dot(vup) < (-10 * exsize) -- True if behind the portal, false otherwise
+		local distPortal = epos:DistToSqr(spos) > (margnPortal * exsize) -- Too far away (make this a convar later!)
+		local lookingPortal = EyeAngles():Forward():Dot(vup) >= (0.6 * exsize) -- Looking away from the portal
 
 		shouldRenderPortal = behindPortal or distPortal or lookingPortal
 	end
 
-	render.SetMaterial(drawMat)
+	render.SetMaterial(SeamlessPortals.PortalDrawMat)
 
-	-- holy shit lol this if statment
+	-- Holy shit lol this if statment
 	if SeamlessPortals.Rendering or exitInvalid or shouldRenderPortal or halo.RenderedEntity() == self then
 		render.DrawBox(spos, self:LocalToWorldAngles(Angle(0, 90, 0)), Vector(-scaley, -scalex, -backAmt * 2), Vector(scaley, scalex, 0))
 		if !SeamlessPortals.Rendering then
@@ -185,14 +190,14 @@ function ENT:Draw()
 		return
 	end
 
-	-- outer quads
+	-- Outer quads
 	DrawQuadEasier(self, Vector( scaley, -scalex, -backAmt), backVec)
 	DrawQuadEasier(self, Vector( scaley, -scalex,  backAmt), backVec, 1)
 	DrawQuadEasier(self, Vector( scaley,  scalex, -backAmt), backVec, 1)
 	DrawQuadEasier(self, Vector( scaley, -scalex,  backAmt), backVec, 2)
 	DrawQuadEasier(self, Vector(-scaley, -scalex, -backAmt), backVec, 2)
 
-	-- do cursed stencil stuff
+	-- Do cursed stencil stuff
 	render.ClearStencil()
 	render.SetStencilEnable(true)
 	render.SetStencilWriteMask(1)
@@ -203,15 +208,15 @@ function ENT:Draw()
 	render.SetStencilPassOperation(STENCIL_REPLACE)
 	render.SetStencilCompareFunction(STENCIL_ALWAYS)
 
-	-- draw the quad that the 2d texture will be drawn on
-	-- teleporting causes flashing if the quad is drawn right next to the player, so we offset it
+	-- Draw the quad that the 2d texture will be drawn on
+	-- Teleporting causes flashing if the quad is drawn right next to the player, so we offset it
 	DrawQuadEasier(self, Vector( scaley,  scalex, -backAmt), backVec)
 	DrawQuadEasier(self, Vector( scaley,  scalex,  backAmt), backVec, 1)
 	DrawQuadEasier(self, Vector( scaley, -scalex, -backAmt), backVec, 1)
 	DrawQuadEasier(self, Vector( scaley,  scalex,  backAmt), backVec, 2)
 	DrawQuadEasier(self, Vector(-scaley,  scalex, -backAmt), backVec, 2)
 
-	-- draw the actual portal texture
+	-- Draw the actual portal texture
 	render.SetMaterial(SeamlessPortals.PortalMaterials[self.PORTAL_RT_NUMBER or 1])
 	render.SetStencilCompareFunction(STENCIL_EQUAL)
 	render.DrawScreenQuad()
@@ -220,7 +225,7 @@ function ENT:Draw()
 	self.PORTAL_SHOULDRENDER = true
 end
 
--- scale the physmesh
+-- Scale the physmesh
 function ENT:UpdatePhysmesh()
 	self:PhysicsInit(6)
 	if self:GetPhysicsObject():IsValid() then
@@ -241,29 +246,28 @@ function ENT:UpdatePhysmesh()
 	end
 end
 
-SeamlessPortals.PortalIndex = #ents.FindByClass("seamless_portal") -- for hotreloading
+SeamlessPortals.PortalIndex = #ents.FindByClass("seamless_portal") -- For hotreloading
 SeamlessPortals.MaxRTs = 6
 SeamlessPortals.TransformPortal = function(a, b, pos, ang)
-	if !a or !b or !b:IsValid() or !a:IsValid() then return Vector(), Angle() end
-	local editedPos = Vector()
-	local editedAng = Angle()
+	local ePos, eAng = Vector(), Angle()
+	if !a or !b or !b:IsValid() or !a:IsValid() then return ePos, eAng end
 
 	if pos then
-		editedPos = a:WorldToLocal(pos) * (b:GetExitSize()[1] / a:GetExitSize()[1])
-		editedPos = b:LocalToWorld(Vector(editedPos[1], -editedPos[2], -editedPos[3]))
-		editedPos = editedPos + b:GetUp()
+		ePos = a:WorldToLocal(pos) * (b:GetExitSize()[1] / a:GetExitSize()[1])
+		ePos = b:LocalToWorld(Vector(ePos[1], -ePos[2], -ePos[3]))
+		ePos = ePos + b:GetUp()
 	end
 
 	if ang then
-		local clonedAngle = Angle(ang[1], ang[2], ang[3]) -- rotatearoundaxis modifies original variable
-		clonedAngle:RotateAroundAxis(a:GetForward(), 180)
-		editedAng = b:LocalToWorldAngles(a:WorldToLocalAngles(clonedAngle))
+		local cAng = Angle(ang[1], ang[2], ang[3]) -- Rotatearoundaxis modifies original variable
+		cAng:RotateAroundAxis(a:GetForward(), 180)
+		eAng:Set(b:LocalToWorldAngles(a:WorldToLocalAngles(cAng)))
 	end
 
-	return editedPos, editedAng
+	return ePos, eAng
 end
 
--- set physmesh pos on client
+-- Set physmesh pos on client
 if CLIENT then
 	function ENT:Think()
 		local phys = self:GetPhysicsObject()
@@ -281,7 +285,7 @@ if CLIENT then
 			incrementPortal(v)
 		end
 
-		-- this code creates the rendertargets to be used for the portals
+		-- This code creates the rendertargets to be used for the portals
 		SeamlessPortals.PortalRTs = {}
 		SeamlessPortals.PortalMaterials = {}
 
