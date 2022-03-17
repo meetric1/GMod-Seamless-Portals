@@ -252,14 +252,15 @@ SeamlessPortals.TransformPortal = function(a, b, pos, ang)
 	local ePos, eAng = Vector(), Angle()
 	if !a or !b or !b:IsValid() or !a:IsValid() then return ePos, eAng end
 
-	if pos then
-		ePos = a:WorldToLocal(pos) * (b:GetExitSize()[1] / a:GetExitSize()[1])
-		ePos = b:LocalToWorld(Vector(ePos[1], -ePos[2], -ePos[3]))
-		ePos = ePos + b:GetUp()
+	if pos then -- Use data copy innstead of assign target
+		ePos:Set(a:WorldToLocal(pos))
+		ePos:Mul(b:GetExitSize()[1] / a:GetExitSize()[1])
+		ePos:Set(b:LocalToWorld(Vector(ePos[1], -ePos[2], -ePos[3])))
+		ePos:Add(b:GetUp()) -- Reduces vector object creation. Keep reference
 	end
 
-	if ang then
-		local cAng = Angle(ang[1], ang[2], ang[3]) -- Rotatearoundaxis modifies original variable
+	if ang then -- Rotatearoundaxis modifies original variable
+		local cAng = Angle(ang[1], ang[2], ang[3])
 		cAng:RotateAroundAxis(a:GetForward(), 180)
 		eAng:Set(b:LocalToWorldAngles(a:WorldToLocalAngles(cAng)))
 	end
