@@ -82,9 +82,7 @@ end
 SeamlessPortals.IncrementPortal = incrementPortal
 
 function ENT:Initialize()
-	if CLIENT then
-		incrementPortal(self)
-	else
+	if SERVER then
 		self:SetModel("models/hunter/plates/plate2x2.mdl")
 		self:SetAngles(self:GetAngles() + Angle(90, 0, 0))
 		self:PhysicsInit(SOLID_VPHYSICS)
@@ -96,8 +94,9 @@ function ENT:Initialize()
 		self:SetCollisionGroup(COLLISION_GROUP_WORLD)
 		self:DrawShadow(false)
 		self:SetExitSize(Vector(1, 1, 1))
-		SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
 	end
+
+	incrementPortal(self) -- Increment portal index
 end
 
 function ENT:SpawnFunction(ply, tr)
