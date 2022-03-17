@@ -79,6 +79,8 @@ local function incrementPortal(ent)
 	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
 end
 
+SeamlessPortals.IncrementPortal = incrementPortal
+
 function ENT:Initialize()
 	if CLIENT then
 		incrementPortal(self)
@@ -227,7 +229,7 @@ end
 
 -- Scale the physmesh
 function ENT:UpdatePhysmesh()
-	self:PhysicsInit(6)
+	self:PhysicsInit(SOLID_VPHYSICS)
 	if self:GetPhysicsObject():IsValid() then
 		local finalMesh = {}
 		for k, tri in pairs(self:GetPhysicsObject():GetMeshConvexes()[1]) do
@@ -252,7 +254,7 @@ SeamlessPortals.TransformPortal = function(a, b, pos, ang)
 	local ePos, eAng = Vector(), Angle()
 	if !a or !b or !b:IsValid() or !a:IsValid() then return ePos, eAng end
 
-	if pos then -- Use data copy innstead of assign target
+	if pos then -- Use data copy instead of assign target
 		ePos:Set(a:WorldToLocal(pos))
 		ePos:Mul(b:GetExitSize()[1] / a:GetExitSize()[1])
 		ePos:Set(b:LocalToWorld(Vector(ePos[1], -ePos[2], -ePos[3])))
