@@ -32,13 +32,12 @@ SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Ammo = "none"
 SWEP.Secondary.Automatic = false
 
-function SWEP:ShootFX()
+function SWEP:ShootFX(tr)
+  local num = math.random(3, 4)
+  local sws = SeamlessPortals.SwepSound:format(num)
 	self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
 	self.Owner:SetAnimation(PLAYER_ATTACK1)
-
-	if CLIENT then
-		EmitSound("NPC_Vortigaunt.Shoot", self:GetPos(), self:EntIndex(), CHAN_AUTO, 0.25)	-- quieter for client
-	end
+  self:EmitSound(sws, 35, 100, 1, CHAN_WEAPON)
 end
 
 function SWEP:PrimaryAttack()
@@ -81,6 +80,7 @@ end
 
 function SWEP:Reload()
 	if CLIENT then return end
+  self:SendWeaponAnim(ACT_VM_RELOAD)
 	SafeRemoveEntity(self.Portal)
 	SafeRemoveEntity(self.Portal2)
 end

@@ -12,6 +12,8 @@ SeamlessPortals.VarDrawDistance = CreateConVar("seamless_portal_drwdist", 2500, 
 -- For hotreloading
 SeamlessPortals.PortalIndex = #ents.FindByClass("seamless_portal")
 SeamlessPortals.MaxRTs = 6
+-- For portal weapon sound format
+SeamlessPortals.SwepSound = "npc/vort/vort_attack_shoot%d.wav"
 -- For seamless check
 SeamlessPortals.SeamlessClass =
 {
