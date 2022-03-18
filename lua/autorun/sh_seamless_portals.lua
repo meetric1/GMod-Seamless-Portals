@@ -150,3 +150,13 @@ function SeamlessPortals.SetPortalPlacement(owner, portal, tr, ang)
   -- Register to CPPI
 	if CPPI then portal:CPPISetOwner(owner) end
 end
+
+--[[
+ * Until PR: https://github.com/Mee12345/GMod-Seamless-Portals/pull/36
+ * Keep the implementation when it becomes handy sometimes
+ * And the user can easily call VEC1:AngleBetween(VEC2)
+]]
+function SeamlessPortals.VectorAngle(vec1, vec2)
+	local coth = vec1:Dot(vec2) / (vec1:Length() * vec2:Length())
+	return math.deg(math.acos(coth))
+end

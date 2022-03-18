@@ -4,17 +4,11 @@ TOOL.Name = "#Tool.portal_creator_tool.name"
 TOOL.Information = {
 	{ name = "left" },
 	{ name = "right1", stage = 1 },
-	{ name = "right2", stage = 2 }
+	{ name = "right2", stage = 2 },
+  { name = "reload" }
 }
 
 TOOL.LinkTarget = NULL
-
--- yoink! smiley :)
-local function VectorAngle(vec1, vec2)
-	local costheta = vec1:Dot(vec2) / (vec1:Length() * vec2:Length())
-	local theta = math.acos(costheta)
-	return math.deg(theta)
-end
 
 function TOOL:GetPlacementPosition(tr)
   local ply = self:GetOwner()
@@ -44,6 +38,7 @@ if ( CLIENT ) then
 	language.Add("Tool.portal_creator_tool.left", "Left Click: Create portal")
 	language.Add("Tool.portal_creator_tool.right1", "Right Click: Start linking a portal")
 	language.Add("Tool.portal_creator_tool.right2", "Right Click: Create link to another portal")
+  language.Add("Tool.portal_creator_tool.reload", "Reload: Remove your portals. Press SHIFT to clear all")
 
 	-- yoink! smiley :)
 	local xVar = CreateClientConVar("seamless_portal_size_x", "1", false, true, "Sets the size of the portal along the X axis", 0.01, 10)
