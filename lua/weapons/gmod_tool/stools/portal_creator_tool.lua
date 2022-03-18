@@ -179,6 +179,7 @@ elseif ( SERVER ) then
 				end
 			end -- Remove all the portals that are ours
 			if rdx then return true end
+      return false -- Do not soot effect
 		end
 		local tre = tr.Entity
 		if !tre or !tre:IsValid() then return end
