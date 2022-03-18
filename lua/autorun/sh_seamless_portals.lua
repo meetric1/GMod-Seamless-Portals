@@ -43,7 +43,7 @@ end
 
 function SeamlessPortals.DrawQuadEasier(ent, multiplier, offset, rotate)
 	local ex, ey = ent:GetForward(), ent:GetRight()
-  local ez, ep = ent:GetUp(), ent:GetPos()
+	local ez, ep = ent:GetUp(), ent:GetPos()
 	local rotate = (tonumber(rotate) or 0)
 	local mx = ey * multiplier.x
 	local my = ex * multiplier.y
@@ -117,7 +117,7 @@ function SeamlessPortals.SeamlessCheck(ent)
 end
 
 function SeamlessPortals.UpdateAngle(owner, tr, ang)
-  local ang = ang or Angle()
+	local ang = ang or Angle()
 
 	-- Align portals on 45 degree surfaces
 	if math.abs(tr.HitNormal:Dot(ang:Up())) < 0.71 then
@@ -128,7 +128,7 @@ function SeamlessPortals.UpdateAngle(owner, tr, ang)
 		ang:Set(SeamlessPortals.GetSurfaceAngle(owner, tr.HitNormal))
 	end
 
-  return ang
+	return ang
 end
 
 function SeamlessPortals.SetPortalPlacement(owner, portal, tr, ang)
@@ -136,20 +136,20 @@ function SeamlessPortals.SetPortalPlacement(owner, portal, tr, ang)
 	local aim = owner:GetAimVector()
 	local mul = 10 * portal:GetExitSize()[3]
 
-  if !tr then -- No base trace result
-    tr = util.TraceLine({
-      start = pos,
-      endpos = pos + aim * 99999,
-      filter = SeamlessPortals.SeamlessCheck,
-      noDetour = true,
-    }) -- Do a trace when not provided
-  end
-  -- The portal angle created or updated
-  local ang = SeamlessPortals.UpdateAngle(owner, tr, ang)
-  -- Adjust the portal position and angles
+	if !tr then -- No base trace result
+		tr = util.TraceLine({
+			start = pos,
+			endpos = pos + aim * 99999,
+			filter = SeamlessPortals.SeamlessCheck,
+			noDetour = true,
+		}) -- Do a trace when not provided
+	end
+	-- The portal angle created or updated
+	local ang = SeamlessPortals.UpdateAngle(owner, tr, ang)
+	-- Adjust the portal position and angles
 	portal:SetPos((tr.HitPos + mul * tr.HitNormal))
 	portal:SetAngles(ang)
-  -- Register to CPPI
+	-- Register to CPPI
 	if CPPI then portal:CPPISetOwner(owner) end
 end
 

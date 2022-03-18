@@ -69,12 +69,12 @@ end
 function ENT:SpawnFunction(ply, tr)
 	local portal1 = ents.Create("seamless_portal")
 	portal1:SetPos(tr.HitPos + tr.HitNormal * 150)
-  portal1:SetCreator(ply)
+	portal1:SetCreator(ply)
 	portal1:Spawn()
 
 	local portal2 = ents.Create("seamless_portal")
 	portal2:SetPos(tr.HitPos + tr.HitNormal * 50)
-  portal2:SetCreator(ply)
+	portal2:SetCreator(ply)
 	portal2:Spawn()
 
 	if CPPI then portal2:CPPISetOwner(ply) end
@@ -116,11 +116,11 @@ function ENT:Draw()
 
 	-- Holy shit lol this if statment
 	if SeamlessPortals.Rendering or exitInvalid or
-     shouldRenderPortal or halo.RenderedEntity() == self
-  then
-    local wang = self:LocalToWorldAngles(Angle(0, 90, 0))
-    local vstr = Vector(-scaley, -scalex, -backAmt * 2)
-    local vend = Vector(scaley, scalex, 0)
+		 shouldRenderPortal or halo.RenderedEntity() == self
+	then
+		local wang = self:LocalToWorldAngles(Angle(0, 90, 0))
+		local vstr = Vector(-scaley, -scalex, -backAmt * 2)
+		local vend = Vector(scaley, scalex, 0)
 
 		render.DrawBox(spos, wang, vstr, vend)
 

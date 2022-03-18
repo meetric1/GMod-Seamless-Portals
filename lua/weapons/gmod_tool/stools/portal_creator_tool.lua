@@ -5,17 +5,17 @@ TOOL.Information = {
 	{ name = "left" },
 	{ name = "right1", stage = 1 },
 	{ name = "right2", stage = 2 },
-  { name = "reload" }
+	{ name = "reload" }
 }
 
 TOOL.LinkTarget = NULL
 
 function TOOL:GetPlacementPosition(tr)
-  local ply = self:GetOwner()
+	local ply = self:GetOwner()
 	if not tr then tr = ply:GetEyeTrace() end
 	if not tr.Hit then return false end
-	-- yoink! smiley :)
-  local sizeX = ply:GetInfoNum("seamless_portal_size_x", 1)
+	-- Yoink! smiley :)
+	local sizeX = ply:GetInfoNum("seamless_portal_size_x", 1)
 	local rotatedAng = SeamlessPortals.UpdateAngle(ply, tr)
 	-- Return calculated position and angle
 	return (tr.HitPos + tr.HitNormal * sizeX  * 6.1), rotatedAng
@@ -38,9 +38,9 @@ if ( CLIENT ) then
 	language.Add("Tool.portal_creator_tool.left", "Left Click: Create portal")
 	language.Add("Tool.portal_creator_tool.right1", "Right Click: Start linking a portal")
 	language.Add("Tool.portal_creator_tool.right2", "Right Click: Create link to another portal")
-  language.Add("Tool.portal_creator_tool.reload", "Reload: Remove your portals. Press SHIFT to clear all")
+	language.Add("Tool.portal_creator_tool.reload", "Reload: Remove your portals. Press SHIFT to clear all")
 
-	-- yoink! smiley :)
+	-- Yoink! smiley :)
 	local xVar = CreateClientConVar("seamless_portal_size_x", "1", false, true, "Sets the size of the portal along the X axis", 0.01, 10)
 	local yVar = CreateClientConVar("seamless_portal_size_y", "1", false, true, "Sets the size of the portal along the Y axis", 0.01, 10)
 
@@ -55,7 +55,7 @@ if ( CLIENT ) then
 	function TOOL:DrawHUD()
 		local pos, angles = self:GetPlacementPosition()
 		if not pos then return end
-		--
+
 		cam.Start3D()
 			if self:GetStage() == 2 then
 				local target = self:GetLinkTarget()
@@ -63,7 +63,7 @@ if ( CLIENT ) then
 					local from = target:GetPos()
 					local to = pos
 					local tr = self.Owner:GetEyeTrace()
-					-- the tower of if statements
+					-- The tower of if statements
 					if tr.Hit then
 						local ent = tr.Entity
 						if IsValid(ent) then
@@ -95,9 +95,9 @@ if ( CLIENT ) then
 		return true
 	end
 
-  function TOOL:Reload()
-    return true
-  end
+	function TOOL:Reload()
+		return true
+	end
 
 elseif ( SERVER ) then
 
@@ -108,22 +108,22 @@ elseif ( SERVER ) then
 	function TOOL:LeftClick(trace)
 		local pos, angles = self:GetPlacementPosition(trace)
 		if not pos then return false end
-    local ply = self:GetOwner()
+		local ply = self:GetOwner()
 		local ent = ents.Create("seamless_portal")
 		ent:SetPos(pos)
-    ent:SetCreator(ply)
+		ent:SetCreator(ply)
 		ent:SetAngles(angles + Angle(270, 0, 0))
 		ent:Spawn()
 		if CPPI then ent:CPPISetOwner(ply) end
-		-- yoink! smiley
+		-- Yoink! smiley
 		local sizex = ply:GetInfoNum("seamless_portal_size_x", 1)
 		local sizey = ply:GetInfoNum("seamless_portal_size_y", 1)
 		ent:SetExitSize(Vector(sizex, sizey, sizex))
 		cleanup.Add(ply, "props", ent)
-        undo.Create("Seamless Portal")
-            undo.AddEntity(ent)
-            undo.SetPlayer(ply)
-        undo.Finish()
+				undo.Create("Seamless Portal")
+						undo.AddEntity(ent)
+						undo.SetPlayer(ply)
+				undo.Finish()
 		return true
 	end
 
@@ -166,26 +166,26 @@ elseif ( SERVER ) then
 		return true
 	end
 
-  function TOOL:Reload(tr)
-    local ply = self:GetOwner()
-    if ply:KeyDown(IN_SPEED) then
-      local arr, rdx = ents.GetAll()
-      for idx, ent in pairs(arr) do
-        if ent:GetClass() == "seamless_portal" and
-           ent:GetCreator() == ply
-        then -- We have removed atleast one entity
-          rdx = idx -- Store the index to proof
-          SafeRemoveEntity(ent) -- Remove
-        end
-      end -- Remove all the portals that are ours
-      if rdx then return true end
-    end
-    local tre = tr.Entity
-    if !tre or !tre:IsValid() then return end
-    if tre:GetClass() != "seamless_portal" then return end
-    if tre:GetCreator() != ply then return end
-    SafeRemoveEntity(tre)
-    return true
-  end
+	function TOOL:Reload(tr)
+		local ply = self:GetOwner()
+		if ply:KeyDown(IN_SPEED) then
+			local arr, rdx = ents.GetAll()
+			for idx, ent in pairs(arr) do
+				if ent:GetClass() == "seamless_portal" and
+					 ent:GetCreator() == ply
+				then -- We have removed atleast one entity
+					rdx = idx -- Store the index to proof
+					SafeRemoveEntity(ent) -- Remove
+				end
+			end -- Remove all the portals that are ours
+			if rdx then return true end
+		end
+		local tre = tr.Entity
+		if !tre or !tre:IsValid() then return end
+		if tre:GetClass() != "seamless_portal" then return end
+		if tre:GetCreator() != ply then return end
+		SafeRemoveEntity(tre)
+		return true
+	end
 
 end
