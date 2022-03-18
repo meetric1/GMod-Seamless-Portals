@@ -13,17 +13,6 @@ ENT.Purpose      = ""
 ENT.Instructions = ""
 ENT.Spawnable    = true
 
--- Create global table
-SeamlessPortals = SeamlessPortals or {}
--- Server tells all clients what value must be used
-SeamlessPortals.FlagVarSC = bit.bor(FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_PRINTABLEONLY, FCVAR_REPLICATED)
--- Server and all the clients use separate indipendent values
-SeamlessPortals.FlagVarIV = bit.bor(FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_PRINTABLEONLY)
--- Store material here so it can be used in other files
-SeamlessPortals.PortalDrawMat = Material("models/props_combine/combine_interface_disp")
--- Put dedicated convears here
-SeamlessPortals.VarDrawDistance = CreateConVar("seamless_portal_drwdist", 2500, SeamlessPortals.FlagVarSC, "Ditance margin for portlas being drawn", 0, 5000)
-
 function ENT:SetupDataTables()
 	self:NetworkVar("Entity", 0, "PortalExit")
 	self:NetworkVar("Vector", 0, "PortalScale")
@@ -59,28 +48,6 @@ function ENT:GetExitSize()
 	return self.PORTAL_SCALE
 end
 
-local function incrementPortal(ent)
-	if CLIENT then
-		local bounding1, bounding2 = ent:GetRenderBounds()
-		-- For some reason this fixes a black flash when going backwards through a portal
-		ent:SetRenderBounds(bounding1 * 1024, bounding2 * 1024)
-		if ent.UpdatePhysmesh then
-			ent:UpdatePhysmesh()
-		else
-			-- Takes a minute to try and find the portal, if it cant, oh well...
-			timer.Create("seamless_portal_init" .. SeamlessPortals.PortalIndex, 1, 60, function()
-				if !ent or !ent:IsValid() or !ent.UpdatePhysmesh then return end
-
-				ent:UpdatePhysmesh()
-				timer.Remove("seamless_portal_init" .. SeamlessPortals.PortalIndex)
-			end)
-		end
-	end
-	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
-end
-
-SeamlessPortals.IncrementPortal = incrementPortal
-
 function ENT:Initialize()
 	if SERVER then
 		self:SetModel("models/hunter/plates/plate2x2.mdl")
@@ -96,16 +63,18 @@ function ENT:Initialize()
 		self:SetExitSize(Vector(1, 1, 1))
 	end
 
-	incrementPortal(self) -- Increment portal index
+	SeamlessPortals.IncrementPortal(self) -- Increment portal index
 end
 
 function ENT:SpawnFunction(ply, tr)
 	local portal1 = ents.Create("seamless_portal")
 	portal1:SetPos(tr.HitPos + tr.HitNormal * 150)
+  portal1:SetCreator(ply)
 	portal1:Spawn()
 
 	local portal2 = ents.Create("seamless_portal")
 	portal2:SetPos(tr.HitPos + tr.HitNormal * 50)
+  portal2:SetCreator(ply)
 	portal2:Spawn()
 
 	if CPPI then portal2:CPPISetOwner(ply) end
@@ -120,43 +89,6 @@ function ENT:OnRemove()
 	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex - 1
 	if SERVER and self.PORTAL_REMOVE_EXIT then
 		SafeRemoveEntity(self:ExitPortal())
-	end
-end
-
-local function DrawQuadEasier(e, multiplier, offset, rotate)
-	local ex, ey, ez = e:GetForward(), e:GetRight(), e:GetUp()
-	local rotate = (tonumber(rotate) or 0)
-	local mx = ey * multiplier.x
-	local my = ex * multiplier.y
-	local mz = ez * multiplier.z
-	local ox = ey * offset.x -- Currently zero
-	local oy = ex * offset.y -- Currently zero
-	local oz = ez * offset.z
-
-	local pos = e:GetPos() + ox + oy + oz
-	if rotate == 0 then
-		render.DrawQuad(
-			pos + mx - my + mz,
-			pos - mx - my + mz,
-			pos - mx + my + mz,
-			pos + mx + my + mz
-		)
-	elseif rotate == 1 then
-		render.DrawQuad(
-			pos + mx + my - mz,
-			pos - mx + my - mz,
-			pos - mx + my + mz,
-			pos + mx + my + mz
-		)
-	elseif rotate == 2 then
-		render.DrawQuad(
-			pos + mx - my + mz,
-			pos + mx - my - mz,
-			pos + mx + my - mz,
-			pos + mx + my + mz
-		)
-	else
-		print("Failed processing rotation:", tostring(rotate))
 	end
 end
 
@@ -183,8 +115,15 @@ function ENT:Draw()
 	render.SetMaterial(SeamlessPortals.PortalDrawMat)
 
 	-- Holy shit lol this if statment
-	if SeamlessPortals.Rendering or exitInvalid or shouldRenderPortal or halo.RenderedEntity() == self then
-		render.DrawBox(spos, self:LocalToWorldAngles(Angle(0, 90, 0)), Vector(-scaley, -scalex, -backAmt * 2), Vector(scaley, scalex, 0))
+	if SeamlessPortals.Rendering or exitInvalid or
+     shouldRenderPortal or halo.RenderedEntity() == self
+  then
+    local wang = self:LocalToWorldAngles(Angle(0, 90, 0))
+    local vstr = Vector(-scaley, -scalex, -backAmt * 2)
+    local vend = Vector(scaley, scalex, 0)
+
+		render.DrawBox(spos, wang, vstr, vend)
+
 		if !SeamlessPortals.Rendering then
 			self.PORTAL_SHOULDRENDER = !shouldRenderPortal
 		end
@@ -192,11 +131,11 @@ function ENT:Draw()
 	end
 
 	-- Outer quads
-	DrawQuadEasier(self, Vector( scaley, -scalex, -backAmt), backVec)
-	DrawQuadEasier(self, Vector( scaley, -scalex,  backAmt), backVec, 1)
-	DrawQuadEasier(self, Vector( scaley,  scalex, -backAmt), backVec, 1)
-	DrawQuadEasier(self, Vector( scaley, -scalex,  backAmt), backVec, 2)
-	DrawQuadEasier(self, Vector(-scaley, -scalex, -backAmt), backVec, 2)
+	SeamlessPortals.DrawQuadEasier(self, Vector( scaley, -scalex, -backAmt), backVec)
+	SeamlessPortals.DrawQuadEasier(self, Vector( scaley, -scalex,  backAmt), backVec, 1)
+	SeamlessPortals.DrawQuadEasier(self, Vector( scaley,  scalex, -backAmt), backVec, 1)
+	SeamlessPortals.DrawQuadEasier(self, Vector( scaley, -scalex,  backAmt), backVec, 2)
+	SeamlessPortals.DrawQuadEasier(self, Vector(-scaley, -scalex, -backAmt), backVec, 2)
 
 	-- Do cursed stencil stuff
 	render.ClearStencil()
@@ -211,11 +150,11 @@ function ENT:Draw()
 
 	-- Draw the quad that the 2d texture will be drawn on
 	-- Teleporting causes flashing if the quad is drawn right next to the player, so we offset it
-	DrawQuadEasier(self, Vector( scaley,  scalex, -backAmt), backVec)
-	DrawQuadEasier(self, Vector( scaley,  scalex,  backAmt), backVec, 1)
-	DrawQuadEasier(self, Vector( scaley, -scalex, -backAmt), backVec, 1)
-	DrawQuadEasier(self, Vector( scaley,  scalex,  backAmt), backVec, 2)
-	DrawQuadEasier(self, Vector(-scaley,  scalex, -backAmt), backVec, 2)
+	SeamlessPortals.DrawQuadEasier(self, Vector( scaley,  scalex, -backAmt), backVec)
+	SeamlessPortals.DrawQuadEasier(self, Vector( scaley,  scalex,  backAmt), backVec, 1)
+	SeamlessPortals.DrawQuadEasier(self, Vector( scaley, -scalex, -backAmt), backVec, 1)
+	SeamlessPortals.DrawQuadEasier(self, Vector( scaley,  scalex,  backAmt), backVec, 2)
+	SeamlessPortals.DrawQuadEasier(self, Vector(-scaley,  scalex, -backAmt), backVec, 2)
 
 	-- Draw the actual portal texture
 	render.SetMaterial(SeamlessPortals.PortalMaterials[self.PORTAL_RT_NUMBER or 1])
@@ -247,28 +186,6 @@ function ENT:UpdatePhysmesh()
 	end
 end
 
-SeamlessPortals.PortalIndex = #ents.FindByClass("seamless_portal") -- For hotreloading
-SeamlessPortals.MaxRTs = 6
-SeamlessPortals.TransformPortal = function(a, b, pos, ang)
-	local ePos, eAng = Vector(), Angle()
-	if !a or !b or !b:IsValid() or !a:IsValid() then return ePos, eAng end
-
-	if pos then -- Use data copy instead of assign target
-		ePos:Set(a:WorldToLocal(pos))
-		ePos:Mul(b:GetExitSize()[1] / a:GetExitSize()[1])
-		ePos:Set(b:LocalToWorld(Vector(ePos[1], -ePos[2], -ePos[3])))
-		ePos:Add(b:GetUp()) -- Reduces vector object creation. Keep reference
-	end
-
-	if ang then -- Rotatearoundaxis modifies original variable
-		local cAng = Angle(ang[1], ang[2], ang[3])
-		cAng:RotateAroundAxis(a:GetForward(), 180)
-		eAng:Set(b:LocalToWorldAngles(a:WorldToLocalAngles(cAng)))
-	end
-
-	return ePos, eAng
-end
-
 -- Set physmesh pos on client
 if CLIENT then
 	function ENT:Think()
@@ -284,7 +201,7 @@ if CLIENT then
 	hook.Add("InitPostEntity", "seamless_portal_init", function()
 		for k, v in ipairs(ents.FindByClass("seamless_portal")) do
 			print("Initializing portal " .. v:EntIndex())
-			incrementPortal(v)
+			SeamlessPortals.IncrementPortal(v)
 		end
 
 		-- This code creates the rendertargets to be used for the portals

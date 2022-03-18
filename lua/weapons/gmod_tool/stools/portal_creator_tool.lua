@@ -17,17 +17,14 @@ local function VectorAngle(vec1, vec2)
 end
 
 function TOOL:GetPlacementPosition(tr)
-	if not tr then tr = self:GetOwner():GetEyeTrace() end
+  local ply = self:GetOwner()
+	if not tr then tr = ply:GetEyeTrace() end
 	if not tr.Hit then return false end
 	-- yoink! smiley :)
-	local rotatedAng = tr.HitNormal:Angle() + Angle(90, 0, 0)
-
-	local elevationangle = VectorAngle(vector_up, tr.HitNormal)
-	if elevationangle < 1 or (elevationangle > 179 and elevationangle < 181) then 
-		rotatedAng.y = self:GetOwner():EyeAngles().y + 180
-	end
-	--
-	return (tr.HitPos + tr.HitNormal * self:GetOwner():GetInfoNum("seamless_portal_size_x", 1) * 6.1), rotatedAng
+  local sizeX = ply:GetInfoNum("seamless_portal_size_x", 1)
+	local rotatedAng = SeamlessPortals.UpdateAngle(ply, tr)
+	-- Return calculated position and angle
+	return (tr.HitPos + tr.HitNormal * sizeX  * 6.1), rotatedAng
 end
 
 function TOOL:GetLinkTarget()
@@ -60,7 +57,6 @@ if ( CLIENT ) then
 		panel:NumSlider("Portal Size Y", "seamless_portal_size_y", 0.05, 10, 2)
 	end
 
-	local beamMat = Material("cable/blue_elec")
 	function TOOL:DrawHUD()
 		local pos, angles = self:GetPlacementPosition()
 		if not pos then return end
@@ -83,7 +79,7 @@ if ( CLIENT ) then
 							end
 						end
 					end
-					render.SetMaterial(beamMat)
+					render.SetMaterial(SeamlessPortals.BeamMaterHUD)
 					render.DrawBeam(from, to, 3, 0, 1)
 					cam.End3D()
 					return
@@ -104,6 +100,10 @@ if ( CLIENT ) then
 		return true
 	end
 
+  function TOOL:Reload()
+    return true
+  end
+
 elseif ( SERVER ) then
 
 	function TOOL:Deploy()
@@ -113,19 +113,21 @@ elseif ( SERVER ) then
 	function TOOL:LeftClick(trace)
 		local pos, angles = self:GetPlacementPosition(trace)
 		if not pos then return false end
+    local ply = self:GetOwner()
 		local ent = ents.Create("seamless_portal")
 		ent:SetPos(pos)
+    ent:SetCreator(ply)
 		ent:SetAngles(angles + Angle(270, 0, 0))
 		ent:Spawn()
-		if CPPI then ent:CPPISetOwner(self:GetOwner()) end
+		if CPPI then ent:CPPISetOwner(ply) end
 		-- yoink! smiley
-		local sizex = self:GetOwner():GetInfoNum("seamless_portal_size_x", 1)
-		local sizey = self:GetOwner():GetInfoNum("seamless_portal_size_y", 1)
+		local sizex = ply:GetInfoNum("seamless_portal_size_x", 1)
+		local sizey = ply:GetInfoNum("seamless_portal_size_y", 1)
 		ent:SetExitSize(Vector(sizex, sizey, sizex))
-		cleanup.Add(self:GetOwner(), "props", ent)
+		cleanup.Add(ply, "props", ent)
         undo.Create("Seamless Portal")
             undo.AddEntity(ent)
-            undo.SetPlayer(self:GetOwner())
+            undo.SetPlayer(ply)
         undo.Finish()
 		return true
 	end
@@ -168,5 +170,14 @@ elseif ( SERVER ) then
 		end
 		return true
 	end
+
+  function TOOL:Reload(tr)
+    local tre = tr.Entity
+    if !tre or !tre:IsValid() then return end
+    if tre:GetClass() != "seamless_portal" then return end
+    if tre:GetCreator() != self:GetOwner() then return end
+    SafeRemoveEntity(tre)
+    return true
+  end
 
 end

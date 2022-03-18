@@ -32,56 +32,6 @@ SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Ammo = "none"
 SWEP.Secondary.Automatic = false
 
---[[
- * Calculate surface normal angle by using cross products
- * owner > The player that does the trace
- * norm  > The trace hit surface normal vector
- * Returns the angle tangent to the surface hit position
-]]
-local function getSurfaceAngle(owner, norm)
-	local fwd = owner:GetAimVector()
-	local rgh = fwd:Cross(norm); fwd:Set(norm:Cross(rgh))
-	return fwd:AngleEx(norm)
-end
-
-local gtCheck =
-{
-	["player"]          = true,
-	["seamless_portal"] = true
-}
-
-local function seamlessCheck(e)
-	if(!IsValid(e)) then return end
-	return !gtCheck[e:GetClass()]
-end
-
-local function setPortalPlacement(owner, portal)
-	local ang = Angle() -- The portal angle
-	local pos = owner:GetShootPos()
-	local aim = owner:GetAimVector()
-	local mul = 10 * portal:GetExitSize()[3]
-
-	local tr = util.TraceLine({
-		start = pos,
-		endpos = pos + aim * 99999,
-		filter = seamlessCheck,
-		noDetour = true,
-	})
-
-	-- Align portals on 45 degree surfaces
-	if math.abs(tr.HitNormal:Dot(ang:Up())) < 0.71 then
-		ang:Set(tr.HitNormal:Angle())
-		ang:RotateAroundAxis(ang:Right(), -90)
-		ang:RotateAroundAxis(ang:Up(), 180)
-	else -- Place portals on any surface and angle
-		ang:Set(getSurfaceAngle(owner, tr.HitNormal))
-	end
-
-	portal:SetPos((tr.HitPos + mul * tr.HitNormal))	--20
-	portal:SetAngles(ang)
-	if CPPI then portal:CPPISetOwner(owner) end
-end
-
 function SWEP:ShootFX()
 	self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
 	self.Owner:SetAnimation(PLAYER_ATTACK1)
@@ -102,7 +52,7 @@ function SWEP:PrimaryAttack()
 		self.Portal:SetExitSize(Vector(1, 0.6, 1))
 	end
 
-	setPortalPlacement(self.Owner, self.Portal)
+	SeamlessPortals.SetPortalPlacement(self.Owner, self.Portal)
 	self:SetNextPrimaryFire(CurTime() + 0.1)
 end
 
@@ -117,7 +67,7 @@ function SWEP:SecondaryAttack()
 		self.Portal2:SetExitSize(Vector(1, 0.6, 1))
 	end
 
-	setPortalPlacement(self.Owner, self.Portal2)
+	SeamlessPortals.SetPortalPlacement(self.Owner, self.Portal2)
 	self:SetNextSecondaryFire(CurTime() + 0.1)
 end
 
@@ -132,9 +82,3 @@ function SWEP:Reload()
 	SafeRemoveEntity(self.Portal)
 	SafeRemoveEntity(self.Portal2)
 end
-
--- Index the global table
-SeamlessPortals = SeamlessPortals or {}
-SeamlessPortals.SeamlessCheck = seamlessCheck
-SeamlessPortals.GetSurfaceAngle = getSurfaceAngle
-SeamlessPortals.SetPortalPlacement = setPortalPlacement
