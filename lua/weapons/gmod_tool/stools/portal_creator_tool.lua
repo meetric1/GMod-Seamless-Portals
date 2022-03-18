@@ -172,10 +172,23 @@ elseif ( SERVER ) then
 	end
 
   function TOOL:Reload(tr)
+    local ply = self:GetOwner()
+    if ply:KeyDown(IN_SPEED) then
+      local arr, rdx = ents.GetAll()
+      for idx, ent in pairs(arr) do
+        if ent:GetClass() == "seamless_portal" and
+           ent:GetCreator() == ply
+        then -- We have removed atleast one entity
+          rdx = idx -- Store the index to proof
+          SafeRemoveEntity(ent) -- Remove
+        end
+      end -- Remove all the portals that are ours
+      if rdx then return true end
+    end
     local tre = tr.Entity
     if !tre or !tre:IsValid() then return end
     if tre:GetClass() != "seamless_portal" then return end
-    if tre:GetCreator() != self:GetOwner() then return end
+    if tre:GetCreator() != ply then return end
     SafeRemoveEntity(tre)
     return true
   end
