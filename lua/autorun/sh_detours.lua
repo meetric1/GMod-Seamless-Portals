@@ -4,7 +4,7 @@ AddCSLuaFile()
 -- bullet detour
 hook.Add("EntityFireBullets", "seamless_portal_detour_bullet", function(entity, data)
     if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
-	local tr = util.TraceLine({start = data.Src, endpos = data.Src + data.Dir * data.Distance, filter = entity, noDetour = true})
+	local tr = SeamlessPortals.TraceLine({start = data.Src, endpos = data.Src + data.Dir * data.Distance, filter = entity})
 	local hitPortal = tr.Entity
 	if !hitPortal:IsValid() then return end
 	if hitPortal:GetClass() == "seamless_portal" and hitPortal:ExitPortal() then
@@ -34,7 +34,7 @@ SeamlessPortals = SeamlessPortals or {}
 SeamlessPortals.TraceLine = SeamlessPortals.TraceLine or util.TraceLine
 local function editedTraceLine(data)
 	local tr = SeamlessPortals.TraceLine(data)
-	if tr.Entity:IsValid() and tr.Entity:GetClass() == "seamless_portal" then
+	if tr.Entity:IsValid() and tr.Entity:GetClass() == "seamless_portal" and tr.Entity:ExitPortal() and tr.Entity:ExitPortal():IsValid() then
 		local hitPortal = tr.Entity
 		if tr.HitNormal:Dot(hitPortal:GetUp()) > 0 then
 			data.start = SeamlessPortals.TransformPortal(hitPortal, hitPortal:ExitPortal(), data.start)

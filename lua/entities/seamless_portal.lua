@@ -56,8 +56,6 @@ end
 
 local function incrementPortal(ent)
 	if CLIENT then
-		local bounding1, bounding2 = ent:GetRenderBounds()
-		ent:SetRenderBounds(bounding1 * 1024, bounding2 * 1024)		-- for some reason this fixes a black flash when going backwards through a portal
 		if ent.UpdatePhysmesh then
 			ent:UpdatePhysmesh()
 		else
@@ -169,19 +167,18 @@ function ENT:Draw()
 		local margnPortal = SeamlessPortals.VarDrawDistance:GetFloat()^2
 		local behindPortal = (epos - spos):Dot(vup) < (-10 * exsize) -- true if behind the portal, false otherwise
 		local distPortal = epos:DistToSqr(spos) > (margnPortal * exsize) -- too far away (make this a convar later!)
-		local lookingPortal = EyeAngles():Forward():Dot(vup) >= (0.6 * exsize) -- looking away from the portal
+		--local lookingPortal = EyeAngles():Forward():Dot(vup) >= (0.6 * exsize) -- looking away from the portal
 
-		shouldRenderPortal = behindPortal or distPortal or lookingPortal
+		shouldRenderPortal = behindPortal or distPortal-- or lookingPortal
 	end
+
+	self.PORTAL_SHOULDRENDER = !shouldRenderPortal
 
 	render.SetMaterial(drawMat)
 
 	-- holy shit lol this if statment
 	if SeamlessPortals.Rendering or exitInvalid or shouldRenderPortal or halo.RenderedEntity() == self then
 		render.DrawBox(spos, self:LocalToWorldAngles(Angle(0, 90, 0)), Vector(-scaley, -scalex, -backAmt * 2), Vector(scaley, scalex, 0))
-		if !SeamlessPortals.Rendering then
-			self.PORTAL_SHOULDRENDER = !shouldRenderPortal
-		end
 		return
 	end
 
@@ -217,7 +214,7 @@ function ENT:Draw()
 	render.DrawScreenQuad()
 	render.SetStencilEnable(false)
 
-	self.PORTAL_SHOULDRENDER = true
+	--self.PORTAL_SHOULDRENDER = true
 end
 
 -- scale the physmesh

@@ -61,11 +61,10 @@ local function setPortalPlacement(owner, portal)
 	local aim = owner:GetAimVector()
 	local mul = 10 * portal:GetExitSize()[3]
 
-	local tr = util.TraceLine({
+	local tr = SeamlessPortals.TraceLine({
 		start = pos,
 		endpos = pos + aim * 99999,
 		filter = seamlessCheck,
-		noDetour = true,
 	})
 
 	-- Align portals on 45 degree surfaces
@@ -86,7 +85,7 @@ function SWEP:ShootFX()
 	self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
 	self.Owner:SetAnimation(PLAYER_ATTACK1)
 
-	if CLIENT then
+	if CLIENT and IsFirstTimePredicted() then
 		EmitSound("NPC_Vortigaunt.Shoot", self:GetPos(), self:EntIndex(), CHAN_AUTO, 0.25)	-- quieter for client
 	end
 end

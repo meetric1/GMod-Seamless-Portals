@@ -28,8 +28,7 @@ if CLIENT then
 	local COLOR_GREEN = Color(0, 255, 0, 50)
 	function TOOL:DrawHUD()
 		local traceTable = util.GetPlayerTrace(self:GetOwner())
-		traceTable.noDetour = true
-		local trace = util.TraceLine(traceTable)
+		local trace = SeamlessPortals.TraceLine(traceTable)
 		
 		if !trace.Entity or trace.Entity:GetClass() != "seamless_portal" then return end	-- dont draw the world or else u crash lol
 
@@ -46,8 +45,7 @@ end
 
 function TOOL:LeftClick(trace)
 	local traceTable = util.GetPlayerTrace(self:GetOwner())
-	traceTable.noDetour = true
-	local trace = util.TraceLine(traceTable)
+	local trace = SeamlessPortals.TraceLine(traceTable)
 
 	if !trace.Entity or trace.Entity:GetClass() != "seamless_portal" then return false end
 	if CPPI and SERVER then if !trace.Entity:CPPICanTool(self:GetOwner(), "remover") then return false end end
@@ -59,8 +57,7 @@ end
 
 function TOOL:RightClick(trace)
 	local traceTable = util.GetPlayerTrace(self:GetOwner())
-	traceTable.noDetour = true
-	local trace = util.TraceLine(traceTable)
+	local trace = SeamlessPortals.TraceLine(traceTable)
 
 	if !trace.Entity or trace.Entity:GetClass() != "seamless_portal" then return false end
 	if CPPI and SERVER then if !trace.Entity:CPPICanTool(self:GetOwner(), "remover") then return false end end

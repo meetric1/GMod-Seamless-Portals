@@ -10,7 +10,6 @@ local sky_materials = {}
 
 local portals = {}
 local oldHalo = 0
-local haloChanged = false
 local timesRendered = 0
 
 local skysize = 16384	--2^14, default zfar limit
@@ -40,6 +39,15 @@ timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
 		sky_materials[4] = Material(prefix .. "lf")
 		sky_materials[5] = Material(prefix .. "rt")
 		sky_materials[6] = Material(prefix .. "up")
+	end
+end)
+
+
+hook.Add("PostDrawOpaqueRenderables", "seamless_portals_draw_all", function()
+	for k, v in ipairs(portals) do
+		if v and v:IsValid() then
+			v:Draw()
+		end
 	end
 end)
 
@@ -118,6 +126,8 @@ local function drawsky(pos, ang, size, size_2, color, materials)
 end
 
 hook.Add("PostDrawTranslucentRenderables", "seamless_portal_skybox", function()
-	if !drawPlayerInView or util.IsSkyboxVisibleFromPoint(renderViewTable.origin) then return end
+	if !SeamlessPortals.Rendering or util.IsSkyboxVisibleFromPoint(renderViewTable.origin) then return end
+	render.OverrideDepthEnable(true, false)
 	drawsky(renderViewTable.origin, angle_zero, skysize, -skysize * 2, color_white, sky_materials)
+	render.OverrideDepthEnable(false , false)
 end)

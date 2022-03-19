@@ -77,7 +77,6 @@ local seamless_check = function(e) return !(e:GetClass() == "seamless_portal" or
 
 -- 'no collide' the player with the wall by shrinking the player's collision box
 local traceTable = {}
-traceTable.noDetour = true
 local function editPlayerCollision(mv, ply)
 	traceTable.start = ply:GetPos() + ply:GetVelocity() * 0.02
 	traceTable.endpos = traceTable.start
@@ -90,7 +89,7 @@ local function editPlayerCollision(mv, ply)
 	else
 		-- extrusion in case the player enables non-ground collision and manages to clip outside of the portal while they are falling (rare case)
 		if ply.PORTAL_STUCK_OFFSET != 0 then
-			local tr = util.TraceLine({start = ply:EyePos(), endpos = ply:EyePos() - Vector(0, 0, 64), filter = ply, noDetour = true})
+			local tr = SeamlessPortals.TraceLine({start = ply:EyePos(), endpos = ply:EyePos() - Vector(0, 0, 64), filter = ply})
 			if tr.Hit and tr.Entity:GetClass() != "seamless_portal" then
 				ply.PORTAL_STUCK_OFFSET = nil
 				mv:SetOrigin(tr.HitPos)
@@ -151,7 +150,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	traceTable.start = plyPos - mv:GetVelocity() * 0.02
 	traceTable.endpos = plyPos + mv:GetVelocity() * 0.02
 	traceTable.filter = ply
-	local tr = util.TraceLine(traceTable)
+	local tr = SeamlessPortals.TraceLine(traceTable)
 
 	editPlayerCollision(mv, ply)
 	
@@ -174,7 +173,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			traceTable.start = editedPos + (ply:EyePos() - ply:GetPos())
 			traceTable.endpos = editedPos - Vector(0, 0, 0.1)
 			traceTable.filter = seamless_check
-			local floor_trace = util.TraceLine(traceTable)
+			local floor_trace = SeamlessPortals.TraceLine(traceTable)
 
 			-- scaling part
 			local finalPos = editedPos
@@ -217,7 +216,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 				ply:SetEyeAngles(editedEyeAng)
 			end
 
-			ply.PORTAL_TELEPORTING = true 
+			ply.PORTAL_TELEPORTING = true
 			ply.PORTAL_STUCK_OFFSET = 0
 			ply:SetHull(Vector(-4, -4, 0), Vector(4, 4, 72))
 			ply:SetHullDuck(Vector(-4, -4, 0), Vector(4, 4, 36))

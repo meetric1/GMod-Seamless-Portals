@@ -39,11 +39,10 @@ hook.Add("Tick", "seamless_portal_teleport", function()
         local realPos = prop:GetPos()
 
         -- can it go through the portal?
-        local tr = util.TraceLine({
+        local tr = SeamlessPortals.TraceLine({
             start = realPos - prop:GetVelocity() * 0.02, 
             endpos = realPos + prop:GetVelocity() * 0.02, 
             filter = seamless_check,
-            noDetour = true,
         })
 
         if !tr.Hit then continue end
