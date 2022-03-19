@@ -109,12 +109,8 @@ elseif ( SERVER ) then
 		local pos, angles = self:GetPlacementPosition(trace)
 		if not pos then return false end
 		local ply = self:GetOwner()
-		local ent = ents.Create("seamless_portal")
-		ent:SetPos(pos)
-		ent:SetCreator(ply)
-		ent:SetAngles(angles + Angle(270, 0, 0))
-		ent:Spawn()
-		if CPPI then ent:CPPISetOwner(ply) end
+		local ent = SeamlessPortals.NewPortal(ply, pos, angles + Angle(270, 0, 0))
+
 		-- Yoink! smiley
 		local sizex = ply:GetInfoNum("seamless_portal_size_x", 1)
 		local sizey = ply:GetInfoNum("seamless_portal_size_y", 1)
@@ -179,7 +175,7 @@ elseif ( SERVER ) then
 				end
 			end -- Remove all the portals that are ours
 			if rdx then return true end
-      return false -- Do not soot effect
+			return false -- Do not soot effect
 		end
 		local tre = tr.Entity
 		if !tre or !tre:IsValid() then return end

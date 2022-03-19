@@ -45,9 +45,7 @@ function SWEP:PrimaryAttack()
 	if CLIENT then return end
 
 	if !self.Portal or !self.Portal:IsValid() then
-		self.Portal = ents.Create("seamless_portal")
-		self.Portal:SetCreator(self.Owner)
-		self.Portal:Spawn()
+		self.Portal = SeamlessPortals.NewPortal(self.Owner)
 		self.Portal:LinkPortal(self.Portal2)
 		self.Portal:SetExitSize(Vector(1, 0.6, 1))
 	end
@@ -61,9 +59,7 @@ function SWEP:SecondaryAttack()
 	if CLIENT then return end
 
 	if !self.Portal2 or !self.Portal2:IsValid() then
-		self.Portal2 = ents.Create("seamless_portal")
-		self.Portal2:SetCreator(self.Owner)
-		self.Portal2:Spawn()
+		self.Portal2 = SeamlessPortals.NewPortal(self.Owner)
 		self.Portal2:LinkPortal(self.Portal)
 		self.Portal2:SetExitSize(Vector(1, 0.6, 1))
 	end

@@ -41,6 +41,19 @@ function SeamlessPortals.IncrementPortal(ent)
 	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
 end
 
+function SeamlessPortals.NewPortal(ply, pos, ang)
+	local ent = ents.Create("seamless_portal")
+	if !ent or !ent:IsValid() then return nil end
+	local pos = pos or Vector()
+	local ang = ang or Angle()
+	ent:SetPos(pos)
+	ent:SetAngles(ang)
+	ent:SetCreator(ply)
+	ent:Spawn()
+	if CPPI then ent:CPPISetOwner(ply) end
+	return ent
+end
+
 function SeamlessPortals.DrawQuadEasier(ent, multiplier, offset, rotate)
 	local ex, ey = ent:GetForward(), ent:GetRight()
 	local ez, ep = ent:GetUp(), ent:GetPos()
