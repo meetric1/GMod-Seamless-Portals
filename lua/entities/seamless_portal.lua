@@ -17,7 +17,7 @@ ENT.Spawnable    = true
 local gbSvFlag = bit.bor(FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_PRINTABLEONLY, FCVAR_REPLICATED)
 -- create global table
 SeamlessPortals = SeamlessPortals or {}
-SeamlessPortals.VarDrawDistance = CreateConVar("seamless_portal_drwdist", 2500, gbSvFlag, "Ditance margin for portlas being drawn", 0, 5000)
+SeamlessPortals.VarDrawDistance = CreateConVar("seamless_portal_drwdist", 2500, gbSvFlag, "Distance margin for portals being drawn", 0, 5000)
 
 function ENT:SetupDataTables()
 	self:NetworkVar("Entity", 0, "PortalExit")
@@ -166,7 +166,7 @@ function ENT:Draw()
 	local exitInvalid = !self:ExitPortal() or !self:ExitPortal():IsValid()
 	local shouldRenderPortal = false
 	if !SeamlessPortals.Rendering and !exitInvalid then
-	  local margnPortal = SeamlessPortals.VarDrawDistance:GetFloat()^2
+		local margnPortal = SeamlessPortals.VarDrawDistance:GetFloat()^2
 		local behindPortal = (epos - spos):Dot(vup) < (-10 * exsize) -- true if behind the portal, false otherwise
 		local distPortal = epos:DistToSqr(spos) > (margnPortal * exsize) -- too far away (make this a convar later!)
 		local lookingPortal = EyeAngles():Forward():Dot(vup) >= (0.6 * exsize) -- looking away from the portal

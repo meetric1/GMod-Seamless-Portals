@@ -32,9 +32,10 @@ local function updateCalcViews(finalPos, finalVel, finalSize)
 		-- position ping compensation
 		if freezePly and ply:Ping() > 5 then
 			finalPos = finalPos + finalVel * FrameTime()
-            SeamlessPortals.drawPlayerInView = true
+            SeamlessPortals.DrawPlayerInView = true
 		else
 			finalPos = ply:EyePos()
+			SeamlessPortals.DrawPlayerInView = false
 		end
 
 		weaponAng = angle

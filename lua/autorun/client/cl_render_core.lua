@@ -11,7 +11,6 @@ local sky_materials = {}
 local portals = {}
 local oldHalo = 0
 local haloChanged = false
-local drawPlayerInView = false
 local timesRendered = 0
 
 local skysize = 16384	--2^14, default zfar limit
@@ -48,7 +47,6 @@ end)
 local physgun_halo = GetConVar("physgun_halo")
 hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov)
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 or SeamlessPortals.Rendering then return end
-	drawPlayerInView = true
 	SeamlessPortals.Rendering = true
 
 	-- black halo clipping plane fix (Thanks to homonovus)
@@ -85,14 +83,13 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov
 
 	physgun_halo:SetInt(oldHalo)
 
-	drawPlayerInView = false
 	SeamlessPortals.Rendering = false
 	timesRendered = 0
 end)
 
 -- draw the player in renderview
 hook.Add("ShouldDrawLocalPlayer", "seamless_portal_drawplayer", function()
-	if drawPlayerInView then 
+	if SeamlessPortals.Rendering and !SeamlessPortals.DrawPlayerInView then 
 		return true 
 	end
 end)

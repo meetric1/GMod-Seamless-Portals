@@ -29,59 +29,31 @@ local function effect(name, b, c, d)
 end
 util.Effect = effect
 
--- traceline detour (Thanks to WasabiThumb)
--- (REWRITE THIS!)
-local oldTraceLine = util.TraceLine
-local rLayer = 0
-local rLimit = 2
-local function traceLine(data)
-	local tr = oldTraceLine(data)
-	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return tr end
-	if data["noDetour"] then return tr end
-	if (rLayer >= rLimit) then return tr end
-	if tr.Fraction >= 1 then return tr end
-	if not tr.Hit then return tr end
-	local ent = tr.Entity
-	if not IsValid(ent) then return tr end
-	if ent:GetClass() ~= "seamless_portal" then return tr end
-	local exit = ent:ExitPortal()
-	if not IsValid(exit) then return tr end
-	local normal = tr.HitNormal
-	local targetNormal = ent:GetUp()
-	-- Taking advantage of the fact that portals are rectangular prisms
-	if normal:DistToSqr(targetNormal) >= 1 then return tr end
-	-- We hit the surface of a portal, time to perform a new trace
-	local totalDist = data["endpos"]:Distance(data["start"])
-	local remainingDist = totalDist * (1 - tr.Fraction)
-	local realAngle = (data["endpos"] - data["start"]):Angle()
-	local newStart, newAngle = SeamlessPortals.TransformPortal(ent, exit, tr.HitPos, realAngle)
-	local newEnd = newStart + newAngle:Forward() * remainingDist
-	local oldFilter = data["filter"]
-	local myLayer = rLayer + 1
-	local function newFilter(e)
-		if not IsValid(e) then return false end
-		if rLayer == myLayer then
-			if e:EntIndex() == exit:EntIndex() then return false end
-			if e:EntIndex() == ent:EntIndex() then return false end
+-- super simple traceline detour
+SeamlessPortals = SeamlessPortals or {}
+SeamlessPortals.TraceLine = SeamlessPortals.TraceLine or util.TraceLine
+local function editedTraceLine(data)
+	local tr = SeamlessPortals.TraceLine(data)
+	if tr.Entity:IsValid() and tr.Entity:GetClass() == "seamless_portal" then
+		local hitPortal = tr.Entity
+		if tr.HitNormal:Dot(hitPortal:GetUp()) > 0 then
+			data.start = SeamlessPortals.TransformPortal(hitPortal, hitPortal:ExitPortal(), data.start)
+			data.endpos = SeamlessPortals.TransformPortal(hitPortal, hitPortal:ExitPortal(), data.endpos)
+			data.filter = hitPortal:ExitPortal()
+			return SeamlessPortals.TraceLine(data)
 		end
-		if istable(oldFilter) then
-			if table.HasValue(oldFilter, e) then return false end
-		elseif isfunction(oldFilter) then
-			return oldFilter(e)
-		end
-		return true
 	end
-	data["start"] = newStart
-	data["endpos"] = newEnd
-	data["filter"] = newFilter
-	rLayer = rLayer + 1
-	local ret = util.TraceLine(data)
-	rLayer = rLayer - 1
-	return ret
+	return tr
 end
 
-util.TraceLine = traceLine
-
+-- use original traceline if there are no portals
+timer.Create("seamless_portals_traceline", 1, 0, function()
+	if SeamlessPortals.PortalIndex > 0 then
+		util.TraceLine = editedTraceLine
+	else
+		util.TraceLine = SeamlessPortals.TraceLine
+	end
+end)
 
 if SERVER then return end
 
