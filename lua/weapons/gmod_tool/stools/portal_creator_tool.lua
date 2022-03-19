@@ -110,7 +110,7 @@ elseif ( SERVER ) then
 		if not pos then return false end
 		local ply = self:GetOwner()
 		local ent = SeamlessPortals.NewPortal(ply, pos, angles + Angle(270, 0, 0))
-
+		if !ent or !ent:IsValid() then return end
 		-- Yoink! smiley
 		local sizex = ply:GetInfoNum("seamless_portal_size_x", 1)
 		local sizey = ply:GetInfoNum("seamless_portal_size_y", 1)
