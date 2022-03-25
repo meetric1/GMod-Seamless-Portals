@@ -42,15 +42,6 @@ timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
 	end
 end)
 
-
-hook.Add("PostDrawOpaqueRenderables", "seamless_portals_draw_all", function()
-	for k, v in ipairs(portals) do
-		if v and v:IsValid() then
-			v:Draw()
-		end
-	end
-end)
-
 -- update the rendertarget here since we cant do it in postdraw (cuz of infinite recursion)
 local physgun_halo = GetConVar("physgun_halo")
 hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov)

@@ -37,10 +37,17 @@ local function editedTraceLine(data)
 	if tr.Entity:IsValid() and tr.Entity:GetClass() == "seamless_portal" and tr.Entity:ExitPortal() and tr.Entity:ExitPortal():IsValid() then
 		local hitPortal = tr.Entity
 		if tr.HitNormal:Dot(hitPortal:GetUp()) > 0 then
-			data.start = SeamlessPortals.TransformPortal(hitPortal, hitPortal:ExitPortal(), data.start)
-			data.endpos = SeamlessPortals.TransformPortal(hitPortal, hitPortal:ExitPortal(), data.endpos)
-			data.filter = hitPortal:ExitPortal()
-			return SeamlessPortals.TraceLine(data)
+			local editeddata = table.Copy(data)
+			editeddata.start = SeamlessPortals.TransformPortal(hitPortal, hitPortal:ExitPortal(), tr.HitPos)
+			editeddata.endpos = SeamlessPortals.TransformPortal(hitPortal, hitPortal:ExitPortal(), data.endpos)
+			-- filter the exit portal from being hit by the ray
+			if IsEntity(data.filter) then
+				editeddata.filter = {data.filter, hitPortal:ExitPortal()}
+			else
+				editeddata.filter = data.filter or {}
+				table.insert(editeddata.filter, hitPortal:ExitPortal())
+			end
+			return SeamlessPortals.TraceLine(editeddata)
 		end
 	end
 	return tr

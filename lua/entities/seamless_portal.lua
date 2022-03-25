@@ -14,14 +14,15 @@ ENT.Instructions = ""
 ENT.Spawnable    = true
 
 
-local gbSvFlag = bit.bor(FCVAR_ARCHIVE, FCVAR_NOTIFY, FCVAR_PRINTABLEONLY, FCVAR_REPLICATED)
+local gbSvFlag = bit.bor(FCVAR_ARCHIVE)
 -- create global table
 SeamlessPortals = SeamlessPortals or {}
-SeamlessPortals.VarDrawDistance = CreateConVar("seamless_portal_drwdist", 2500, gbSvFlag, "Distance margin for portals being drawn", 0, 5000)
+SeamlessPortals.VarDrawDistance = CreateClientConVar("seamless_portal_drawdistance", "2500", true, false, "Sets the size of the portal along the Y axis", 0)
 
 function ENT:SetupDataTables()
 	self:NetworkVar("Entity", 0, "PortalExit")
 	self:NetworkVar("Vector", 0, "PortalScale")
+	self:NetworkVar("Bool", 0, "DisableBackface")
 end
 
 -- get exit portal
@@ -103,6 +104,7 @@ function ENT:SpawnFunction(ply, tr)
 
 	portal1:LinkPortal(portal2)
 	portal1.PORTAL_REMOVE_EXIT = true
+	portal2.PORTAL_REMOVE_EXIT = true
 
 	return portal1
 end
@@ -167,9 +169,8 @@ function ENT:Draw()
 		local margnPortal = SeamlessPortals.VarDrawDistance:GetFloat()^2
 		local behindPortal = (epos - spos):Dot(vup) < (-10 * exsize) -- true if behind the portal, false otherwise
 		local distPortal = epos:DistToSqr(spos) > (margnPortal * exsize) -- too far away (make this a convar later!)
-		--local lookingPortal = EyeAngles():Forward():Dot(vup) >= (0.6 * exsize) -- looking away from the portal
 
-		shouldRenderPortal = behindPortal or distPortal-- or lookingPortal
+		shouldRenderPortal = behindPortal or distPortal
 	end
 
 	self.PORTAL_SHOULDRENDER = !shouldRenderPortal
@@ -178,16 +179,20 @@ function ENT:Draw()
 
 	-- holy shit lol this if statment
 	if SeamlessPortals.Rendering or exitInvalid or shouldRenderPortal or halo.RenderedEntity() == self then
-		render.DrawBox(spos, self:LocalToWorldAngles(Angle(0, 90, 0)), Vector(-scaley, -scalex, -backAmt * 2), Vector(scaley, scalex, 0))
+		if !self:GetDisableBackface() then
+			render.DrawBox(spos, self:LocalToWorldAngles(Angle(0, 90, 0)), Vector(-scaley, -scalex, -backAmt * 2), Vector(scaley, scalex, 0))
+		end
 		return
 	end
 
 	-- outer quads
-	DrawQuadEasier(self, Vector( scaley, -scalex, -backAmt), backVec)
-	DrawQuadEasier(self, Vector( scaley, -scalex,  backAmt), backVec, 1)
-	DrawQuadEasier(self, Vector( scaley,  scalex, -backAmt), backVec, 1)
-	DrawQuadEasier(self, Vector( scaley, -scalex,  backAmt), backVec, 2)
-	DrawQuadEasier(self, Vector(-scaley, -scalex, -backAmt), backVec, 2)
+	if !self:GetDisableBackface() then
+		DrawQuadEasier(self, Vector( scaley, -scalex, -backAmt), backVec)
+		DrawQuadEasier(self, Vector( scaley, -scalex,  backAmt), backVec, 1)
+		DrawQuadEasier(self, Vector( scaley,  scalex, -backAmt), backVec, 1)
+		DrawQuadEasier(self, Vector( scaley, -scalex,  backAmt), backVec, 2)
+		DrawQuadEasier(self, Vector(-scaley, -scalex, -backAmt), backVec, 2)
+	end
 
 	-- do cursed stencil stuff
 	render.ClearStencil()
@@ -224,9 +229,9 @@ function ENT:UpdatePhysmesh()
 		local finalMesh = {}
 		for k, tri in pairs(self:GetPhysicsObject():GetMeshConvexes()[1]) do
 			tri.pos = tri.pos * self:GetExitSize()
-			table.insert(finalMesh, tri)
+			table.insert(finalMesh, tri.pos)
 		end
-		self:PhysicsFromMesh(finalMesh)
+		self:PhysicsInitConvex(finalMesh)
 		self:EnableCustomCollisions(true)
 		self:GetPhysicsObject():EnableMotion(false)
 		self:GetPhysicsObject():SetMaterial("glass")
