@@ -155,8 +155,8 @@ end
 
 local drawMat = Material("models/props_combine/combine_interface_disp")
 function ENT:Draw()
-	local exsize = self:GetExitSize()[3]
-	local backAmt = 3 * exsize
+	local exsize = self:GetExitSize()
+	local backAmt = 3 * exsize[3]
 	local backVec = Vector(0, 0, -backAmt)
 	local epos, spos, vup = EyePos(), self:GetPos(), self:GetUp()
 	local scalex = (self:OBBMaxs().x - self:OBBMins().x) * 0.5 - 0.1
@@ -167,8 +167,8 @@ function ENT:Draw()
 	local shouldRenderPortal = false
 	if !SeamlessPortals.Rendering and !exitInvalid then
 		local margnPortal = SeamlessPortals.VarDrawDistance:GetFloat()^2
-		local behindPortal = (epos - spos):Dot(vup) < (-10 * exsize) -- true if behind the portal, false otherwise
-		local distPortal = epos:DistToSqr(spos) > (margnPortal * exsize) -- too far away (make this a convar later!)
+		local behindPortal = (epos - spos):Dot(vup) < (-10 * exsize[1]) -- true if behind the portal, false otherwise
+		local distPortal = epos:DistToSqr(spos) > (margnPortal * exsize[1]) -- too far away
 
 		shouldRenderPortal = behindPortal or distPortal
 	end
@@ -236,6 +236,11 @@ function ENT:UpdatePhysmesh()
 		self:GetPhysicsObject():EnableMotion(false)
 		self:GetPhysicsObject():SetMaterial("glass")
 		self:GetPhysicsObject():SetMass(250)
+
+		if CLIENT then 
+			local mins, maxs = self:GetModelBounds()
+			self:SetRenderBounds(mins * self:GetExitSize(), maxs * self:GetExitSize())
+		end
 	else
 		self:PhysicsDestroy()
 		self:EnableCustomCollisions(false)

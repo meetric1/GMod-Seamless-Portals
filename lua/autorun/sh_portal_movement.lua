@@ -169,8 +169,10 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			local max = math.Max(mv:GetVelocity():Length(), hitPortal:ExitPortal():GetUp():Dot(-physenv.GetGravity() / 3))
 
 			--ground can fluxuate depending on how the user places the portals, so we need to make sure we're not going to teleport into the ground
-			local editedPos = editedPos - (ply:EyePos() - ply:GetPos())
-			traceTable.start = editedPos + (ply:EyePos() - ply:GetPos())
+			local eyeHeight = (ply:EyePos() - ply:GetPos())
+
+			local editedPos = editedPos - eyeHeight
+			traceTable.start = editedPos + eyeHeight
 			traceTable.endpos = editedPos - Vector(0, 0, 0.1)
 			traceTable.filter = seamless_check
 			local floor_trace = SeamlessPortals.TraceLine(traceTable)
@@ -190,7 +192,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			if ply.SCALE_MULTIPLIER then
 				if ply.SCALE_MULTIPLIER * exitSize != ply.SCALE_MULTIPLIER then
 					ply.SCALE_MULTIPLIER = math.Clamp(ply.SCALE_MULTIPLIER * exitSize, 0.01, 10)
-					finalPos = finalPos + ((ply:EyePos() - ply:GetPos()) - (ply:EyePos() - ply:GetPos()) * exitSize)
+					finalPos = finalPos + (eyeHeight - eyeHeight * exitSize)
 					updateScale(ply, ply.SCALE_MULTIPLIER)
 				end
 			end
@@ -217,9 +219,11 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			end
 
 			ply.PORTAL_TELEPORTING = true
-			ply.PORTAL_STUCK_OFFSET = 0
-			ply:SetHull(Vector(-4, -4, 0), Vector(4, 4, 72))
-			ply:SetHullDuck(Vector(-4, -4, 0), Vector(4, 4, 36))
+
+			-- if they come out of a ground portal make the player hitbox tiny
+			ply.PORTAL_STUCK_OFFSET = hitPortal:ExitPortal():GetUp():Dot(Vector(0, 0, 1)) > 0.999 and 72 or 0
+			ply:SetHull(Vector(-4, -4, ply.PORTAL_STUCK_OFFSET), Vector(4, 4, 72 + ply.PORTAL_STUCK_OFFSET * 0.5))
+			ply:SetHullDuck(Vector(-4, -4, ply.PORTAL_STUCK_OFFSET), Vector(4, 4, 36 + ply.PORTAL_STUCK_OFFSET * 0.5))
 
 			timer.Simple(0, function()
 				ply.PORTAL_TELEPORTING = false

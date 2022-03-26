@@ -58,7 +58,7 @@ timer.Create("seamless_portals_traceline", 1, 0, function()
 	if SeamlessPortals.PortalIndex > 0 then
 		util.TraceLine = editedTraceLine
 	else
-		util.TraceLine = SeamlessPortals.TraceLine
+		util.TraceLine = SeamlessPortals.TraceLine	-- THE ORIGINAL TRACELINE
 	end
 end)
 
@@ -70,7 +70,7 @@ hook.Add("EntityEmitSound", "seamless_portals_detour_sound", function(t)
 	for k, v in ipairs(ents.FindByClass("seamless_portal")) do
         if !v.ExitPortal or !v:ExitPortal() or !v:ExitPortal():IsValid() then continue end
         if !t.Pos or !t.Entity or t.Entity == NULL then continue end
-        if t.Pos:DistToSqr(v:GetPos()) < 50000 and (t.Pos - v:GetPos()):Dot(v:GetUp()) > 0 then
+        if t.Pos:DistToSqr(v:GetPos()) < 50000 * v:ExitPortal():GetExitSize()[1] and (t.Pos - v:GetPos()):Dot(v:GetUp()) > 0 then
             local newPos, _ = SeamlessPortals.TransformPortal(v, v:ExitPortal(), t.Pos, Angle())
             local oldPos = t.Entity:GetPos() or Vector()
             t.Entity:SetPos(newPos)

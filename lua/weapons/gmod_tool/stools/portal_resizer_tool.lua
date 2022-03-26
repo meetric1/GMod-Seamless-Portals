@@ -7,9 +7,11 @@ if CLIENT then
 	
 	TOOL.ConvarX = CreateClientConVar("seamless_portal_size_x", "1", false, true, "Sets the size of the portal along the X axis", 0.01, 10)
 	TOOL.ConvarY = CreateClientConVar("seamless_portal_size_y", "1", false, true, "Sets the size of the portal along the Y axis", 0.01, 10)
+	TOOL.ConvarZ = CreateClientConVar("seamless_portal_size_z", "1", false, true, "Sets the size of the portal along the Z axis", 0.01, 10)
 
 	TOOL.DisplayX = TOOL.ConvarX:GetInt()
 	TOOL.DisplayY = TOOL.ConvarY:GetInt()
+	TOOL.DisplayZ = TOOL.ConvarY:GetInt()
 
 	TOOL.Information = {
 		{name = "left"},
@@ -23,6 +25,7 @@ if CLIENT then
 		})
 		panel:NumSlider("Portal Size X", "seamless_portal_size_x", 0.05, 10, 2)
 		panel:NumSlider("Portal Size Y", "seamless_portal_size_y", 0.05, 10, 2)
+		panel:NumSlider("Portal Size Z", "seamless_portal_size_z", 0.05, 10, 2)
 	end
 
 	local COLOR_GREEN = Color(0, 255, 0, 50)
@@ -51,7 +54,8 @@ function TOOL:LeftClick(trace)
 	if CPPI and SERVER then if !trace.Entity:CPPICanTool(self:GetOwner(), "remover") then return false end end
 	local sizex = self:GetOwner():GetInfoNum("seamless_portal_size_x", 1)
 	local sizey = self:GetOwner():GetInfoNum("seamless_portal_size_y", 1)
-	trace.Entity:SetExitSize(Vector(sizex, sizey, sizex))
+	local sizez = self:GetOwner():GetInfoNum("seamless_portal_size_z", 1)
+	trace.Entity:SetExitSize(Vector(sizex, sizey, sizez))
 	return true
 end
 
