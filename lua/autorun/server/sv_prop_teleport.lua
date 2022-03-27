@@ -3,7 +3,7 @@
 
 local allEnts
 local portals
-timer.Create("portals_ent_update", 1, 0, function()
+timer.Create("portals_ent_update", 0.5, 0, function()
     portals = ents.FindByClass("seamless_portal")
     allEnts = ents.GetAll()
 

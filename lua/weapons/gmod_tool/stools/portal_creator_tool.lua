@@ -162,10 +162,10 @@ elseif ( SERVER ) then
 			self:SetStage(2)
 		else
 			local linkTarget = self:GetLinkTarget()
-			if (ent:EntIndex() == linkTarget:EntIndex()) then
+			--[[if (ent:EntIndex() == linkTarget:EntIndex()) then
 				self:SetStage(1)
 				return false
-			end
+			end]]
 			-- LinkPortal already contains an IsValid check
 			ent:LinkPortal(linkTarget)
 			self:SetStage(1)

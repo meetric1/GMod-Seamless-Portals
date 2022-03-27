@@ -44,8 +44,11 @@ local function editedTraceLine(data)
 			if IsEntity(data.filter) then
 				editeddata.filter = {data.filter, hitPortal:ExitPortal()}
 			else
-				editeddata.filter = data.filter or {}
-				table.insert(editeddata.filter, hitPortal:ExitPortal())
+				if istable(editeddata.filter) then
+					table.insert(editeddata.filter, hitPortal:ExitPortal())
+				else
+					editeddata.filter = hitPortal:ExitPortal()
+				end
 			end
 			return SeamlessPortals.TraceLine(editeddata)
 		end

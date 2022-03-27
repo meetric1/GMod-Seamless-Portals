@@ -103,6 +103,7 @@ function ENT:SpawnFunction(ply, tr)
 	if CPPI then portal2:CPPISetOwner(ply) end
 
 	portal1:LinkPortal(portal2)
+	portal2:LinkPortal(portal1)
 	portal1.PORTAL_REMOVE_EXIT = true
 	portal2.PORTAL_REMOVE_EXIT = true
 
@@ -216,10 +217,15 @@ function ENT:Draw()
 	-- draw the actual portal texture
 	render.SetMaterial(SeamlessPortals.PortalMaterials[self.PORTAL_RT_NUMBER or 1])
 	render.SetStencilCompareFunction(STENCIL_EQUAL)
-	render.DrawScreenQuad()
-	render.SetStencilEnable(false)
 
-	--self.PORTAL_SHOULDRENDER = true
+	-- draw quad reversed if the portal is linked to itself
+	if self.ExitPortal and self:ExitPortal() == self then
+		render.DrawScreenQuadEx(ScrW(), 0, -ScrW(), ScrH())
+	else
+		render.DrawScreenQuad()
+	end
+
+	render.SetStencilEnable(false)
 end
 
 -- scale the physmesh
@@ -248,7 +254,11 @@ function ENT:UpdatePhysmesh()
 	end
 end
 
-SeamlessPortals.PortalIndex = #ents.FindByClass("seamless_portal") -- for hotreloading
+function ENT:UpdateTransmitState()
+	return TRANSMIT_ALWAYS
+end
+
+SeamlessPortals.PortalIndex = #ents.FindByClass("seamless_portal")
 SeamlessPortals.MaxRTs = 6
 SeamlessPortals.TransformPortal = function(a, b, pos, ang)
 	if !a or !b or !b:IsValid() or !a:IsValid() then return Vector(), Angle() end
@@ -262,9 +272,14 @@ SeamlessPortals.TransformPortal = function(a, b, pos, ang)
 	end
 
 	if ang then
-		local clonedAngle = Angle(ang[1], ang[2], ang[3]) -- rotatearoundaxis modifies original variable
-		clonedAngle:RotateAroundAxis(a:GetForward(), 180)
-		editedAng = b:LocalToWorldAngles(a:WorldToLocalAngles(clonedAngle))
+		local localAng = a:WorldToLocalAngles(ang)
+		editedAng = b:LocalToWorldAngles(Angle(-localAng[1], -localAng[2], localAng[3] + 180))
+
+		if a == b then
+			if pos then editedPos = a:LocalToWorld(a:WorldToLocal(pos) * Vector(1, 1, -1)) end
+			local localAng = a:WorldToLocalAngles(ang)
+			editedAng = a:LocalToWorldAngles(Angle(-localAng[1], localAng[2], -localAng[3] + 180))
+		end
 	end
 
 	return editedPos, editedAng
@@ -274,7 +289,7 @@ end
 if CLIENT then
 	function ENT:Think()
 		local phys = self:GetPhysicsObject()
-		if phys:IsValid() and phys:GetPos() != self:GetPos() then
+		if phys:IsValid() then
 			phys:EnableMotion(false)
 			phys:SetMaterial("glass")
 			phys:SetPos(self:GetPos())
@@ -300,4 +315,54 @@ if CLIENT then
 			})
 		end
 	end)
+
+	--funny flipped scene
+	local rendering = false
+	local cursedRT = GetRenderTarget("Portal_Flipscene", ScrW(), ScrH())
+	local cursedMat = CreateMaterial("Portal_Flipscene", "GMODScreenspace", {
+		["$basetexture"] = cursedRT:GetName(),
+	})
+
+	function SeamlessPortals.ToggleMirror(enable)
+		if enable then
+			hook.Add("PreRender", "portal_flip_scene", function()
+				rendering = true
+				render.PushRenderTarget(cursedRT)
+				render.RenderView({drawviewmodel = false})
+				render.PopRenderTarget()
+				rendering = false
+			end)
+
+			hook.Add("PostDrawTranslucentRenderables", "portal_flip_scene", function(_, sky, sky3d)
+				if rendering then return end
+				render.SetMaterial(cursedMat)
+				render.DrawScreenQuadEx(ScrW(), 0, -ScrW(), ScrH())
+
+				if LocalPlayer():Health() <= 0 then
+					SeamlessPortals.ToggleMirror(false)
+				end
+			end)
+
+			-- invert mouse x
+			hook.Add("InputMouseApply", "portal_flip_scene", function(cmd, x, y, ang)
+				if LocalPlayer():WaterLevel() < 3 then
+					cmd:SetViewAngles(ang + Angle(0, x / 22.5, 0))
+				end
+			end)
+
+			-- invert movement x
+			hook.Add("CreateMove", "portal_flip_scene", function(cmd)
+				if LocalPlayer():WaterLevel() < 3 then
+					cmd:SetSideMove(-cmd:GetSideMove())
+				end
+			end)
+		else
+			hook.Remove("PreRender", "portal_flip_scene")
+			hook.Remove("PostDrawTranslucentRenderables", "portal_flip_scene")
+			hook.Remove("InputMouseApply", "portal_flip_scene")
+			hook.Remove("CreateMove", "portal_flip_scene")
+		end
+	end
+
+	SeamlessPortals.ToggleMirror(false)
 end
