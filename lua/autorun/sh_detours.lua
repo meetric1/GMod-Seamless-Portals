@@ -22,10 +22,11 @@ hook.Add("EntityFireBullets", "seamless_portal_detour_bullet", function(entity, 
 end)
 
 -- effect detour (Thanks to WasabiThumb)
+local tPhys = {["phys_freeze"] = true, ["phys_unfreeze"] = true}
 local oldUtilEffect = util.Effect
 local function effect(name, b, c, d)
-	 if SeamlessPortals.PortalIndex > 0 and (name == "phys_freeze" or name == "phys_unfreeze") then return end
-	 oldUtilEffect(name, b, c, d)
+	if SeamlessPortals.PortalIndex > 0 and tPhys[name] then return end
+	oldUtilEffect(name, b, c, d)
 end
 util.Effect = effect
 
@@ -41,21 +42,23 @@ local function editedTraceLine(data)
 	local exEnt = trEnt:ExitPortal()
 	if !exEnt or !exEnt:IsValid() then return tr end
 	if tr.HitNormal:Dot(trEnt:GetUp()) > 0 then
-	local editeddata = table.Copy(data)
-	editeddata.start = SeamlessPortals.TransformPortal(trEnt, exEnt, tr.HitPos)
-	editeddata.endpos = SeamlessPortals.TransformPortal(trEnt, exEnt, data.endpos)
-	-- filter the exit portal from being hit by the ray
-	if IsEntity(data.filter) then
-		editeddata.filter = {data.filter, exEnt}
-	else
-	  if istable(editeddata.filter) then
-			table.insert(editeddata.filter, exEnt)
-	  else
-			editeddata.filter = exEnt
-	  end
+		local editeddata = table.Copy(data)
+		editeddata.start = SeamlessPortals.TransformPortal(trEnt, exEnt, tr.HitPos)
+		editeddata.endpos = SeamlessPortals.TransformPortal(trEnt, exEnt, data.endpos)
+		-- filter the exit portal from being hit by the ray
+		if IsEntity(data.filter) then
+			editeddata.filter = {data.filter, exEnt}
+		else
+			if istable(editeddata.filter) then
+				table.insert(editeddata.filter, exEnt)
+			else
+				editeddata.filter = exEnt
+			end
+		end
+			return SeamlessPortals.TraceLine(editeddata)
 	end
-		return SeamlessPortals.TraceLine(editeddata)
-	end
+
+	return tr
 end
 
 -- use original traceline if there are no portals
