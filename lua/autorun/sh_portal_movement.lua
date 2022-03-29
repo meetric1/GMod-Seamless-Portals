@@ -61,7 +61,12 @@ if SERVER then
     util.AddNetworkString("PORTALS_FREEZE")
 else
     net.Receive("PORTALS_FREEZE", function()
-		if game.SinglePlayer() then updateCalcViews(Vector(), Vector()) end 	--singleplayer lerp fix
+		if game.SinglePlayer() then 
+			updateCalcViews(Vector(), Vector())
+			if net.ReadBool() then
+				SeamlessPortals.ToggleMirror(!SeamlessPortals.ToggleMirror())
+			end
+		end 	--singleplayer fixes (cuz stupid move hook isnt clientside in singleplayer)
         freezePly = false
     end)
 end
@@ -156,22 +161,18 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			freezePly = true
 
             -- wow look at all of this code just to teleport the player
-			local editedPos, editedAng = SeamlessPortals.TransformPortal(hitPortal, hitPortal:ExitPortal(), tr.HitPos, ply:EyeAngles())
-			local _, editedVelocity = SeamlessPortals.TransformPortal(hitPortal, hitPortal:ExitPortal(), nil, mv:GetVelocity():Angle())
-			--newEyeAngle:RotateAroundAxis(hitPortal:GetForward(), 180)
-			--local editedEyeAng = hitPortal:ExitPortal():LocalToWorldAngles(hitPortal:WorldToLocalAngles(newEyeAngle))
-			local max = math.Max(mv:GetVelocity():Length(), hitPortal:ExitPortal():GetUp():Dot(-physenv.GetGravity() / 3))
+			local exitPortal = hitPortal:ExitPortal()
+			local editedPos, editedAng = SeamlessPortals.TransformPortal(hitPortal, exitPortal, tr.HitPos, ply:EyeAngles())
+			local _, editedVelocity = SeamlessPortals.TransformPortal(hitPortal, exitPortal, nil, mv:GetVelocity():Angle())
+			local max = math.Max(mv:GetVelocity():Length(), exitPortal:GetUp():Dot(-physenv.GetGravity() / 3))
 
 			--ground can fluxuate depending on how the user places the portals, so we need to make sure we're not going to teleport into the ground
 			local eyeHeight = (ply:EyePos() - ply:GetPos())
-
 			local editedPos = editedPos - eyeHeight
 			traceTable.start = editedPos + eyeHeight
 			traceTable.endpos = editedPos - Vector(0, 0, 0.1)
 			traceTable.filter = seamless_check
 			local floor_trace = SeamlessPortals.TraceLine(traceTable)
-
-			-- scaling part
 			local finalPos = editedPos
 
 			-- dont do extrusion if the player is noclipping
@@ -182,7 +183,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 				offset = editedPos
 			end
 
-			local exitSize = (hitPortal:ExitPortal():GetExitSize()[1] / hitPortal:GetExitSize()[1])
+			local exitSize = (exitPortal:GetExitSize()[1] / hitPortal:GetExitSize()[1])
 			if ply.SCALE_MULTIPLIER then
 				if ply.SCALE_MULTIPLIER * exitSize != ply.SCALE_MULTIPLIER then
 					ply.SCALE_MULTIPLIER = math.Clamp(ply.SCALE_MULTIPLIER * exitSize, 0.01, 10)
@@ -196,31 +197,32 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			-- apply final velocity
 			mv:SetVelocity(editedVelocity:Forward() * max * exitSize)
 
-			-- lerp fix for singleplayer
-			if game.SinglePlayer() then
-				ply:SetPos(finalPos)
-				ply:SetEyeAngles(editedAng)
-			end
-
-			-- send the client the new position
+			-- send the client that the new position is valid
 			if SERVER then 
+				-- lerp fix for singleplayer
+				if game.SinglePlayer() then
+					ply:SetPos(finalPos)
+					ply:SetEyeAngles(editedAng)
+				end
+				
 				mv:SetOrigin(finalPos)
 				net.Start("PORTALS_FREEZE")
+				net.WriteBool(hitPortal == exitPortal)
 				net.Send(ply)
 			else
 				updateCalcViews(finalPos + (ply:EyePos() - ply:GetPos()), editedVelocity:Forward() * max * exitSize, (ply.SCALE_MULTIPLIER or 1) * exitSize)	--fix viewmodel lerping for a tiny bit
 				ply:SetEyeAngles(editedAng)
 				ply:SetPos(finalPos)
 
-				if hitPortal:ExitPortal() == hitPortal then
-					SeamlessPortals.ToggleMirror(true)
+				-- mirror dimension
+				if exitPortal == hitPortal then
+					SeamlessPortals.ToggleMirror(!SeamlessPortals.ToggleMirror())
 				end
 			end
 
-			ply.PORTAL_TELEPORTING = true
-
 			-- if they come out of a ground portal make the player hitbox tiny
-			ply.PORTAL_STUCK_OFFSET = hitPortal:ExitPortal():GetUp():Dot(Vector(0, 0, 1)) > 0.999 and 72 or 0
+			ply.PORTAL_TELEPORTING = true
+			ply.PORTAL_STUCK_OFFSET = exitPortal:GetUp():Dot(Vector(0, 0, 1)) > 0.999 and 72 or 0
 			ply:SetHull(Vector(-4, -4, ply.PORTAL_STUCK_OFFSET), Vector(4, 4, 72 + ply.PORTAL_STUCK_OFFSET * 0.5))
 			ply:SetHullDuck(Vector(-4, -4, ply.PORTAL_STUCK_OFFSET), Vector(4, 4, 36 + ply.PORTAL_STUCK_OFFSET * 0.5))
 

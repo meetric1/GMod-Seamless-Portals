@@ -15,6 +15,7 @@ hook.Add("EntityFireBullets", "seamless_portal_detour_bullet", function(entity, 
 			data.IgnoreEntity = hitPortal:ExitPortal()
 			data.Src = newPos
 			data.Dir = newAng:Forward()
+			data.Tracer = 0
 
 			return true
 		end
@@ -41,7 +42,7 @@ local function editedTraceLine(data)
 			editeddata.start = SeamlessPortals.TransformPortal(hitPortal, hitPortal:ExitPortal(), tr.HitPos)
 			editeddata.endpos = SeamlessPortals.TransformPortal(hitPortal, hitPortal:ExitPortal(), data.endpos)
 			-- filter the exit portal from being hit by the ray
-			if IsEntity(data.filter) then
+			if IsEntity(data.filter) and data.filter:GetClass() != "player" then
 				editeddata.filter = {data.filter, hitPortal:ExitPortal()}
 			else
 				if istable(editeddata.filter) then

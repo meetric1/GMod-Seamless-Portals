@@ -258,7 +258,7 @@ function ENT:UpdateTransmitState()
 	return TRANSMIT_ALWAYS
 end
 
-SeamlessPortals.PortalIndex = #ents.FindByClass("seamless_portal")
+SeamlessPortals.PortalIndex = 0 --#ents.FindByClass("seamless_portal")
 SeamlessPortals.MaxRTs = 6
 SeamlessPortals.TransformPortal = function(a, b, pos, ang)
 	if !a or !b or !b:IsValid() or !a:IsValid() then return Vector(), Angle() end
@@ -323,6 +323,7 @@ if CLIENT then
 		["$basetexture"] = cursedRT:GetName(),
 	})
 
+	local mirrored = false
 	function SeamlessPortals.ToggleMirror(enable)
 		if enable then
 			hook.Add("PreRender", "portal_flip_scene", function()
@@ -334,7 +335,7 @@ if CLIENT then
 			end)
 
 			hook.Add("PostDrawTranslucentRenderables", "portal_flip_scene", function(_, sky, sky3d)
-				if rendering then return end
+				if rendering or SeamlessPortals.Rendering then return end
 				render.SetMaterial(cursedMat)
 				render.DrawScreenQuadEx(ScrW(), 0, -ScrW(), ScrH())
 
@@ -356,12 +357,18 @@ if CLIENT then
 					cmd:SetSideMove(-cmd:GetSideMove())
 				end
 			end)
-		else
+
+			mirrored = true
+		elseif enable == false then
 			hook.Remove("PreRender", "portal_flip_scene")
 			hook.Remove("PostDrawTranslucentRenderables", "portal_flip_scene")
 			hook.Remove("InputMouseApply", "portal_flip_scene")
 			hook.Remove("CreateMove", "portal_flip_scene")
+
+			mirrored = false
 		end
+
+		return mirrored
 	end
 
 	SeamlessPortals.ToggleMirror(false)
