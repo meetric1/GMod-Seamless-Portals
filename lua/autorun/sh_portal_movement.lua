@@ -234,3 +234,55 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 		end
 	end
 end)
+
+local searchPortalsRadius = 2000 -- Longer seek distances make reentry smoother
+local angleRange = math.pi / 6 -- 60º
+hook.Add("Move", "seamless_portal_funneling", function(ply, move)
+	if not SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
+
+	local velVec = move:GetVelocity()
+	local minVelSqr = ply:GetRunSpeed() * ply:GetRunSpeed()
+	local velSqr = velVec:LengthSqr()
+
+	if velSqr > minVelSqr then
+		-- Get the nearest portal with the acceptable entry angle
+		-- Both the player distance and velocity vectors must have their angles in the acceptable entry range
+		local foundPortals = ents.FindInSphere(ply:GetPos(), searchPortalsRadius)
+		local selectedPortal
+		local lastDistSqr = 1/0 -- infinite
+		for _, portal in ipairs(foundPortals) do
+			if portal:GetClass() == "seamless_portal" then
+				local portalDownVec = -portal:GetUp()
+				local distVec = portal:GetPos() - ply:GetPos()
+				local angleBetweenDistAndPortalDownVecs = math.acos(
+					(distVec.x * portalDownVec.x + distVec.y * portalDownVec.y + distVec.z * portalDownVec.z) / (
+						math.sqrt(distVec:LengthSqr()) --* math.sqrt(portalDownVec:LengthSqr()) -- Ignored this since it's usually 1
+					)
+				)
+				if angleBetweenDistAndPortalDownVecs < angleRange then
+					local angleBetweenVelAndPortalDownVecs = math.acos(
+						(velVec.x * portalDownVec.x + velVec.y * portalDownVec.y + velVec.z * portalDownVec.z) / (
+							math.sqrt(velSqr) --* math.sqrt(portalDownVec:LengthSqr())
+						)
+					)
+					local currentDistSqr = distVec:LengthSqr()
+
+					if angleBetweenVelAndPortalDownVecs < angleRange and currentDistSqr < lastDistSqr then
+						selectedPortal = portal
+						lastDistSqr = currentDistSqr
+					end
+				end
+			end
+		end
+
+		if selectedPortal then
+			-- Slowly fix the player's trajectory making it freer if he tries to move sideways
+			local vel = math.sqrt(velSqr)
+			local velCorretionVec = (selectedPortal:GetPos() - (ply:GetPos() - velVec * 0.1)):GetNormalized() * vel
+			local changeProportion = move:GetSideSpeed() == 0 and 0.05 or 0.01
+			local newVelVec = velVec * (1 - changeProportion) + velCorretionVec * changeProportion
+
+			move:SetVelocity(newVelVec)
+		end
+	end
+end)
