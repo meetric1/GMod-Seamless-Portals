@@ -20,39 +20,30 @@ SeamlessPortals = SeamlessPortals or {}
 SeamlessPortals.VarDrawDistance = CreateClientConVar("seamless_portal_drawdistance", "2500", true, false, "Sets the size of the portal along the Y axis", 0)
 
 function ENT:SetupDataTables()
-	self:NetworkVar("Entity", 0, "PortalExit")
-	self:NetworkVar("Vector", 0, "PortalScale")
+	self:NetworkVar("Entity", 0, "ExitPortal")
+	self:NetworkVar("Vector", 0, "PortalSize")
 	self:NetworkVar("Bool", 0, "DisableBackface")
-end
-
--- get exit portal
-function ENT:ExitPortal()
-	if CLIENT then
-		return self:GetPortalExit()
-	end
-	return self.PORTAL_EXIT
 end
 
 function ENT:LinkPortal(ent)
 	if !ent or !ent:IsValid() then return end
-	self.PORTAL_EXIT = ent
-	ent.PORTAL_EXIT = self
-	self:SetPortalExit(ent)
-	ent:SetPortalExit(self)
+	self:SetExitPortal(ent)
+	ent:SetExitPortal(self)
 end
 
 -- custom size for portal
 function ENT:SetExitSize(n)
-	self.PORTAL_SCALE = n
-	self:SetPortalScale(n)
+	self:SetPortalSize(n)
 	self:UpdatePhysmesh(n)
 end
 
+-- (for older api compatibility)
+function ENT:ExitPortal()
+	return self:GetExitPortal()
+end
+
 function ENT:GetExitSize()
-	if CLIENT then
-		return self:GetPortalScale()
-	end
-	return self.PORTAL_SCALE
+	return self:GetPortalSize()
 end
 
 local function incrementPortal(ent)
@@ -113,7 +104,7 @@ end
 function ENT:OnRemove()
 	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex - 1
 	if SERVER and self.PORTAL_REMOVE_EXIT then
-		SafeRemoveEntity(self:ExitPortal())
+		SafeRemoveEntity(self:GetExitPortal())
 	end
 end
 
@@ -158,13 +149,13 @@ local drawMat = Material("models/props_combine/combine_interface_disp")
 function ENT:Draw()
 	local exsize = self:GetExitSize()
 	local backAmt = 3 * exsize[3]
-	local backVec = Vector(0, 0, -backAmt)
+	local backVec = Vector(0, 0, -backAmt + 0.5)
 	local epos, spos, vup = EyePos(), self:GetPos(), self:GetUp()
 	local scalex = (self:OBBMaxs().x - self:OBBMins().x) * 0.5 - 0.1
 	local scaley = (self:OBBMaxs().y - self:OBBMins().y) * 0.5 - 0.1
 
 	-- optimization checks
-	local exitInvalid = !self:ExitPortal() or !self:ExitPortal():IsValid()
+	local exitInvalid = !self:GetExitPortal() or !self:GetExitPortal():IsValid()
 	local shouldRenderPortal = false
 	if !SeamlessPortals.Rendering and !exitInvalid then
 		local margnPortal = SeamlessPortals.VarDrawDistance:GetFloat()^2
@@ -219,7 +210,7 @@ function ENT:Draw()
 	render.SetStencilCompareFunction(STENCIL_EQUAL)
 
 	-- draw quad reversed if the portal is linked to itself
-	if self.ExitPortal and self:ExitPortal() == self then
+	if self.ExitPortal and self:GetExitPortal() == self then
 		render.DrawScreenQuadEx(ScrW(), 0, -ScrW(), ScrH())
 	else
 		render.DrawScreenQuad()
@@ -234,8 +225,9 @@ function ENT:UpdatePhysmesh()
 	if self:GetPhysicsObject():IsValid() then
 		local finalMesh = {}
 		for k, tri in pairs(self:GetPhysicsObject():GetMeshConvexes()[1]) do
-			tri.pos = tri.pos * self:GetExitSize()
-			table.insert(finalMesh, tri.pos)
+			local pos = tri.pos * self:GetExitSize()
+			pos[3] = pos[3] > 0 and 0.5 or -0.5
+			table.insert(finalMesh, pos)
 		end
 		self:PhysicsInitConvex(finalMesh)
 		self:EnableCustomCollisions(true)
@@ -274,9 +266,15 @@ SeamlessPortals.TransformPortal = function(a, b, pos, ang)
 	if ang then
 		local localAng = a:WorldToLocalAngles(ang)
 		editedAng = b:LocalToWorldAngles(Angle(-localAng[1], -localAng[2], localAng[3] + 180))
+	end
 
-		if a == b then
-			if pos then editedPos = a:LocalToWorld(a:WorldToLocal(pos) * Vector(1, 1, -1)) end
+	-- mirror portal
+	if a == b then
+		if pos then
+			editedPos = a:LocalToWorld(a:WorldToLocal(pos) * Vector(1, 1, -1)) 
+		end
+
+		if ang then
 			local localAng = a:WorldToLocalAngles(ang)
 			editedAng = a:LocalToWorldAngles(Angle(-localAng[1], localAng[2], -localAng[3] + 180))
 		end

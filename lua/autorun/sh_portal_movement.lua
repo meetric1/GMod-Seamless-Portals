@@ -101,7 +101,7 @@ local function editPlayerCollision(mv, ply)
 	local tr = util.TraceHull(traceTable)
 
 	-- getting this to work on the ground was a FUCKING headache
-	if !ply.PORTAL_STUCK_OFFSET and tr.Hit and tr.Entity:GetClass() == "seamless_portal" and tr.Entity.ExitPortal and tr.Entity:ExitPortal() and tr.Entity:ExitPortal():IsValid() then
+	if !ply.PORTAL_STUCK_OFFSET and tr.Hit and tr.Entity:GetClass() == "seamless_portal" and tr.Entity.ExitPortal and tr.Entity:GetExitPortal() and tr.Entity:GetExitPortal():IsValid() then
 		local secondaryOffset = 0
 		if tr.Entity:GetUp():Dot(Vector(0, 0, 1)) > 0.5 then		-- the portal is on the ground
 			traceTable.mins = Vector(0, 0, 0)
@@ -155,13 +155,13 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	
 	if !tr.Hit then return end
 	local hitPortal = tr.Entity
-	if hitPortal:GetClass() == "seamless_portal" and hitPortal.ExitPortal and hitPortal:ExitPortal() and hitPortal:ExitPortal():IsValid() then
+	if hitPortal:GetClass() == "seamless_portal" and hitPortal.ExitPortal and hitPortal:GetExitPortal() and hitPortal:GetExitPortal():IsValid() then
 		if mv:GetVelocity():Dot(hitPortal:GetUp()) < 0 then
 			if ply.PORTAL_TELEPORTING then return end
 			freezePly = true
 
             -- wow look at all of this code just to teleport the player
-			local exitPortal = hitPortal:ExitPortal()
+			local exitPortal = hitPortal:GetExitPortal()
 			local editedPos, editedAng = SeamlessPortals.TransformPortal(hitPortal, exitPortal, tr.HitPos, ply:EyeAngles())
 			local _, editedVelocity = SeamlessPortals.TransformPortal(hitPortal, exitPortal, nil, mv:GetVelocity():Angle())
 			local max = math.Max(mv:GetVelocity():Length(), exitPortal:GetUp():Dot(-physenv.GetGravity() / 3))
@@ -226,7 +226,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			ply:SetHull(Vector(-4, -4, ply.PORTAL_STUCK_OFFSET), Vector(4, 4, 72 + ply.PORTAL_STUCK_OFFSET * 0.5))
 			ply:SetHullDuck(Vector(-4, -4, ply.PORTAL_STUCK_OFFSET), Vector(4, 4, 36 + ply.PORTAL_STUCK_OFFSET * 0.5))
 
-			timer.Simple(0, function()
+			timer.Simple(0.03, function()
 				ply.PORTAL_TELEPORTING = false
 			end)
 
