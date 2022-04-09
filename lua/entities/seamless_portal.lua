@@ -110,7 +110,7 @@ end
 
 local function DrawQuadEasier(e, multiplier, offset, rotate)
 	local ex, ey, ez = e:GetForward(), e:GetRight(), e:GetUp()
-	local rotate = (tonumber(rotate) or 0)
+	local rotate = rotate
 	local mx = ey * multiplier.x
 	local my = ex * multiplier.y
 	local mz = ez * multiplier.z
@@ -163,9 +163,8 @@ function ENT:Draw()
 		local distPortal = epos:DistToSqr(spos) > (margnPortal * exsize[1]) -- too far away
 
 		shouldRenderPortal = behindPortal or distPortal
+		self.PORTAL_SHOULDRENDER = !shouldRenderPortal
 	end
-
-	self.PORTAL_SHOULDRENDER = !shouldRenderPortal
 
 	render.SetMaterial(drawMat)
 
@@ -179,7 +178,7 @@ function ENT:Draw()
 
 	-- outer quads
 	if !self:GetDisableBackface() then
-		DrawQuadEasier(self, Vector( scaley, -scalex, -backAmt), backVec)
+		DrawQuadEasier(self, Vector( scaley, -scalex, -backAmt), backVec, 0)
 		DrawQuadEasier(self, Vector( scaley, -scalex,  backAmt), backVec, 1)
 		DrawQuadEasier(self, Vector( scaley,  scalex, -backAmt), backVec, 1)
 		DrawQuadEasier(self, Vector( scaley, -scalex,  backAmt), backVec, 2)
@@ -199,25 +198,27 @@ function ENT:Draw()
 
 	-- draw the quad that the 2d texture will be drawn on
 	-- teleporting causes flashing if the quad is drawn right next to the player, so we offset it
-	DrawQuadEasier(self, Vector( scaley,  scalex, -backAmt), backVec)
+	DrawQuadEasier(self, Vector( scaley,  scalex, -backAmt), backVec, 0)
 	DrawQuadEasier(self, Vector( scaley,  scalex,  backAmt), backVec, 1)
 	DrawQuadEasier(self, Vector( scaley, -scalex, -backAmt), backVec, 1)
 	DrawQuadEasier(self, Vector( scaley,  scalex,  backAmt), backVec, 2)
 	DrawQuadEasier(self, Vector(-scaley,  scalex, -backAmt), backVec, 2)
 
 	-- draw the actual portal texture
-	render.SetMaterial(SeamlessPortals.PortalMaterials[self.PORTAL_RT_NUMBER or 1])
+	local portalmat = SeamlessPortals.PortalMaterials
+	render.SetMaterial(portalmat[self.PORTAL_RT_NUMBER or 1])
 	render.SetStencilCompareFunction(STENCIL_EQUAL)
 
 	-- draw quad reversed if the portal is linked to itself
 	if self.ExitPortal and self:GetExitPortal() == self then
 		render.DrawScreenQuadEx(ScrW(), 0, -ScrW(), ScrH())
 	else
-		render.DrawScreenQuad()
+		render.DrawScreenQuadEx(0, 0, ScrW(), ScrH())
 	end
 
 	render.SetStencilEnable(false)
 end
+
 
 -- scale the physmesh
 function ENT:UpdatePhysmesh()

@@ -16,6 +16,10 @@ local skysize = 16384	--2^14, default zfar limit
 local angle_zero = Angle(0, 0, 0)
 
 local renderViewTable = {
+	x = 0,
+	y = 0,
+	w = ScrW(),
+	h = ScrH(),
 	origin = Vector(),
 	angles = Angle(),
 	drawviewmodel = false,
@@ -66,6 +70,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov
 			renderViewTable.fov = fov
 
 			v.PORTAL_RT_NUMBER = timesRendered + 1	-- the number index of the rendertarget it will use in rendering
+			v.PORTAL_SHOULDRENDER = false
 
 			-- render the scene
 			local oldClip = render.EnableClipping(true)
