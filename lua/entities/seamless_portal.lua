@@ -147,31 +147,17 @@ end
 
 local drawMat = Material("models/props_combine/combine_interface_disp")
 function ENT:Draw()
-	local exsize = self:GetExitSize()
-	local backAmt = 3 * exsize[3]
+	local backAmt = 3 * self:GetExitSize()[3]
 	local backVec = Vector(0, 0, -backAmt + 0.5)
-	local epos, spos, vup = EyePos(), self:GetPos(), self:GetUp()
 	local scalex = (self:OBBMaxs().x - self:OBBMins().x) * 0.5 - 0.1
 	local scaley = (self:OBBMaxs().y - self:OBBMins().y) * 0.5 - 0.1
-
-	-- optimization checks
 	local exitInvalid = !self:GetExitPortal() or !self:GetExitPortal():IsValid()
-	local shouldRenderPortal = false
-	if !SeamlessPortals.Rendering and !exitInvalid then
-		local margnPortal = SeamlessPortals.VarDrawDistance:GetFloat()^2
-		local behindPortal = (epos - spos):Dot(vup) < (-10 * exsize[1]) -- true if behind the portal, false otherwise
-		local distPortal = epos:DistToSqr(spos) > (margnPortal * exsize[1]) -- too far away
-
-		shouldRenderPortal = behindPortal or distPortal
-		self.PORTAL_SHOULDRENDER = !shouldRenderPortal
-	end
 
 	render.SetMaterial(drawMat)
 
-	-- holy shit lol this if statment
-	if SeamlessPortals.Rendering or exitInvalid or shouldRenderPortal or halo.RenderedEntity() == self then
+	if SeamlessPortals.Rendering or exitInvalid or halo.RenderedEntity() == self or !SeamlessPortals.ShouldRender(self, EyePos(), EyeAngles()) then
 		if !self:GetDisableBackface() then
-			render.DrawBox(spos, self:LocalToWorldAngles(Angle(0, 90, 0)), Vector(-scaley, -scalex, -backAmt * 2), Vector(scaley, scalex, 0))
+			render.DrawBox(self:GetPos(), self:LocalToWorldAngles(Angle(0, 90, 0)), Vector(-scaley, -scalex, -backAmt * 2), Vector(scaley, scalex, 0))
 		end
 		return
 	end
@@ -286,6 +272,16 @@ end
 
 -- set physmesh pos on client
 if CLIENT then
+	-- only render the portals that are in the frustum, or should be rendered
+	SeamlessPortals.ShouldRender = function(portal, eyePos, eyeAngle)
+		local portalPos, portalUp, exitSize = portal:GetPos(), portal:GetUp(), portal:GetExitSize()
+		local infrontPortal = (eyePos - portalPos):Dot(portalUp) > (-10 * exitSize[1]) -- true if behind the portal, false otherwise
+		local distPortal = eyePos:DistToSqr(portalPos) < SeamlessPortals.VarDrawDistance:GetFloat()^2 * exitSize[1] -- true if close enough
+		local portalLooking = (eyePos - portalPos):Dot(eyeAngle:Forward()) < 50 * exitSize[1] -- true if looking at the portal, false otherwise
+
+		return infrontPortal and distPortal and portalLooking
+	end
+
 	function ENT:Think()
 		local phys = self:GetPhysicsObject()
 		if phys:IsValid() then
@@ -305,6 +301,7 @@ if CLIENT then
 		-- this code creates the rendertargets to be used for the portals
 		SeamlessPortals.PortalRTs = {}
 		SeamlessPortals.PortalMaterials = {}
+		SeamlessPortals.PixelVis = {}
 
 		for i = 1, SeamlessPortals.MaxRTs do
 			SeamlessPortals.PortalRTs[i] = GetRenderTarget("SeamlessPortal" .. i, ScrW(), ScrH())
@@ -312,6 +309,7 @@ if CLIENT then
 				["$basetexture"] = SeamlessPortals.PortalRTs[i]:GetName(),
 				["$model"] = "1"
 			})
+			SeamlessPortals.PixelVis[i] = util.GetPixelVisibleHandle()
 		end
 	end)
 

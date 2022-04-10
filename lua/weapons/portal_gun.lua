@@ -76,6 +76,24 @@ local function setPortalPlacement(owner, portal)
 		ang:Set(getSurfaceAngle(owner, tr.HitNormal))
 	end
 
+	-- extrude portal from the ground
+	local angTab = {
+		ang:Forward() * portal:GetExitSize()[1], 
+		-ang:Forward() * portal:GetExitSize()[1], 
+		ang:Right() * portal:GetExitSize()[2], 
+		-ang:Right() * portal:GetExitSize()[2]
+	}
+	for i = 1, 4 do
+		local extr = SeamlessPortals.TraceLine({
+			start = tr.HitPos,
+			endpos = tr.HitPos - angTab[i] * 48,
+		})
+
+		if extr.Hit then
+			tr.HitPos = tr.HitPos + angTab[i] * 48 * (1 - extr.Fraction)
+		end
+	end
+
 	portal:SetPos((tr.HitPos + mul * tr.HitNormal))	--20
 	portal:SetAngles(ang)
 	if CPPI then portal:CPPISetOwner(owner) end

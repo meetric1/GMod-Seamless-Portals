@@ -60,8 +60,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov
 	for k, v in ipairs(portals) do
 		if timesRendered >= SeamlessPortals.MaxRTs then break end
 		if !v:IsValid() or !v:GetExitPortal():IsValid() then continue end
-		
-		if timesRendered < SeamlessPortals.MaxRTs and v.PORTAL_SHOULDRENDER then
+		if timesRendered < SeamlessPortals.MaxRTs and SeamlessPortals.ShouldRender(v, eyePos, eyeAngles) then
 			local exitPortal = v:GetExitPortal()
 			local editedPos, editedAng = SeamlessPortals.TransformPortal(v, exitPortal, eyePos, eyeAngles)
 
@@ -69,19 +68,17 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov
 			renderViewTable.angles = editedAng
 			renderViewTable.fov = fov
 
-			v.PORTAL_RT_NUMBER = timesRendered + 1	-- the number index of the rendertarget it will use in rendering
-			v.PORTAL_SHOULDRENDER = false
+			timesRendered = timesRendered + 1
+			v.PORTAL_RT_NUMBER = timesRendered	-- the number index of the rendertarget it will use in rendering
 
 			-- render the scene
 			local oldClip = render.EnableClipping(true)
-			render.PushRenderTarget(SeamlessPortals.PortalRTs[timesRendered + 1])
+			render.PushRenderTarget(SeamlessPortals.PortalRTs[timesRendered])
 			render.PushCustomClipPlane(exitPortal:GetUp(), exitPortal:GetUp():Dot(exitPortal:GetPos()))
 			render.RenderView(renderViewTable)
 			render.PopCustomClipPlane()
 			render.EnableClipping(oldClip)
 			render.PopRenderTarget()
-
-			timesRendered = timesRendered + 1
 		end
 	end
 
