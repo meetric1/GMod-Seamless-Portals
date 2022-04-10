@@ -77,7 +77,11 @@ function ENT:Initialize()
 		self:SetRenderMode(RENDERMODE_TRANSCOLOR)
 		self:SetCollisionGroup(COLLISION_GROUP_WORLD)
 		self:DrawShadow(false)
-		self:SetExitSize(Vector(1, 1, 1))
+		if self:GetExitSize() == Vector() then
+			self:SetExitSize(Vector(1, 1, 1))
+		else
+			self:SetExitSize(self:GetExitSize())
+		end
 		SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
 	end
 end

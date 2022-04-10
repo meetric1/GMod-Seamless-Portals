@@ -74,7 +74,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov
 			-- render the scene
 			local oldClip = render.EnableClipping(true)
 			render.PushRenderTarget(SeamlessPortals.PortalRTs[timesRendered])
-			render.PushCustomClipPlane(exitPortal:GetUp(), exitPortal:GetUp():Dot(exitPortal:GetPos()))
+			render.PushCustomClipPlane(exitPortal:GetUp(), exitPortal:GetUp():Dot(exitPortal:GetPos() + exitPortal:GetUp() * 0.49))
 			render.RenderView(renderViewTable)
 			render.PopCustomClipPlane()
 			render.EnableClipping(oldClip)

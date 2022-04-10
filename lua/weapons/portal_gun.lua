@@ -85,8 +85,8 @@ local function setPortalPlacement(owner, portal)
 	}
 	for i = 1, 4 do
 		local extr = SeamlessPortals.TraceLine({
-			start = tr.HitPos,
-			endpos = tr.HitPos - angTab[i] * 48,
+			start = tr.HitPos + tr.HitNormal,
+			endpos = tr.HitPos + tr.HitNormal - angTab[i] * 48,
 		})
 
 		if extr.Hit then

@@ -17,7 +17,7 @@ local function updateScale(ply, scale)
 end
 
 local freezePly = false
-local function updateCalcViews(finalPos, finalVel, finalSize)
+local function updateCalcViews(finalPos, finalVel)
 	timer.Remove("portals_eye_fix_delay")	--just in case you enter the portal while the timer is running
 	
 	local addAngle = 1
@@ -77,10 +77,14 @@ local seamless_check = function(e) return !(e:GetClass() == "seamless_portal" or
 -- 'no collide' the player with the wall by shrinking the player's collision box
 local traceTable = {}
 local function editPlayerCollision(mv, ply)
-	traceTable.start = ply:GetPos() + ply:GetVelocity() * 0.02
+	if ply.PORTAL_STUCK_OFFSET != 0 then
+		traceTable.start = ply:GetPos() + ply:GetVelocity() * 0.02
+	else
+		traceTable.start = ply:GetPos()
+	end
 	traceTable.endpos = traceTable.start
 	traceTable.mins = Vector(-16, -16, 0)
-	traceTable.maxs = Vector(16, 16, 72)
+	traceTable.maxs = Vector(16, 16, 72 - (ply:Crouching() and 1 or 0) * 36)
 	traceTable.filter = ply
 
 	if !ply.PORTAL_STUCK_OFFSET then
@@ -119,7 +123,7 @@ local function editPlayerCollision(mv, ply)
 				secondaryOffset = 36
 			end
 		elseif tr.Entity:GetUp():Dot(Vector(0, 0, 1)) < -0.9 then 
-			return 
+			return 							-- the portal is on the ceiling
 		else
 			ply.PORTAL_STUCK_OFFSET = 0		-- the portal is not on the ground
 		end
