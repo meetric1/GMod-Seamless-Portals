@@ -49,7 +49,7 @@ end)
 -- update the rendertarget here since we cant do it in postdraw (cuz of infinite recursion)
 local physgun_halo = GetConVar("physgun_halo")
 hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov)
-	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 or SeamlessPortals.Rendering then return end
+	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	SeamlessPortals.Rendering = true
 
 	-- black halo clipping plane fix (Thanks to homonovus)
@@ -72,9 +72,10 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov
 			v.PORTAL_RT_NUMBER = timesRendered	-- the number index of the rendertarget it will use in rendering
 
 			-- render the scene
+			local up = exitPortal:GetUp()
 			local oldClip = render.EnableClipping(true)
 			render.PushRenderTarget(SeamlessPortals.PortalRTs[timesRendered])
-			render.PushCustomClipPlane(exitPortal:GetUp(), exitPortal:GetUp():Dot(exitPortal:GetPos() + exitPortal:GetUp() * 0.49))
+			render.PushCustomClipPlane(up, up:Dot(exitPortal:GetPos() + up * 0.49))
 			render.RenderView(renderViewTable)
 			render.PopCustomClipPlane()
 			render.EnableClipping(oldClip)

@@ -161,7 +161,7 @@ function ENT:Draw()
 
 	if SeamlessPortals.Rendering or exitInvalid or halo.RenderedEntity() == self or !SeamlessPortals.ShouldRender(self, EyePos(), EyeAngles()) then
 		if !self:GetDisableBackface() then
-			render.DrawBox(self:GetPos(), self:LocalToWorldAngles(Angle(0, 90, 0)), Vector(-scaley, -scalex, -backAmt * 2), Vector(scaley, scalex, 0))
+			render.DrawBox(self:GetPos(), self:LocalToWorldAngles(Angle(0, 90, 0)), Vector(-scaley, -scalex, -backAmt * 2 + 0.5), Vector(scaley, scalex, 0.5))
 		end
 		return
 	end

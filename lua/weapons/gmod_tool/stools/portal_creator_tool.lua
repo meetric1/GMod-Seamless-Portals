@@ -52,6 +52,7 @@ if ( CLIENT ) then
 	local xVar = CreateClientConVar("seamless_portal_size_x", "1", false, true, "Sets the size of the portal along the X axis", 0.01, 10)
 	local yVar = CreateClientConVar("seamless_portal_size_y", "1", false, true, "Sets the size of the portal along the Y axis", 0.01, 10)
 	local zVar = CreateClientConVar("seamless_portal_size_z", "1", false, true, "Sets the size of the portal along the Z axis", 0.01, 10)
+	local backVar = CreateClientConVar("seamless_portal_backface", "1", false, true, "Sets whether to spawn with a backface or not", 0, 1)
 
 	function TOOL.BuildCPanel(panel)
 		panel:AddControl("label", {
@@ -60,6 +61,7 @@ if ( CLIENT ) then
 		panel:NumSlider("Portal Size X", "seamless_portal_size_x", 0.05, 10, 2)
 		panel:NumSlider("Portal Size Y", "seamless_portal_size_y", 0.05, 10, 2)
 		panel:NumSlider("Portal Size Z", "seamless_portal_size_z", 0.05, 10, 2)
+		panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portal_backface")
 	end
 
 	local beamMat = Material("cable/blue_elec")
@@ -126,6 +128,7 @@ elseif ( SERVER ) then
 		local sizey = self:GetOwner():GetInfoNum("seamless_portal_size_y", 1)
 		local sizez = self:GetOwner():GetInfoNum("seamless_portal_size_z", 1)
 		ent:SetExitSize(Vector(sizex, sizey, sizez))
+		ent:SetDisableBackface(self:GetOwner():GetInfoNum("seamless_portal_backface", 1) == 0)
 		cleanup.Add(self:GetOwner(), "props", ent)
         undo.Create("Seamless Portal")
             undo.AddEntity(ent)
