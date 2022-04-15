@@ -41,8 +41,6 @@ hook.Add("Tick", "seamless_portal_teleport", function()
         -- can it go through the portal?
         local obbMin = prop:OBBMins()
         local obbMax = prop:OBBMaxs()
-        local obbMinPos = prop:LocalToWorld(obbMin) - prop:GetPos()
-        local obbMaxPos = prop:LocalToWorld(obbMax) - prop:GetPos()
         local tr = util.TraceHull({
             start = realPos - prop:GetVelocity() * 0.02,
             endpos = realPos + prop:GetVelocity() * 0.02,
@@ -58,7 +56,7 @@ hook.Add("Tick", "seamless_portal_teleport", function()
         local hitPortal = tr.Entity
         if hitPortal:GetClass() != "seamless_portal" then return end
         local hitPortalExit = tr.Entity:GetExitPortal()
-        if hitPortalExit and hitPortalExit:IsValid() and prop:GetVelocity():Dot(hitPortal:GetUp()) < -0.25 then
+        if hitPortalExit and hitPortalExit:IsValid() and obbMax[1] < hitPortal:GetExitSize()[1] * 45 and obbMax[2] < hitPortal:GetExitSize()[2] * 45 and prop:GetVelocity():Dot(hitPortal:GetUp()) < -0.5 then
             local constrained = constraint.GetAllConstrainedEntities(prop)
             for k, constrainedProp in pairs(constrained) do
                 local editedPos, editedPropAng = SeamlessPortals.TransformPortal(hitPortal, hitPortalExit, constrainedProp:GetPos(), constrainedProp:GetAngles())
