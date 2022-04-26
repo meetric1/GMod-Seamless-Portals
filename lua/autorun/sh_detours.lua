@@ -35,6 +35,7 @@ SeamlessPortals = SeamlessPortals or {}
 SeamlessPortals.TraceLine = SeamlessPortals.TraceLine or util.TraceLine
 local function editedTraceLine(data)
 	local tr = SeamlessPortals.TraceLine(data)
+	if data.noDetour then return tr end
 	if tr.Entity:IsValid() and tr.Entity:GetClass() == "seamless_portal" and tr.Entity:GetExitPortal() and tr.Entity:GetExitPortal():IsValid() then
 		local hitPortal = tr.Entity
 		if tr.HitNormal:Dot(hitPortal:GetUp()) > 0 then
