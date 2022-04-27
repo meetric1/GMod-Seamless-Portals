@@ -9,8 +9,9 @@ hook.Add("EntityFireBullets", "seamless_portal_detour_bullet", function(entity, 
 	local tr = SeamlessPortals.TraceLine(line)
 	local hitPortal = tr.Entity
 	if !hitPortal or !hitPortal:IsValid() then return end
+	if hitPortal:GetClass() != "seamless_portal" then return end
 	local exitPortal = hitPortal:GetExitPortal()
-	if hitPortal:GetClass() == "seamless_portal" and exitPortal and exitPortal:IsValid() then
+	if exitPortal and exitPortal:IsValid() then
 		if (tr.HitPos - hitPortal:GetPos()):Dot(hitPortal:GetUp()) > 0 then
 			local newPos, newAng = SeamlessPortals.TransformPortal(hitPortal, exitPortal, tr.HitPos, data.Dir:Angle())
 
