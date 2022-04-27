@@ -4,15 +4,18 @@ AddCSLuaFile()
 -- Bullet detour
 hook.Add("EntityFireBullets", "seamless_portal_detour_bullet", function(entity, data)
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
-	local tr = SeamlessPortals.TraceLine({start = data.Src, endpos = data.Src + data.Dir * data.Distance, filter = entity})
+	local line = {start = Vector(data.Src), filter = entity}
+	line.endpos = Vector(data.Dir); line.endpos:Mul(data.Distance); line.endpos:Add(data.Src)
+	local tr = SeamlessPortals.TraceLine(line)
 	local hitPortal = tr.Entity
-	if !hitPortal:IsValid() then return end
-	if hitPortal:GetClass() == "seamless_portal" and hitPortal:GetExitPortal() and hitPortal:GetExitPortal():IsValid() then
+	if !hitPortal or !hitPortal:IsValid() then return end
+	local exitPortal = hitPortal:GetExitPortal()
+	if hitPortal:GetClass() == "seamless_portal" and exitPortal and exitPortal:IsValid() then
 		if (tr.HitPos - hitPortal:GetPos()):Dot(hitPortal:GetUp()) > 0 then
-			local newPos, newAng = SeamlessPortals.TransformPortal(hitPortal, hitPortal:GetExitPortal(), tr.HitPos, data.Dir:Angle())
+			local newPos, newAng = SeamlessPortals.TransformPortal(hitPortal, exitPortal, tr.HitPos, data.Dir:Angle())
 
 			-- Ignoreentity doesnt seem to work for some reason
-			data.IgnoreEntity = hitPortal:GetExitPortal()
+			data.IgnoreEntity = exitPortal
 			data.Src = newPos
 			data.Dir = newAng:Forward()
 			data.Tracer = 0
@@ -22,10 +25,14 @@ hook.Add("EntityFireBullets", "seamless_portal_detour_bullet", function(entity, 
 	end
 end)
 
+local efName = {
+	["phys_freeze"] = true,
+	["phys_unfreeze"] = true
+} -- Store names as hashes @dvdvideo1234
 -- Effect detour (Thanks to WasabiThumb)
 local oldUtilEffect = util.Effect
 local function effect(name, b, c, d)
-	if SeamlessPortals.PortalIndex > 0 and (name == "phys_freeze" or name == "phys_unfreeze") then return end
+	if SeamlessPortals.PortalIndex > 0 and efName[name] then return end
 	oldUtilEffect(name, b, c, d)
 end
 util.Effect = effect
