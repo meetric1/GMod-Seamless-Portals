@@ -35,24 +35,25 @@ SeamlessPortals = SeamlessPortals or {}
 SeamlessPortals.TraceLine = SeamlessPortals.TraceLine or util.TraceLine
 local function editedTraceLine(data)
 	local tr = SeamlessPortals.TraceLine(data)
-	if data.noDetour then return tr end
-	if tr.Entity:IsValid() and tr.Entity:GetClass() == "seamless_portal" and tr.Entity:GetExitPortal() and tr.Entity:GetExitPortal():IsValid() then
-		local hitPortal = tr.Entity
-		if tr.HitNormal:Dot(hitPortal:GetUp()) > 0 then
-			local editeddata = table.Copy(data)
-			editeddata.start = SeamlessPortals.TransformPortal(hitPortal, hitPortal:GetExitPortal(), tr.HitPos)
-			editeddata.endpos = SeamlessPortals.TransformPortal(hitPortal, hitPortal:GetExitPortal(), data.endpos)
+	if data.noDetour then return tr end -- Backwards compatibility
+	local hitPortal = tr.Entity
+	if hitPortal and hitPortal:IsValid() and hitPortal:GetClass() == "seamless_portal" then
+		local exitPortal = hitPortal:GetExitPortal() -- Read exit portal
+		if exitPortal and exitPortal:IsValid() and tr.HitNormal:Dot(hitPortal:GetUp()) > 0 then
+			local detour = table.Copy(data)
+			detour.start = SeamlessPortals.TransformPortal(hitPortal, exitPortal, tr.HitPos)
+			detour.endpos = SeamlessPortals.TransformPortal(hitPortal, exitPortal, data.endpos)
 			-- filter the exit portal from being hit by the ray
 			if IsEntity(data.filter) and data.filter:GetClass() != "player" then
-				editeddata.filter = {data.filter, hitPortal:GetExitPortal()}
+				detour.filter = {data.filter, exitPortal}
 			else
-				if istable(editeddata.filter) then
-					table.insert(editeddata.filter, hitPortal:GetExitPortal())
+				if istable(detour.filter) then
+					table.insert(detour.filter, exitPortal)
 				else
-					editeddata.filter = hitPortal:GetExitPortal()
+					detour.filter = exitPortal
 				end
 			end
-			return SeamlessPortals.TraceLine(editeddata)
+			return SeamlessPortals.TraceLine(detour)
 		end
 	end
 	return tr
