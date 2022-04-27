@@ -43,7 +43,6 @@ SeamlessPortals = SeamlessPortals or {}
 SeamlessPortals.TraceLine = SeamlessPortals.TraceLine or util.TraceLine
 local function detourTraceLine(data)
 	local tr = SeamlessPortals.TraceLine(data)
-	if data.noDetour then return tr end -- Backwards compatibility
 	local hitPortal = tr.Entity
 	if hitPortal and hitPortal:IsValid() and hitPortal:GetClass() == "seamless_portal" then
 		local exitPortal = hitPortal:GetExitPortal() -- Read exit portal
