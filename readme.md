@@ -2,11 +2,11 @@
 [![](https://img.youtube.com/vi/lgiPHZdTGxs/0.jpg)](http://www.youtube.com/watch?v=lgiPHZdTGxs "")
 
 ### Description
-My seamless portals addon for garrys mod. This is a mod that adds a entity called the Seamless Portal, and a functioning portal gun!
-You can spawn the Portals in the spawnmenu, or by using the portal gun in the weapons tab.
+My seamless portals addon for Garry’s mod. This is a mod that adds an entity called the Seamless Portal, and a functioning portal gun!
+You can spawn the Portals in the spawn menu, or by using the portal gun in the weapons tab.
 
 ### Installation
-To install this addon, download and unzip the contents and put it in your garrys mod addon folder
+To install this addon, download and unzip the contents and put it in your Garry’s mod addon folder
 
 ### Features
  * More seamless
@@ -15,7 +15,7 @@ To install this addon, download and unzip the contents and put it in your garrys
  * Floor extrusion if your player gets stuck in the ground
  * Sounds travel through
  * Black skybox fix
- * Optimized traceline implementation
+ * Optimized trace line implementation
  * Includes non janky portal gun
  * Includes some tools to play with
  * Option for scalable portals to resize the player (using my player resizer)
@@ -34,13 +34,13 @@ To install this addon, download and unzip the contents and put it in your garrys
 |`portal:SetExitSize(vector)`|Sets the size of the portal|
 |`portal:SetDisableBackface(bool)`|Disables/Enables the back material on the portal|
 
-|Getters **(SERVER & CLIENT)**|Description|
+|Getters **(SHARED)**|Description|
 |:---|:---|
-|`portal:GetPortalSize()`|Self explanatory, default is `Vector(1,1,1)`|
+|`portal:GetPortalSize()`|Self-explanatory, default is `Vector(1,1,1)`|
 |`portal:GetExitPortal()`|Gets the portal's exit, `nil` or `NULL` entity if there is none|
-|`portal:GetDisableBackface()`|Self explanatory, default is `false`|
+|`portal:GetDisableBackface()`|Self-explanatory, default is `false`|
 
-### Creadits
+### Credits
  * Fafy2801 for finding a fix for the black skybox
  * PeteBroccoli for improving the networking system
  * WasabiThumb for fixing a black halo glitch & adding traceline functionality
