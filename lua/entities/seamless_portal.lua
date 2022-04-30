@@ -13,8 +13,8 @@ ENT.Purpose      = ""
 ENT.Instructions = ""
 ENT.Spawnable    = true
 
+local EyePos, EyeAngles = EyePos, EyeAngles
 
-local gbSvFlag = bit.bor(FCVAR_ARCHIVE)
 -- create global table
 SeamlessPortals = SeamlessPortals or {}
 SeamlessPortals.VarDrawDistance = CreateClientConVar("seamless_portal_drawdistance", "2500", true, false, "Sets the size of the portal along the Y axis", 0)
@@ -124,6 +124,8 @@ local function DrawQuadEasier(e, multiplier, offset, rotate)
 
 	local pos = e:GetPos() + ox + oy + oz
 	if rotate == 0 then
+		-- What the fuck is this?
+		-- TODO: Comment what this does
 		render.DrawQuad(
 			pos + mx - my + mz,
 			pos - mx - my + mz,
@@ -131,6 +133,8 @@ local function DrawQuadEasier(e, multiplier, offset, rotate)
 			pos + mx + my + mz
 		)
 	elseif rotate == 1 then
+		-- What the fuck is this?
+		-- TODO: Comment what this does
 		render.DrawQuad(
 			pos + mx + my - mz,
 			pos - mx + my - mz,
@@ -138,6 +142,8 @@ local function DrawQuadEasier(e, multiplier, offset, rotate)
 			pos + mx + my + mz
 		)
 	elseif rotate == 2 then
+		-- What the fuck is this?
+		-- TODO: Comment what this does
 		render.DrawQuad(
 			pos + mx - my + mz,
 			pos + mx - my - mz,
@@ -149,66 +155,81 @@ local function DrawQuadEasier(e, multiplier, offset, rotate)
 	end
 end
 
-local drawMat = Material("models/props_combine/combine_interface_disp")
-function ENT:Draw()
-	local backAmt = 3 * self:GetExitSize()[3]
-	local backVec = Vector(0, 0, -backAmt + 0.5)
-	local scalex = (self:OBBMaxs().x - self:OBBMins().x) * 0.5 - 0.1
-	local scaley = (self:OBBMaxs().y - self:OBBMins().y) * 0.5 - 0.1
-	local exitInvalid = !self:GetExitPortal() or !self:GetExitPortal():IsValid()
 
-	render.SetMaterial(drawMat)
+if CLIENT then
+	local render_ClearStencil = render.ClearStencil
+	local render_SetStencilEnable = render.SetStencilEnable
+	local render_SetStencilWriteMask = render.SetStencilWriteMask
+	local render_SetStencilTestMask = render.SetStencilTestMask
+	local render_SetStencilReferenceValue = render.SetStencilReferenceValue
+	local render_SetStencilFailOperation = render.SetStencilFailOperation
+	local render_SetStencilZFailOperation = render.SetStencilZFailOperation
+	local render_SetStencilPassOperation = render.SetStencilPassOperation
+	local render_SetStencilCompareFunction = render.SetStencilCompareFunction
 
-	if SeamlessPortals.Rendering or exitInvalid or halo.RenderedEntity() == self or !SeamlessPortals.ShouldRender(self, EyePos(), EyeAngles()) then
-		if !self:GetDisableBackface() then
-			render.DrawBox(self:GetPos(), self:LocalToWorldAngles(Angle(0, 90, 0)), Vector(-scaley, -scalex, -backAmt * 2 + 0.5), Vector(scaley, scalex, 0.5))
+	local renderedEntity = halo.RenderedEntity
+	local render_DrawBox = render.DrawBox
+
+	local drawMat = Material("models/props_combine/combine_interface_disp")
+	function ENT:Draw()
+		local backAmt = 3 * self:GetExitSize()[3]
+		local backVec = Vector(0, 0, -backAmt + 0.5)
+		local scalex = (self:OBBMaxs().x - self:OBBMins().x) * 0.5 - 0.1
+		local scaley = (self:OBBMaxs().y - self:OBBMins().y) * 0.5 - 0.1
+		local exitInvalid = !self:GetExitPortal() or !self:GetExitPortal():IsValid()
+
+		render.SetMaterial(drawMat)
+
+		if SeamlessPortals.Rendering or exitInvalid or renderedEntity() == self or not SeamlessPortals.ShouldRender(self, EyePos(), EyeAngles()) then
+			if !self:GetDisableBackface() then
+				render_DrawBox(self:GetPos(), self:LocalToWorldAngles(Angle(0, 90, 0)), Vector(-scaley, -scalex, -backAmt * 2 + 0.5), Vector(scaley, scalex, 0.5))
+			end
+			return
 		end
-		return
+
+		-- outer quads
+		if !self:GetDisableBackface() then
+			DrawQuadEasier(self, Vector( scaley, -scalex, -backAmt), backVec, 0)
+			DrawQuadEasier(self, Vector( scaley, -scalex,  backAmt), backVec, 1)
+			DrawQuadEasier(self, Vector( scaley,  scalex, -backAmt), backVec, 1)
+			DrawQuadEasier(self, Vector( scaley, -scalex,  backAmt), backVec, 2)
+			DrawQuadEasier(self, Vector(-scaley, -scalex, -backAmt), backVec, 2)
+		end
+
+		-- do cursed stencil stuff
+		render_ClearStencil()
+		render_SetStencilEnable(true)
+		render_SetStencilWriteMask(1)
+		render_SetStencilTestMask(1)
+		render_SetStencilReferenceValue(1)
+		render_SetStencilFailOperation(STENCIL_KEEP)
+		render_SetStencilZFailOperation(STENCIL_KEEP)
+		render_SetStencilPassOperation(STENCIL_REPLACE)
+		render_SetStencilCompareFunction(STENCIL_ALWAYS)
+
+		-- draw the quad that the 2d texture will be drawn on
+		-- teleporting causes flashing if the quad is drawn right next to the player, so we offset it
+		DrawQuadEasier(self, Vector( scaley,  scalex, -backAmt), backVec, 0)
+		DrawQuadEasier(self, Vector( scaley,  scalex,  backAmt), backVec, 1)
+		DrawQuadEasier(self, Vector( scaley, -scalex, -backAmt), backVec, 1)
+		DrawQuadEasier(self, Vector( scaley,  scalex,  backAmt), backVec, 2)
+		DrawQuadEasier(self, Vector(-scaley,  scalex, -backAmt), backVec, 2)
+
+		-- draw the actual portal texture
+		local portalmat = SeamlessPortals.PortalMaterials
+		render.SetMaterial(portalmat[self.PORTAL_RT_NUMBER or 1])
+		render.SetStencilCompareFunction(STENCIL_EQUAL)
+
+		-- draw quad reversed if the portal is linked to itself
+		if self.ExitPortal and self:GetExitPortal() == self then
+			render.DrawScreenQuadEx(ScrW(), 0, -ScrW(), ScrH())
+		else
+			render.DrawScreenQuadEx(0, 0, ScrW(), ScrH())
+		end
+
+		render.SetStencilEnable(false)
 	end
-
-	-- outer quads
-	if !self:GetDisableBackface() then
-		DrawQuadEasier(self, Vector( scaley, -scalex, -backAmt), backVec, 0)
-		DrawQuadEasier(self, Vector( scaley, -scalex,  backAmt), backVec, 1)
-		DrawQuadEasier(self, Vector( scaley,  scalex, -backAmt), backVec, 1)
-		DrawQuadEasier(self, Vector( scaley, -scalex,  backAmt), backVec, 2)
-		DrawQuadEasier(self, Vector(-scaley, -scalex, -backAmt), backVec, 2)
-	end
-
-	-- do cursed stencil stuff
-	render.ClearStencil()
-	render.SetStencilEnable(true)
-	render.SetStencilWriteMask(1)
-	render.SetStencilTestMask(1)
-	render.SetStencilReferenceValue(1)
-	render.SetStencilFailOperation(STENCIL_KEEP)
-	render.SetStencilZFailOperation(STENCIL_KEEP)
-	render.SetStencilPassOperation(STENCIL_REPLACE)
-	render.SetStencilCompareFunction(STENCIL_ALWAYS)
-
-	-- draw the quad that the 2d texture will be drawn on
-	-- teleporting causes flashing if the quad is drawn right next to the player, so we offset it
-	DrawQuadEasier(self, Vector( scaley,  scalex, -backAmt), backVec, 0)
-	DrawQuadEasier(self, Vector( scaley,  scalex,  backAmt), backVec, 1)
-	DrawQuadEasier(self, Vector( scaley, -scalex, -backAmt), backVec, 1)
-	DrawQuadEasier(self, Vector( scaley,  scalex,  backAmt), backVec, 2)
-	DrawQuadEasier(self, Vector(-scaley,  scalex, -backAmt), backVec, 2)
-
-	-- draw the actual portal texture
-	local portalmat = SeamlessPortals.PortalMaterials
-	render.SetMaterial(portalmat[self.PORTAL_RT_NUMBER or 1])
-	render.SetStencilCompareFunction(STENCIL_EQUAL)
-
-	-- draw quad reversed if the portal is linked to itself
-	if self.ExitPortal and self:GetExitPortal() == self then
-		render.DrawScreenQuadEx(ScrW(), 0, -ScrW(), ScrH())
-	else
-		render.DrawScreenQuadEx(0, 0, ScrW(), ScrH())
-	end
-
-	render.SetStencilEnable(false)
 end
-
 
 -- scale the physmesh
 function ENT:UpdatePhysmesh()
@@ -241,6 +262,9 @@ function ENT:UpdateTransmitState()
 	return TRANSMIT_ALWAYS
 end
 
+local Vector = Vector
+local Angle = Angle
+local MIRROR_CONSTANT = Vector(1, 1, -1)
 SeamlessPortals.PortalIndex = 0 --#ents.FindByClass("seamless_portal")
 SeamlessPortals.MaxRTs = 6
 SeamlessPortals.TransformPortal = function(a, b, pos, ang)
@@ -249,6 +273,8 @@ SeamlessPortals.TransformPortal = function(a, b, pos, ang)
 	local editedAng = Angle()
 
 	if pos then
+		-- What the fuck is this?
+		-- TODO: Comment what this does
 		editedPos = a:WorldToLocal(pos) * (b:GetExitSize()[1] / a:GetExitSize()[1])
 		editedPos = b:LocalToWorld(Vector(editedPos[1], -editedPos[2], -editedPos[3]))
 		editedPos = editedPos + b:GetUp()
@@ -262,11 +288,13 @@ SeamlessPortals.TransformPortal = function(a, b, pos, ang)
 	-- mirror portal
 	if a == b then
 		if pos then
-			editedPos = a:LocalToWorld(a:WorldToLocal(pos) * Vector(1, 1, -1)) 
+			editedPos = a:LocalToWorld(a:WorldToLocal(pos) * MIRROR_CONSTANT) 
 		end
 
 		if ang then
 			local localAng = a:WorldToLocalAngles(ang)
+			-- What the fuck is this?
+			-- TODO: Comment what this does
 			editedAng = a:LocalToWorldAngles(Angle(-localAng[1], localAng[2], -localAng[3] + 180))
 		end
 	end
@@ -279,8 +307,14 @@ if CLIENT then
 	-- only render the portals that are in the frustum, or should be rendered
 	SeamlessPortals.ShouldRender = function(portal, eyePos, eyeAngle)
 		local portalPos, portalUp, exitSize = portal:GetPos(), portal:GetUp(), portal:GetExitSize()
+		-- What the fuck is this?
+		-- TODO: Comment what this does
 		local infrontPortal = (eyePos - portalPos):Dot(portalUp) > (-10 * exitSize[1]) -- true if behind the portal, false otherwise
+		-- What the fuck is this?
+		-- TODO: Comment what this does
 		local distPortal = eyePos:DistToSqr(portalPos) < SeamlessPortals.VarDrawDistance:GetFloat()^2 * exitSize[1] -- true if close enough
+		-- What the fuck is this?
+		-- TODO: Comment what this does
 		local portalLooking = (eyePos - portalPos):Dot(eyeAngle:Forward()) < 50 * exitSize[1] -- true if looking at the portal, false otherwise
 
 		return infrontPortal and distPortal and portalLooking
@@ -348,6 +382,8 @@ if CLIENT then
 			-- invert mouse x
 			hook.Add("InputMouseApply", "portal_flip_scene", function(cmd, x, y, ang)
 				if LocalPlayer():WaterLevel() < 3 then
+					-- What the fuck is this?
+					-- TODO: Comment what this does
 					cmd:SetViewAngles(ang + Angle(0, x / 22.5, 0))
 				end
 			end)

@@ -90,6 +90,7 @@ local function setPortalPlacement(owner, portal)
 		})
 
 		if extr.Hit then
+			-- Ultimate form of magic numbers right here
 			tr.HitPos = tr.HitPos + angTab[i] * 48 * (1 - extr.Fraction)
 		end
 	end

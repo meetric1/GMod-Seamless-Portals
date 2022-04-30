@@ -5,10 +5,14 @@
 AddCSLuaFile()
 
 local function updateScale(ply, scale)
+	-- What the fuck is this?
+	-- TODO: Comment what this does
     ply:SetModelScale(scale)
     ply:SetViewOffset(Vector(0, 0, 64 * scale))
     ply:SetViewOffsetDucked(Vector(0, 0, 64 * scale / 2))
 
+	-- What the fuck is this?
+	-- TODO: Comment what this does
     if scale < 0.11 then
         ply:SetCrouchedWalkSpeed(0.83)
     else
@@ -21,6 +25,8 @@ local function updateCalcViews(finalPos, finalVel)
 	timer.Remove("portals_eye_fix_delay")	--just in case you enter the portal while the timer is running
 	
 	local addAngle = 1
+	-- What the fuck is this?
+	-- TODO: Comment what this does
 	finalPos = finalPos - finalVel * FrameTime() * 0.5	-- why does this work? idk but it feels nice, could be a source prediction thing
 	hook.Add("CalcView", "seamless_portals_fix", function(ply, origin, angle)
 		if ply:EyePos():DistToSqr(origin) > 10000 then return end
@@ -83,7 +89,11 @@ local function editPlayerCollision(mv, ply)
 		traceTable.start = ply:GetPos()
 	end
 	traceTable.endpos = traceTable.start
+	-- What the fuck is this?
+	-- TODO: Comment what this does
 	traceTable.mins = Vector(-16, -16, 0)
+	-- What the fuck is this?
+	-- TODO: Comment what this does
 	traceTable.maxs = Vector(16, 16, 72 - (ply:Crouching() and 1 or 0) * 36)
 	traceTable.filter = ply
 
@@ -107,6 +117,7 @@ local function editPlayerCollision(mv, ply)
 	-- getting this to work on the ground was a FUCKING headache
 	if !ply.PORTAL_STUCK_OFFSET and tr.Hit and tr.Entity:GetClass() == "seamless_portal" and tr.Entity.ExitPortal and tr.Entity:GetExitPortal() and tr.Entity:GetExitPortal():IsValid() then
 		local secondaryOffset = 0
+		-- TODO: Make these constants
 		if tr.Entity:GetUp():Dot(Vector(0, 0, 1)) > 0.5 then		-- the portal is on the ground
 			traceTable.mins = Vector(0, 0, 0)
 			traceTable.maxs = Vector(0, 0, 72)
@@ -116,6 +127,8 @@ local function editPlayerCollision(mv, ply)
 				return -- we accomplished nothing :DDDD
 			end
 
+			-- What the fuck is this?
+			-- TODO: Comment what this does
 			if tr.Entity:GetUp():Dot(Vector(0, 0, 1)) > 0.999 then
 				ply.PORTAL_STUCK_OFFSET = 72
 			else
@@ -150,6 +163,8 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	end
 
 	local plyPos = ply:EyePos()
+	-- What the fuck is this?
+	-- TODO: Comment what this does
 	traceTable.start = plyPos - mv:GetVelocity() * 0.02
 	traceTable.endpos = plyPos + mv:GetVelocity() * 0.02
 	traceTable.filter = ply
@@ -168,6 +183,8 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			local exitPortal = hitPortal:GetExitPortal()
 			local editedPos, editedAng = SeamlessPortals.TransformPortal(hitPortal, exitPortal, tr.HitPos, ply:EyeAngles())
 			local _, editedVelocity = SeamlessPortals.TransformPortal(hitPortal, exitPortal, nil, mv:GetVelocity():Angle())
+			-- What the fuck is this?
+			-- TODO: Comment what this does
 			local max = math.Max(mv:GetVelocity():Length(), exitPortal:GetUp():Dot(-physenv.GetGravity() / 3))
 
 			--ground can fluxuate depending on how the user places the portals, so we need to make sure we're not going to teleport into the ground
@@ -190,12 +207,16 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			local exitSize = (exitPortal:GetExitSize()[1] / hitPortal:GetExitSize()[1])
 			if ply.SCALE_MULTIPLIER then
 				if ply.SCALE_MULTIPLIER * exitSize != ply.SCALE_MULTIPLIER then
+					-- What the fuck is this?
+					-- TODO: Comment what this does
 					ply.SCALE_MULTIPLIER = math.Clamp(ply.SCALE_MULTIPLIER * exitSize, 0.01, 10)
 					finalPos = finalPos + (eyeHeight - eyeHeight * exitSize)
 					updateScale(ply, ply.SCALE_MULTIPLIER)
 				end
 			end
 
+			-- What the fuck is this?
+			-- TODO: Comment what this does
 			finalPos = finalPos - (editedPos - offset) * exitSize + Vector(0, 0, 0.1)	-- small offset so we arent in the floor
 
 			-- apply final velocity

@@ -74,6 +74,8 @@ hook.Add("EntityEmitSound", "seamless_portals_detour_sound", function(t)
 	for k, v in ipairs(ents.FindByClass("seamless_portal")) do
         if !v.ExitPortal or !v:GetExitPortal() or !v:GetExitPortal():IsValid() then continue end
         if !t.Pos or !t.Entity or t.Entity == NULL then continue end
+		-- What the fuck is this?
+		-- TODO: Comment what this does
         if t.Pos:DistToSqr(v:GetPos()) < 50000 * v:GetExitPortal():GetExitSize()[1] and (t.Pos - v:GetPos()):Dot(v:GetUp()) > 0 then
             local newPos, _ = SeamlessPortals.TransformPortal(v, v:GetExitPortal(), t.Pos, Angle())
             local oldPos = t.Entity:GetPos() or Vector()
