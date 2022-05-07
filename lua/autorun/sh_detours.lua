@@ -25,7 +25,7 @@ end)
 -- effect detour (Thanks to WasabiThumb)
 local oldUtilEffect = util.Effect
 local function effect(name, b, c, d)
-     if SeamlessPortals.PortalIndex > 0 and (name == "phys_freeze" or name == "phys_unfreeze") then return end
+     if SeamlessPortals.PortalIndex > 0 and (name == "phys_unfreeze" or name == "phys_freeze") then return end
      oldUtilEffect(name, b, c, d)
 end
 util.Effect = effect
@@ -33,7 +33,7 @@ util.Effect = effect
 -- super simple traceline detour
 SeamlessPortals = SeamlessPortals or {}
 SeamlessPortals.TraceLine = SeamlessPortals.TraceLine or util.TraceLine
-local function editedTraceLine(data)
+SeamlessPortals.NewTraceLine = function(data)
 	local tr = SeamlessPortals.TraceLine(data)
 	if tr.Entity:IsValid() and tr.Entity:GetClass() == "seamless_portal" and tr.Entity:GetExitPortal() and tr.Entity:GetExitPortal():IsValid() then
 		local hitPortal = tr.Entity
@@ -57,14 +57,6 @@ local function editedTraceLine(data)
 	return tr
 end
 
--- use original traceline if there are no portals
-timer.Create("seamless_portals_traceline", 1, 0, function()
-	if SeamlessPortals.PortalIndex > 0 then
-		util.TraceLine = editedTraceLine
-	else
-		util.TraceLine = SeamlessPortals.TraceLine	-- THE ORIGINAL TRACELINE
-	end
-end)
 
 if SERVER then return end
 
@@ -72,7 +64,7 @@ if SERVER then return end
 hook.Add("EntityEmitSound", "seamless_portals_detour_sound", function(t)
     if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	for k, v in ipairs(ents.FindByClass("seamless_portal")) do
-        if !v.ExitPortal or !v:GetExitPortal() or !v:GetExitPortal():IsValid() then continue end
+        if !v.ExitPortal or !v:GetExitPortal() or !v:GetExitPortal():IsValid() or !v:GetExitPortal().GetExitSize then continue end
         if !t.Pos or !t.Entity or t.Entity == NULL then continue end
         if t.Pos:DistToSqr(v:GetPos()) < 50000 * v:GetExitPortal():GetExitSize()[1] and (t.Pos - v:GetPos()):Dot(v:GetUp()) > 0 then
             local newPos, _ = SeamlessPortals.TransformPortal(v, v:GetExitPortal(), t.Pos, Angle())

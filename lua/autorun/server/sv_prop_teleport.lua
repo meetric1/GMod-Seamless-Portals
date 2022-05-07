@@ -2,7 +2,7 @@
 -- it only works for things with physics since I dont want to add support to other wacked entities that dont have physics
 
 local allEnts
-timer.Create("portals_ent_update", 0.5, 0, function()
+timer.Create("portals_ent_update", 0.25, 0, function()
     local portals = ents.FindByClass("seamless_portal")
     allEnts = ents.GetAll()
 
@@ -34,7 +34,7 @@ local seamless_check = function(e) return e:GetClass() == "seamless_portal" end 
 hook.Add("Tick", "seamless_portal_teleport", function()
     if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 or !allEnts then return end
     for _, prop in ipairs(allEnts) do
-        if !prop:IsValid() then continue end
+        if !prop or !prop:IsValid() then continue end
         if prop:IsPlayerHolding() then continue end
         local realPos = prop:GetPos()
 
@@ -49,8 +49,6 @@ hook.Add("Tick", "seamless_portal_teleport", function()
             filter = seamless_check,
             ignoreworld = true,
         })
-
-        debugoverlay.Box(realPos, obbMin, obbMax, 0.1, Color(0, 0, 0, 128))
 
         if !tr.Hit then continue end
         local hitPortal = tr.Entity

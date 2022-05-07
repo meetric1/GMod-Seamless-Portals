@@ -8,10 +8,8 @@ if CLIENT then
 	TOOL.ConvarX = CreateClientConVar("seamless_portal_size_x", "1", false, true, "Sets the size of the portal along the X axis", 0.01, 10)
 	TOOL.ConvarY = CreateClientConVar("seamless_portal_size_y", "1", false, true, "Sets the size of the portal along the Y axis", 0.01, 10)
 	TOOL.ConvarZ = CreateClientConVar("seamless_portal_size_z", "1", false, true, "Sets the size of the portal along the Z axis", 0.01, 10)
-
-	TOOL.DisplayX = TOOL.ConvarX:GetInt()
-	TOOL.DisplayY = TOOL.ConvarY:GetInt()
-	TOOL.DisplayZ = TOOL.ConvarY:GetInt()
+	TOOL.ConvarSides = CreateClientConVar("seamless_portal_sides", "1", false, true, "Sets the number of sides of the portal", 3, 100)
+	TOOL.ConvarB = CreateClientConVar("seamless_portal_backface", "1", false, true, "Sets whether to spawn with a backface or not", 0, 1)
 
 	TOOL.Information = {
 		{name = "left"},
@@ -26,6 +24,8 @@ if CLIENT then
 		panel:NumSlider("Portal Size X", "seamless_portal_size_x", 0.05, 10, 2)
 		panel:NumSlider("Portal Size Y", "seamless_portal_size_y", 0.05, 10, 2)
 		panel:NumSlider("Portal Size Z", "seamless_portal_size_z", 0.05, 10, 2)
+		panel:NumSlider("Portal Sides", "seamless_portal_sides", 3, 100, 0)
+		panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portal_backface")
 	end
 
 	local COLOR_GREEN = Color(0, 255, 0, 50)
@@ -36,7 +36,7 @@ if CLIENT then
 		if !trace.Entity or trace.Entity:GetClass() != "seamless_portal" then return end	-- dont draw the world or else u crash lol
 
 		local mins, maxs = trace.Entity:OBBMins(), trace.Entity:OBBMaxs()
-		mins[3] = mins[3] * 3
+		mins[3] = mins[3]
 		maxs[3] = 0
 
 		cam.Start3D()
@@ -55,7 +55,9 @@ function TOOL:LeftClick(trace)
 	local sizex = self:GetOwner():GetInfoNum("seamless_portal_size_x", 1)
 	local sizey = self:GetOwner():GetInfoNum("seamless_portal_size_y", 1)
 	local sizez = self:GetOwner():GetInfoNum("seamless_portal_size_z", 1)
-	trace.Entity:SetExitSize(Vector(sizex, sizey, sizez))
+	trace.Entity:SetExitSize(Vector(math.Clamp(sizex, 0.01, 10), math.Clamp(sizey, 0.01, 10), math.Clamp(sizez, 0.01, 10)))
+	trace.Entity:SetDisableBackface(self:GetOwner():GetInfoNum("seamless_portal_backface", 1) == 0)
+	trace.Entity:SetSides(math.Clamp(self:GetOwner():GetInfoNum("seamless_portal_sides", 1), 3, 100))
 	return true
 end
 

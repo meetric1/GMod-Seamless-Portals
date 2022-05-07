@@ -47,16 +47,11 @@ timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
 end)
 
 -- update the rendertarget here since we cant do it in postdraw (cuz of infinite recursion)
-local physgun_halo = GetConVar("physgun_halo")
 hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov)
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	SeamlessPortals.Rendering = true
 
-	-- black halo clipping plane fix (Thanks to homonovus)
-	physgun_halo = physgun_halo or GetConVar("physgun_halo")
-	local oldHalo = physgun_halo:GetInt()
-	physgun_halo:SetInt(0)
-
+	local render = render
 	for k, v in ipairs(portals) do
 		if timesRendered >= SeamlessPortals.MaxRTs then break end
 		if !v:IsValid() or !v:GetExitPortal():IsValid() then continue end
@@ -83,8 +78,6 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov
 		end
 	end
 
-	physgun_halo:SetInt(oldHalo)
-
 	SeamlessPortals.Rendering = false
 	timesRendered = 0
 end)
@@ -93,6 +86,13 @@ end)
 hook.Add("ShouldDrawLocalPlayer", "seamless_portal_drawplayer", function()
 	if SeamlessPortals.Rendering and !SeamlessPortals.DrawPlayerInView then 
 		return true 
+	end
+end)
+
+-- black halo clipping plane fix (PotatoOS)
+hook.Add("PreDrawHalos", "seamless_portal_blackfix", function()
+	if SeamlessPortals.Rendering then
+		return true
 	end
 end)
 
