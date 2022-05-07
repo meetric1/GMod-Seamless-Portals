@@ -37,13 +37,14 @@ function ENT:LinkPortal(ent)
 end
 
 function ENT:SetSides(sides)
-	self:SetSidesInternal(sides)
-	self:UpdatePhysmesh()
+	local shouldUpdatePhysmesh = self:GetSidesInternal() != sides
+	self:SetSidesInternal(math.Clamp(sides, 3, 100))
+	if shouldUpdatePhysmesh then self:UpdatePhysmesh() end
 end
 
 -- custom size for portal
 function ENT:SetExitSize(n)
-	local n = Vector(math.Clamp(n[1], 0.01, 10), math.Clamp(n[2], 0.01, 10), math.Clamp(n[3], 0.01, 10))
+	local n = Vector(math.Clamp(n[1], 0.01, 10), math.Clamp(n[2], 0.01, 10), math.Clamp(n[3], 0.1, 10))
 	self:SetPortalSize(n)
 	self:UpdatePhysmesh(n)
 end
@@ -196,17 +197,12 @@ function ENT:UpdatePhysmesh()
 	self:PhysicsInit(6)
 	if self:GetPhysicsObject():IsValid() then
 		local finalMesh = {}
-		--for k, tri in pairs(self:GetPhysicsObject():GetMeshConvexes()[1]) do
-		--	local pos = tri.pos * self:GetExitSize()
-		--	pos[3] = math.min(pos[3] * 4, 0)
-		--	table.insert(finalMesh, pos)
-		--end
 		local sides = self:GetSidesInternal()
 		local angleMul = 360 / sides
 		local degreeOffset = 45 * (math.pi / 180)
 		for side = 1, sides do
 			local side1 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), -0.1)
-			local side2 = Vector(math.sin(math.rad((side + 1) * angleMul) + degreeOffset), math.cos(math.rad((side + 1) * angleMul) + degreeOffset), 0)
+			local side2 = Vector(math.sin(math.rad((side + 1) * angleMul) + degreeOffset), math.cos(math.rad((side + 1) * angleMul) + degreeOffset), 0.01)
 			table.insert(finalMesh, side1 * self:GetExitSize() * 66.6)
 			table.insert(finalMesh, side2 * self:GetExitSize() * 66.6)
 		end
@@ -296,8 +292,8 @@ if CLIENT then
 			local degreeOffset = 45 * (math.pi / 180)
 			for side = 1, sides do
 				local side1 = Vector(0, 0, -0.09)
-				local side2 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), -0.09)
-				local side3 = Vector(math.sin(math.rad((side + 1) * angleMul) + degreeOffset), math.cos(math.rad((side + 1) * angleMul) + degreeOffset), -0.09)
+				local side2 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), -0.1)
+				local side3 = Vector(math.sin(math.rad((side + 1) * angleMul) + degreeOffset), math.cos(math.rad((side + 1) * angleMul) + degreeOffset), -0.1)
 
 				local streach1 = (side / sides) * 4
 				local streach2 = ((side + 1) / sides) * 4

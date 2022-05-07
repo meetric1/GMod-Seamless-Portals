@@ -23,7 +23,7 @@ if CLIENT then
 		})
 		panel:NumSlider("Portal Size X", "seamless_portal_size_x", 0.05, 10, 2)
 		panel:NumSlider("Portal Size Y", "seamless_portal_size_y", 0.05, 10, 2)
-		panel:NumSlider("Portal Size Z", "seamless_portal_size_z", 0.05, 10, 2)
+		panel:NumSlider("Portal Size Z", "seamless_portal_size_z", 0.1, 10, 2)
 		panel:NumSlider("Portal Sides", "seamless_portal_sides", 3, 100, 0)
 		panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portal_backface")
 	end
@@ -55,9 +55,9 @@ function TOOL:LeftClick(trace)
 	local sizex = self:GetOwner():GetInfoNum("seamless_portal_size_x", 1)
 	local sizey = self:GetOwner():GetInfoNum("seamless_portal_size_y", 1)
 	local sizez = self:GetOwner():GetInfoNum("seamless_portal_size_z", 1)
-	trace.Entity:SetExitSize(Vector(math.Clamp(sizex, 0.01, 10), math.Clamp(sizey, 0.01, 10), math.Clamp(sizez, 0.01, 10)))
+	trace.Entity:SetExitSize(Vector(sizex, sizey, sizez))
 	trace.Entity:SetDisableBackface(self:GetOwner():GetInfoNum("seamless_portal_backface", 1) == 0)
-	trace.Entity:SetSides(math.Clamp(self:GetOwner():GetInfoNum("seamless_portal_sides", 1), 3, 100))
+	trace.Entity:SetSides(self:GetOwner():GetInfoNum("seamless_portal_sides", 1))
 	return true
 end
 
