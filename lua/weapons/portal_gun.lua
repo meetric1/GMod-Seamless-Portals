@@ -122,7 +122,7 @@ function SWEP:PrimaryAttack()
 	end
 
 	setPortalPlacement(self.Owner, self.Portal)
-	self:SetNextPrimaryFire(CurTime() + 0.1)
+	self:SetNextPrimaryFire(CurTime() + 0.25)
 end
 
 function SWEP:SecondaryAttack()
@@ -138,7 +138,7 @@ function SWEP:SecondaryAttack()
 	end
 
 	setPortalPlacement(self.Owner, self.Portal2)
-	self:SetNextSecondaryFire(CurTime() + 0.1)
+	self:SetNextSecondaryFire(CurTime() + 0.25)
 end
 
 function SWEP:OnRemove()

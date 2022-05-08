@@ -291,7 +291,7 @@ if CLIENT then
 			local angleMul = 360 / sides
 			local degreeOffset = 45 * (math.pi / 180)
 			for side = 1, sides do
-				local side1 = Vector(0, 0, -0.09)
+				local side1 = Vector(0, 0, -0.1)
 				local side2 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), -0.1)
 				local side3 = Vector(math.sin(math.rad((side + 1) * angleMul) + degreeOffset), math.cos(math.rad((side + 1) * angleMul) + degreeOffset), -0.1)
 

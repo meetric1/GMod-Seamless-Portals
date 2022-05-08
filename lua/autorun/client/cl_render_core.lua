@@ -84,7 +84,7 @@ end)
 
 -- draw the player in renderview
 hook.Add("ShouldDrawLocalPlayer", "seamless_portal_drawplayer", function()
-	if SeamlessPortals.Rendering then 
+	if SeamlessPortals.Rendering and !SeamlessPortals.DrawPlayerInView then 
 		return true 
 	end
 end)
