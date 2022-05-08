@@ -7,9 +7,9 @@ if CLIENT then
 	
 	TOOL.ConvarX = CreateClientConVar("seamless_portal_size_x", "1", false, true, "Sets the size of the portal along the X axis", 0.01, 10)
 	TOOL.ConvarY = CreateClientConVar("seamless_portal_size_y", "1", false, true, "Sets the size of the portal along the Y axis", 0.01, 10)
-
-	TOOL.DisplayX = TOOL.ConvarX:GetInt()
-	TOOL.DisplayY = TOOL.ConvarY:GetInt()
+	TOOL.ConvarZ = CreateClientConVar("seamless_portal_size_z", "1", false, true, "Sets the size of the portal along the Z axis", 0.01, 10)
+	TOOL.ConvarSides = CreateClientConVar("seamless_portal_sides", "1", false, true, "Sets the number of sides of the portal", 3, 100)
+	TOOL.ConvarB = CreateClientConVar("seamless_portal_backface", "1", false, true, "Sets whether to spawn with a backface or not", 0, 1)
 
 	TOOL.Information = {
 		{name = "left"},
@@ -23,18 +23,20 @@ if CLIENT then
 		})
 		panel:NumSlider("Portal Size X", "seamless_portal_size_x", 0.05, 10, 2)
 		panel:NumSlider("Portal Size Y", "seamless_portal_size_y", 0.05, 10, 2)
+		panel:NumSlider("Portal Size Z", "seamless_portal_size_z", 0.1, 10, 2)
+		panel:NumSlider("Portal Sides", "seamless_portal_sides", 3, 100, 0)
+		panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portal_backface")
 	end
 
 	local COLOR_GREEN = Color(0, 255, 0, 50)
 	function TOOL:DrawHUD()
 		local traceTable = util.GetPlayerTrace(self:GetOwner())
-		traceTable.noDetour = true
-		local trace = util.TraceLine(traceTable)
+		local trace = SeamlessPortals.TraceLine(traceTable)
 		
 		if !trace.Entity or trace.Entity:GetClass() != "seamless_portal" then return end	-- dont draw the world or else u crash lol
 
 		local mins, maxs = trace.Entity:OBBMins(), trace.Entity:OBBMaxs()
-		mins[3] = mins[3] * 3
+		mins[3] = mins[3]
 		maxs[3] = 0
 
 		cam.Start3D()
@@ -46,21 +48,22 @@ end
 
 function TOOL:LeftClick(trace)
 	local traceTable = util.GetPlayerTrace(self:GetOwner())
-	traceTable.noDetour = true
-	local trace = util.TraceLine(traceTable)
+	local trace = SeamlessPortals.TraceLine(traceTable)
 
 	if !trace.Entity or trace.Entity:GetClass() != "seamless_portal" then return false end
 	if CPPI and SERVER then if !trace.Entity:CPPICanTool(self:GetOwner(), "remover") then return false end end
 	local sizex = self:GetOwner():GetInfoNum("seamless_portal_size_x", 1)
 	local sizey = self:GetOwner():GetInfoNum("seamless_portal_size_y", 1)
-	trace.Entity:SetExitSize(Vector(sizex, sizey, sizex))
+	local sizez = self:GetOwner():GetInfoNum("seamless_portal_size_z", 1)
+	trace.Entity:SetExitSize(Vector(sizex, sizey, sizez))
+	trace.Entity:SetDisableBackface(self:GetOwner():GetInfoNum("seamless_portal_backface", 1) == 0)
+	trace.Entity:SetSides(self:GetOwner():GetInfoNum("seamless_portal_sides", 1))
 	return true
 end
 
 function TOOL:RightClick(trace)
 	local traceTable = util.GetPlayerTrace(self:GetOwner())
-	traceTable.noDetour = true
-	local trace = util.TraceLine(traceTable)
+	local trace = SeamlessPortals.TraceLine(traceTable)
 
 	if !trace.Entity or trace.Entity:GetClass() != "seamless_portal" then return false end
 	if CPPI and SERVER then if !trace.Entity:CPPICanTool(self:GetOwner(), "remover") then return false end end

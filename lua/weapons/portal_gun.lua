@@ -61,11 +61,10 @@ local function setPortalPlacement(owner, portal)
 	local aim = owner:GetAimVector()
 	local mul = 10 * portal:GetExitSize()[3]
 
-	local tr = util.TraceLine({
+	local tr = SeamlessPortals.TraceLine({
 		start = pos,
 		endpos = pos + aim * 99999,
 		filter = seamlessCheck,
-		noDetour = true,
 	})
 
 	-- Align portals on 45 degree surfaces
@@ -77,6 +76,25 @@ local function setPortalPlacement(owner, portal)
 		ang:Set(getSurfaceAngle(owner, tr.HitNormal))
 	end
 
+	-- extrude portal from the ground
+	local angTab = {
+		ang:Forward() * portal:GetExitSize()[1], 
+		-ang:Forward() * portal:GetExitSize()[1], 
+		ang:Right() * portal:GetExitSize()[2], 
+		-ang:Right() * portal:GetExitSize()[2]
+	}
+	for i = 1, 4 do
+		local extr = SeamlessPortals.TraceLine({
+			start = tr.HitPos + tr.HitNormal,
+			endpos = tr.HitPos + tr.HitNormal - angTab[i] * 67,
+			filter = seamlessCheck,
+		})
+
+		if extr.Hit then
+			tr.HitPos = tr.HitPos + angTab[i] * 67 * (1 - extr.Fraction)
+		end
+	end
+
 	portal:SetPos((tr.HitPos + mul * tr.HitNormal))	--20
 	portal:SetAngles(ang)
 	if CPPI then portal:CPPISetOwner(owner) end
@@ -86,7 +104,7 @@ function SWEP:ShootFX()
 	self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
 	self.Owner:SetAnimation(PLAYER_ATTACK1)
 
-	if CLIENT then
+	if CLIENT and IsFirstTimePredicted() then
 		EmitSound("NPC_Vortigaunt.Shoot", self:GetPos(), self:EntIndex(), CHAN_AUTO, 0.25)	-- quieter for client
 	end
 end
@@ -99,11 +117,12 @@ function SWEP:PrimaryAttack()
 		self.Portal = ents.Create("seamless_portal")
 		self.Portal:Spawn()
 		self.Portal:LinkPortal(self.Portal2)
-		self.Portal:SetExitSize(Vector(1, 0.6, 1))
+		self.Portal:SetExitSize(Vector(0.75, 0.4, 1))
+		self.Portal:SetSides(50)
 	end
 
 	setPortalPlacement(self.Owner, self.Portal)
-	self:SetNextPrimaryFire(CurTime() + 0.1)
+	self:SetNextPrimaryFire(CurTime() + 0.25)
 end
 
 function SWEP:SecondaryAttack()
@@ -114,11 +133,12 @@ function SWEP:SecondaryAttack()
 		self.Portal2 = ents.Create("seamless_portal")
 		self.Portal2:Spawn()
 		self.Portal2:LinkPortal(self.Portal)
-		self.Portal2:SetExitSize(Vector(1, 0.6, 1))
+		self.Portal2:SetExitSize(Vector(0.75, 0.4, 1))
+		self.Portal2:SetSides(50)
 	end
 
 	setPortalPlacement(self.Owner, self.Portal2)
-	self:SetNextSecondaryFire(CurTime() + 0.1)
+	self:SetNextSecondaryFire(CurTime() + 0.25)
 end
 
 function SWEP:OnRemove()

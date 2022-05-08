@@ -27,7 +27,7 @@ function TOOL:GetPlacementPosition(tr)
 		rotatedAng.y = self:GetOwner():EyeAngles().y + 180
 	end
 	--
-	return (tr.HitPos + tr.HitNormal * self:GetOwner():GetInfoNum("seamless_portal_size_x", 1) * 6.1), rotatedAng
+	return (tr.HitPos + tr.HitNormal * self:GetOwner():GetInfoNum("seamless_portal_size_z", 1) * 10), rotatedAng
 end
 
 function TOOL:GetLinkTarget()
@@ -51,6 +51,9 @@ if ( CLIENT ) then
 	-- yoink! smiley :)
 	local xVar = CreateClientConVar("seamless_portal_size_x", "1", false, true, "Sets the size of the portal along the X axis", 0.01, 10)
 	local yVar = CreateClientConVar("seamless_portal_size_y", "1", false, true, "Sets the size of the portal along the Y axis", 0.01, 10)
+	local zVar = CreateClientConVar("seamless_portal_size_z", "1", false, true, "Sets the size of the portal along the Z axis", 0.01, 10)
+	local sidesVar = CreateClientConVar("seamless_portal_sides", "4", false, true, "Sets the number of sides the portal has", 3, 100)
+	local backVar = CreateClientConVar("seamless_portal_backface", "1", false, true, "Sets whether to spawn with a backface or not", 0, 1)
 
 	function TOOL.BuildCPanel(panel)
 		panel:AddControl("label", {
@@ -58,6 +61,9 @@ if ( CLIENT ) then
 		})
 		panel:NumSlider("Portal Size X", "seamless_portal_size_x", 0.05, 10, 2)
 		panel:NumSlider("Portal Size Y", "seamless_portal_size_y", 0.05, 10, 2)
+		panel:NumSlider("Portal Size Z", "seamless_portal_size_z", 0.1, 10, 2)
+		panel:NumSlider("Portal Sides", "seamless_portal_sides", 3, 100, 0)
+		panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portal_backface")
 	end
 
 	local beamMat = Material("cable/blue_elec")
@@ -91,8 +97,9 @@ if ( CLIENT ) then
 			end
 			local xScale = xVar:GetFloat()
 			local yScale = yVar:GetFloat()
+			local zScale = zVar:GetFloat()
 			render.SetColorMaterial()
-			render.DrawBox(pos, angles, Vector(-47.45 * xScale, -47.45 * yScale, -xScale * 6.1), Vector(47.45 * xScale, 47.45 * yScale, 0), green)
+			render.DrawBox(pos, angles, Vector(-47.45 * xScale, -47.45 * yScale, -zScale * 5), Vector(47.45 * xScale, 47.45 * yScale, 0), green)
 		cam.End3D()
 	end
 
@@ -121,7 +128,10 @@ elseif ( SERVER ) then
 		-- yoink! smiley
 		local sizex = self:GetOwner():GetInfoNum("seamless_portal_size_x", 1)
 		local sizey = self:GetOwner():GetInfoNum("seamless_portal_size_y", 1)
-		ent:SetExitSize(Vector(sizex, sizey, sizex))
+		local sizez = self:GetOwner():GetInfoNum("seamless_portal_size_z", 1)
+		ent:SetExitSize(Vector(sizex, sizey, sizez))
+		ent:SetDisableBackface(self:GetOwner():GetInfoNum("seamless_portal_backface", 1) == 0)
+		ent:SetSides(self:GetOwner():GetInfoNum("seamless_portal_sides", 4))
 		cleanup.Add(self:GetOwner(), "props", ent)
         undo.Create("Seamless Portal")
             undo.AddEntity(ent)
@@ -158,10 +168,10 @@ elseif ( SERVER ) then
 			self:SetStage(2)
 		else
 			local linkTarget = self:GetLinkTarget()
-			if (ent:EntIndex() == linkTarget:EntIndex()) then
+			--[[if (ent:EntIndex() == linkTarget:EntIndex()) then
 				self:SetStage(1)
 				return false
-			end
+			end]]
 			-- LinkPortal already contains an IsValid check
 			ent:LinkPortal(linkTarget)
 			self:SetStage(1)
