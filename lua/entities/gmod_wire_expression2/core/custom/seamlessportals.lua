@@ -12,7 +12,7 @@ local sbox_wire_portals_max = CreateConVar("sbox_wire_portals_max", 8, {FCVAR_AR
 local E2totalspawnedportals = 0
 
 function SeamlessPortalsCore.IsPortal(ent)
-	if (ent and ent:GetClass() == "seamless_portal") then
+	if (ent and ent:IsValid() and ent:GetClass() == "seamless_portal") then
 		return true
 	end
 	return false
@@ -56,7 +56,9 @@ end
 
 function SeamlessPortalsCore.GetPortalExit(ent)
 	if !SeamlessPortalsCore.IsPortal(ent) then return nil end
-	return ent:GetExitPortal() or nil
+	local Exit = ent:GetExitPortal()
+	if !SeamlessPortalsCore.IsPortal(Exit) then return nil end
+	return Exit
 end
 
 function SeamlessPortalsCore.SetPortalSize(ent, x, y)
@@ -95,13 +97,17 @@ e2function entity entity:getPortalExit()
 end
 
 e2function vector entity:getPortalSize()
-	if !SeamlessPortalsCore.IsPortal(this) then return nil end
-	return this:GetPortalSize()
+	if !SeamlessPortalsCore.IsPortal(this) then return {0,0} end
+	local size = this:GetPortalSize()
+	return {size[1],size[2]}
 end
 
 e2function vector entity:getPortalExitSize()
-	if !SeamlessPortalsCore.IsPortal(this) then return nil end
-	return SeamlessPortalsCore.GetPortalExit(this):GetPortalSize() or nil
+	if !SeamlessPortalsCore.IsPortal(this) then return {0,0} end
+	local Exit = SeamlessPortalsCore.GetPortalExit(this)
+	if !SeamlessPortalsCore.IsPortal(Exit) then return {0,0} end
+	local size = Exit:GetPortalSize()
+	return {size[1],size[2]}
 end
 
 __e2setcost( 25 )
@@ -126,7 +132,7 @@ end
 
 e2function number entity:setPortalExitSize(vector2 size)
 	local Exit = SeamlessPortalsCore.GetPortalExit(this) or nil
-	if !Exit then return 0 end
+	if !SeamlessPortalsCore.IsPortal(Exit) then return 0 end
 	if !SeamlessPortalsCore.CanManipPortal(Exit, self.player) then return 0 end
 	return SeamlessPortalsCore.SetPortalSize(Exit, size[1], size[2])
 end
@@ -138,16 +144,16 @@ e2function number entity:setPortalExitSize(number x, number y)
 	return SeamlessPortalsCore.SetPortalSize(Exit, x, y)
 end
 
-e2function number entity:setPortalSize(number squaredsize)
+e2function number entity:setPortalSize(number size)
 	if !SeamlessPortalsCore.CanManipPortal(this, self.player) then return 0 end
-	return SeamlessPortalsCore.SetPortalSize(this, squaredsize, squaredsize)
+	return SeamlessPortalsCore.SetPortalSize(this, size, size)
 end
 
-e2function number entity:setPortalExitSize(number squaredsize)
+e2function number entity:setPortalExitSize(number size)
 	local Exit = SeamlessPortalsCore.GetPortalExit(this) or nil
 	if !Exit then return 0 end
 	if !SeamlessPortalsCore.CanManipPortal(Exit, self.player) then return 0 end
-	return SeamlessPortalsCore.SetPortalSize(Exit, squaredsize, squaredsize)
+	return SeamlessPortalsCore.SetPortalSize(Exit, size, size)
 end
 
 e2function number entity:setPortalSides(number sides)
