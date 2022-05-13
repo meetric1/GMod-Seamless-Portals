@@ -91,7 +91,7 @@ end
 __e2setcost( 10 )
 
 e2function entity entity:getPortalExit()
-	return SeamlessPortalsCore.GetPortalExit(this)
+	return SeamlessPortalsCore.GetPortalExit(this) or NULL
 end
 
 e2function vector entity:getPortalSize()
