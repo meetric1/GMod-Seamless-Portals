@@ -59,17 +59,22 @@ function ENT:GetExitSize()
 end
 
 local function incrementPortal(ent)
-	if CLIENT then
-		if ent.UpdatePhysmesh then
-			ent:UpdatePhysmesh()
-		else
-			-- takes a minute to try and find the portal, if it cant, oh well...
-			timer.Create("seamless_portal_init" .. SeamlessPortals.PortalIndex, 1, 60, function()
-				if !ent or !ent:IsValid() or !ent.UpdatePhysmesh then return end
-
+	if CLIENT then	-- singleplayer is weird... dont generate a physmesh if its singleplayer
+		if !game.SinglePlayer() then
+			if ent.UpdatePhysmesh then
 				ent:UpdatePhysmesh()
-				timer.Remove("seamless_portal_init" .. SeamlessPortals.PortalIndex)
-			end)
+			else
+				-- takes a minute to try and find the portal, if it cant, oh well...
+				timer.Create("seamless_portal_init" .. SeamlessPortals.PortalIndex, 1, 60, function()
+					if !ent or !ent:IsValid() or !ent.UpdatePhysmesh then return end
+
+					ent:UpdatePhysmesh()
+					timer.Remove("seamless_portal_init" .. SeamlessPortals.PortalIndex)
+				end)
+			end
+		else
+			local mins, maxs = ent:GetModelBounds()
+			ent:SetRenderBounds(mins * ent:GetExitSize() * 2, maxs * ent:GetExitSize() * 2)
 		end
 	end
 	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
@@ -274,7 +279,7 @@ if CLIENT then
 		local portalPos, portalUp, exitSize = portal:GetPos(), portal:GetUp(), portal:GetExitSize()
 		local infrontPortal = (eyePos - portalPos):Dot(portalUp) > (-10 * exitSize[1]) -- true if behind the portal, false otherwise
 		local distPortal = eyePos:DistToSqr(portalPos) < SeamlessPortals.VarDrawDistance:GetFloat()^2 * exitSize[1] -- true if close enough
-		local portalLooking = (eyePos - portalPos):Dot(eyeAngle:Forward()) < 50 * exitSize[1] -- true if looking at the portal, false otherwise
+		local portalLooking = (eyePos - portalPos):Dot(eyeAngle:Forward()) < 50 * exitSize[2] -- true if looking at the portal, false otherwise
 
 		return infrontPortal and distPortal and portalLooking
 	end
