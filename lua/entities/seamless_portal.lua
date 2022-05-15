@@ -96,6 +96,8 @@ function ENT:Initialize()
 
 		if self:GetPortalSize() == Vector() then
 			self:SetExitSize(Vector(1, 1, 1))
+		else
+			self:SetExitSize(self:GetExitSize())
 		end
 
 		SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
@@ -204,7 +206,7 @@ function ENT:UpdatePhysmesh()
 		local finalMesh = {}
 		local sides = self:GetSidesInternal()
 		local angleMul = 360 / sides
-		local degreeOffset = 45 * (math.pi / 180)
+		local degreeOffset = (sides * 90 + (sides % 4 != 0 and 0 or 45)) * (math.pi / 180)
 		for side = 1, sides do
 			local side1 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), -0.1)
 			local side2 = Vector(math.sin(math.rad((side + 1) * angleMul) + degreeOffset), math.cos(math.rad((side + 1) * angleMul) + degreeOffset), 0.01)
@@ -294,7 +296,7 @@ if CLIENT then
 			local meshTable = {}
 			local invMeshTable = {}
 			local angleMul = 360 / sides
-			local degreeOffset = 45 * (math.pi / 180)
+			local degreeOffset = (sides * 90 + (sides % 4 != 0 and 0 or 45)) * (math.pi / 180)
 			for side = 1, sides do
 				local side1 = Vector(0, 0, -0.1)
 				local side2 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), -0.1)
