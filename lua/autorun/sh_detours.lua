@@ -35,24 +35,27 @@ SeamlessPortals = SeamlessPortals or {}
 SeamlessPortals.TraceLine = SeamlessPortals.TraceLine or util.TraceLine
 SeamlessPortals.NewTraceLine = function(data)
 	local tr = SeamlessPortals.TraceLine(data)
-	if tr.Entity:IsValid() and tr.Entity:GetClass() == "seamless_portal" and tr.Entity:GetExitPortal() and tr.Entity:GetExitPortal():IsValid() then
-		local hitPortal = tr.Entity
-		if tr.HitNormal:Dot(hitPortal:GetUp()) > 0 then
-			local editeddata = table.Copy(data)
-			editeddata.start = SeamlessPortals.TransformPortal(hitPortal, hitPortal:GetExitPortal(), tr.HitPos)
-			editeddata.endpos = SeamlessPortals.TransformPortal(hitPortal, hitPortal:GetExitPortal(), data.endpos)
-			-- filter the exit portal from being hit by the ray
-			if IsEntity(data.filter) and data.filter:GetClass() != "player" then
-				editeddata.filter = {data.filter, hitPortal:GetExitPortal()}
-			else
-				if istable(editeddata.filter) then
-					table.insert(editeddata.filter, hitPortal:GetExitPortal())
+	if tr.Entity:IsValid() then
+		if tr.Entity:GetClass() == "seamless_portal" and tr.Entity:GetExitPortal() and tr.Entity:GetExitPortal():IsValid() then
+			local hitPortal = tr.Entity
+			if tr.HitNormal:Dot(hitPortal:GetUp()) > 0 then
+				local editeddata = table.Copy(data)
+				editeddata.start = SeamlessPortals.TransformPortal(hitPortal, hitPortal:GetExitPortal(), tr.HitPos)
+				editeddata.endpos = SeamlessPortals.TransformPortal(hitPortal, hitPortal:GetExitPortal(), data.endpos)
+				-- filter the exit portal from being hit by the ray
+				if IsEntity(data.filter) and data.filter:GetClass() != "player" then
+					editeddata.filter = {data.filter, hitPortal:GetExitPortal()}
 				else
-					editeddata.filter = hitPortal:GetExitPortal()
+					if istable(editeddata.filter) then
+						table.insert(editeddata.filter, hitPortal:GetExitPortal())
+					else
+						editeddata.filter = hitPortal:GetExitPortal()
+					end
 				end
+				return SeamlessPortals.TraceLine(editeddata)
 			end
-			return SeamlessPortals.TraceLine(editeddata)
 		end
+		if data["WorldDetour"] then tr.Entity = game.GetWorld() end
 	end
 	return tr
 end
@@ -75,3 +78,11 @@ hook.Add("EntityEmitSound", "seamless_portals_detour_sound", function(t)
         end
 	end
 end)
+
+-- black halo clipping plane fix
+SeamlessPortals.HaloAdd = SeamlessPortals.HaloAdd or halo.Add
+SeamlessPortals.NewHaloAdd = function(entities, color, blurx, blury, passes, additive, ignorez)
+	if !SeamlessPortals.Rendering then
+		SeamlessPortals.HaloAdd(entities, color, blurx, blury, passes, additive, ignorez)
+	end
+end

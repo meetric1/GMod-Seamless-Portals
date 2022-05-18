@@ -27,6 +27,7 @@ local renderViewTable = {
 
 -- sort the portals by distance since draw functions do not obey the z buffer
 timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
+	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	portals = ents.FindByClass("seamless_portal")
 	table.sort(portals, function(a, b) 
 		return a:GetPos():DistToSqr(EyePos()) < b:GetPos():DistToSqr(EyePos())
@@ -89,34 +90,29 @@ hook.Add("ShouldDrawLocalPlayer", "seamless_portal_drawplayer", function()
 	end
 end)
 
--- black halo clipping plane fix (PotatoOS)
-hook.Add("PreDrawHalos", "seamless_portal_blackfix", function()
-	if SeamlessPortals.Rendering then
-		return true
-	end
-end)
-
 -- (REWRITE THIS!)
 -- draw the 2d skybox in place of the black (Thanks to Fafy2801)
+local render_SetMaterial = render.SetMaterial
+local render_DrawQuadEasy = render.DrawQuadEasy
 local function drawsky(pos, ang, size, size_2, color, materials)
 	-- BACK
-	render.SetMaterial(materials[1])
-	render.DrawQuadEasy(pos + Vector(0, size, 0), ang:Right(), size_2, size_2, color, 0)
+	render_SetMaterial(materials[1])
+	render_DrawQuadEasy(pos + Vector(0, size, 0), Vector(0, -1, 0), size_2, size_2, color, 0)
 	-- DOWN
-	render.SetMaterial(materials[2])
-	render.DrawQuadEasy(pos - Vector(0, 0, size), ang:Up(), size_2, size_2, color, 180)
+	render_SetMaterial(materials[2])
+	render_DrawQuadEasy(pos - Vector(0, 0, size), Vector(0, 0, 1), size_2, size_2, color, 180)
 	-- FRONT
-	render.SetMaterial(materials[3])
-	render.DrawQuadEasy(pos - Vector(0, size, 0), -ang:Right(), size_2, size_2, color, 0)
-	-- LEFT
-	render.SetMaterial(materials[4])
-	render.DrawQuadEasy(pos - Vector(size, 0, 0), ang:Forward(), size_2, size_2, color, 0)
+	render_SetMaterial(materials[3])
+	render_DrawQuadEasy(pos - Vector(0, size, 0), Vector(0, 1, 0), size_2, size_2, color, 0)
+	-- LEFF
+	render_SetMaterial(materials[4])
+	render_DrawQuadEasy(pos - Vector(size, 0, 0), Vector(1, 0, 0), size_2, size_2, color, 0)
 	-- RIGHT
-	render.SetMaterial(materials[5])
-	render.DrawQuadEasy(pos + Vector(size, 0, 0), -ang:Forward(), size_2, size_2, color, 0)
+	render_SetMaterial(materials[5])
+	render_DrawQuadEasy(pos + Vector(size, 0, 0), Vector(-1, 0, 0), size_2, size_2, color, 0)
 	-- UP
-	render.SetMaterial(materials[6])
-	render.DrawQuadEasy(pos + Vector(0, 0, size), -ang:Up(), size_2, size_2, color, 180)
+	render_SetMaterial(materials[6])
+	render_DrawQuadEasy(pos + Vector(0, 0, size), Vector(0, 0, -1), size_2, size_2, color, 180)
 end
 
 hook.Add("PostDrawTranslucentRenderables", "seamless_portal_skybox", function()

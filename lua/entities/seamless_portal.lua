@@ -60,6 +60,7 @@ end
 
 local function incrementPortal(ent)
 	if CLIENT then	-- singleplayer is weird... dont generate a physmesh if its singleplayer
+		ent.RENDER_MATRIX = Matrix()
 		if !game.SinglePlayer() then
 			if ent.UpdatePhysmesh then
 				ent:UpdatePhysmesh()
@@ -125,7 +126,7 @@ function ENT:SpawnFunction(ply, tr)
 end
 
 function ENT:OnRemove()
-	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex - 1
+	SeamlessPortals.PortalIndex = math.Max(SeamlessPortals.PortalIndex - 1, 0)
 	if SERVER and self.PORTAL_REMOVE_EXIT then
 		SafeRemoveEntity(self:GetExitPortal())
 	end
@@ -134,10 +135,10 @@ function ENT:OnRemove()
 end
 
 -- theres gonna be a bunch of magic numbers in this rendering code, since garry decided a hunterplate should be 47.9 rendering units wide and 51 physical units
-
 if CLIENT then
 	local drawMat = CreateMaterial("Seamless_Portal_BackfaceMat", "UnlitGeneric", {["$basetexture"] = "models/dav0r/hoverball"})
 	function ENT:Draw()
+		if halo.RenderedEntity() == self then return end
 		local render = render
 		local cam = cam
 		render.SetMaterial(drawMat)
@@ -145,22 +146,26 @@ if CLIENT then
 		-- render the outside frame
 		local portalSize = self:GetPortalSize()
 		local backface = self:GetDisableBackface()
-		local transformMatrix = Matrix()
-		transformMatrix:SetTranslation(self:GetPos() + self:GetUp() * 0.5)
-		transformMatrix:SetAngles(self:GetAngles())
-		transformMatrix:SetScale(portalSize * 66.6)
+		if self.RENDER_MATRIX:GetTranslation() != self:GetPos() then
+			self.RENDER_MATRIX = Matrix()
+			self.RENDER_MATRIX:SetTranslation(self:GetPos() + self:GetUp() * 0.5)
+			self.RENDER_MATRIX:SetAngles(self:GetAngles())
+			self.RENDER_MATRIX:SetScale(portalSize * 66.6)
+			self.RENDER_MATRIX_FLAT = Matrix(self.RENDER_MATRIX:ToTable())
+			local p = portalSize; p[3] = 0
+			self.RENDER_MATRIX_FLAT:SetScale(p * 66.6)
+		end
+
 		if !backface then
-			cam.PushModelMatrix(transformMatrix)
+			cam.PushModelMatrix(self.RENDER_MATRIX)
 				SeamlessPortals.GetRenderMesh(self:GetSidesInternal())[1]:Draw()
 			cam.PopModelMatrix()
 		end
 
 		-- draw inside of portal
-		if SeamlessPortals.Rendering or !self:GetExitPortal() or !self:GetExitPortal():IsValid() or halo.RenderedEntity() == self then
+		if SeamlessPortals.Rendering or !self:GetExitPortal() or !self:GetExitPortal():IsValid() or !SeamlessPortals.ShouldRender(self, EyePos(), EyeAngles()) then
 			if !backface then 
-				portalSize[3] = 0
-				transformMatrix:SetScale(portalSize * 66.6)
-				cam.PushModelMatrix(transformMatrix)
+				cam.PushModelMatrix(self.RENDER_MATRIX_FLAT)
 					SeamlessPortals.GetRenderMesh(self:GetSidesInternal())[2]:Draw()
 				cam.PopModelMatrix()
 			end
@@ -179,7 +184,7 @@ if CLIENT then
 		render.SetStencilCompareFunction(STENCIL_ALWAYS)
 
 		-- draw inside of portal
-		cam.PushModelMatrix(transformMatrix)
+		cam.PushModelMatrix(self.RENDER_MATRIX)
 			SeamlessPortals.GetRenderMesh(self:GetSidesInternal())[2]:Draw()
 		cam.PopModelMatrix()
 
@@ -266,11 +271,14 @@ SeamlessPortals.TransformPortal = function(a, b, pos, ang)
 
 	return editedPos, editedAng
 end
+
 SeamlessPortals.UpdateTraceline = function()
 	if SeamlessPortals.PortalIndex > 0 then
 		util.TraceLine = SeamlessPortals.NewTraceLine	-- traceline that can go through portals
+		if CLIENT then halo.Add = SeamlessPortals.NewHaloAdd end
 	else
 		util.TraceLine = SeamlessPortals.TraceLine	-- original traceline
+		if CLIENT then halo.Add = SeamlessPortals.HaloAdd end
 	end
 end
 
