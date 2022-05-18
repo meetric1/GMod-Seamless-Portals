@@ -15,7 +15,7 @@ To install this addon, download and unzip the contents and put it in your Garry’
  * Floor extrusion if your player gets stuck in the ground
  * Sounds travel through
  * Black skybox fix
- * Optimized trace line implementation
+ * Optimized [`util.TraceLine`][ref-trln] implementation
  * Includes non janky portal gun
  * Includes some tools to play with
  * Option for scalable portals to resize the player (using my player resizer)
@@ -43,10 +43,11 @@ To install this addon, download and unzip the contents and put it in your Garry’
 ### Credits
  * Fafy2801 for finding a fix for the black skybox
  * PeteBroccoli for improving the networking system
- * WasabiThumb for fixing a black halo glitch & adding traceline functionality
+ * WasabiThumb for fixing a black halo glitch & adding [`util.TraceLine`][ref-trln] functionality
  * WasabiThumb for also making a 'portal creator & linker' tool
  * [dvdvideo1234][ref-dvd] for making accurate portal gun surface angles & some optimizations
 
 [ref-ws]: https://steamcommunity.com/sharedfiles/filedetails/?id=2773737445
 [ref-dsc]: https://discord.gg/vdsgHsFrx2
 [ref-dvd]: https://steamcommunity.com/id/dvd_video
+[ref-trln]: https://wiki.facepunch.com/gmod/util.TraceLine
