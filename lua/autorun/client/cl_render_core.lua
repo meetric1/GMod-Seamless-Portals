@@ -48,9 +48,12 @@ timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
 end)
 
 -- update the rendertarget here since we cant do it in postdraw (cuz of infinite recursion)
+local nofunc = function() end
 hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov)
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	SeamlessPortals.Rendering = true
+	local oldHalo = halo.Add	-- black clipping plane fix
+	halo.Add = nofunc
 
 	local render = render
 	for k, v in ipairs(portals) do
@@ -79,6 +82,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov
 		end
 	end
 
+	halo.Add = oldHalo
 	SeamlessPortals.Rendering = false
 	timesRendered = 0
 end)

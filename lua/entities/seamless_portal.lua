@@ -275,10 +275,8 @@ end
 SeamlessPortals.UpdateTraceline = function()
 	if SeamlessPortals.PortalIndex > 0 then
 		util.TraceLine = SeamlessPortals.NewTraceLine	-- traceline that can go through portals
-		if CLIENT then halo.Add = SeamlessPortals.NewHaloAdd end
 	else
 		util.TraceLine = SeamlessPortals.TraceLine	-- original traceline
-		if CLIENT then halo.Add = SeamlessPortals.HaloAdd end
 	end
 end
 

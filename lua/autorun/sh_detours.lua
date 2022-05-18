@@ -78,11 +78,3 @@ hook.Add("EntityEmitSound", "seamless_portals_detour_sound", function(t)
         end
 	end
 end)
-
--- black halo clipping plane fix
-SeamlessPortals.HaloAdd = SeamlessPortals.HaloAdd or halo.Add
-SeamlessPortals.NewHaloAdd = function(entities, color, blurx, blury, passes, additive, ignorez)
-	if !SeamlessPortals.Rendering then
-		SeamlessPortals.HaloAdd(entities, color, blurx, blury, passes, additive, ignorez)
-	end
-end
