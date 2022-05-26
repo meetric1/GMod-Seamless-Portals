@@ -54,10 +54,11 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov
 	SeamlessPortals.Rendering = true
 	local oldHalo = halo.Add	-- black clipping plane fix
 	halo.Add = nofunc
+	local maxAm = SeamlessPortals.ToggleMirror() and 1 or 0
 
 	local render = render
 	for k, v in ipairs(portals) do
-		if timesRendered >= SeamlessPortals.MaxRTs then break end
+		if timesRendered >= SeamlessPortals.MaxRTs - maxAm then break end
 		if !v:IsValid() or !v:GetExitPortal():IsValid() then continue end
 		if timesRendered < SeamlessPortals.MaxRTs and SeamlessPortals.ShouldRender(v, eyePos, eyeAngles) then
 			local exitPortal = v:GetExitPortal()

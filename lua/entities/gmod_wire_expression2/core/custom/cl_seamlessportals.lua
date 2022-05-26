@@ -12,4 +12,5 @@ E2Helper.Descriptions["setPortalExitSize(e:n)"] = E2Helper.Descriptions["setPort
 E2Helper.Descriptions["setPortalSides(e:n)"] = "Sets the portal sides to the given number clamped between 3 to 100.\nReturns 0 on fail, 1 on success."
 E2Helper.Descriptions["setPortalExitSides(e:n)"] = E2Helper.Descriptions["setPortalSides(e:n)"]
 E2Helper.Descriptions["linkPortal(e:e)"] = "Links the given portal to another portal.\nReturns 0 on fail, 1 on success."
+E2Helper.Descriptions["unlinkPortal(e:)"] = "Unlinks the given portal from its exit portal.\nReturns 0 on fail, 1 on success."
 E2Helper.Descriptions["removePortal(e:)"] = "Removes a portal.\nReturns 0 on fail, 1 on success."

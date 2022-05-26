@@ -51,6 +51,7 @@ function SeamlessPortalsCore.CreatePortal(self, Pos, Ang, Clear)
 		ent:CPPISetOwner(self.player)
 	end
 	E2totalspawnedportals = E2totalspawnedportals + 1
+	gamemode.Call( "PlayerSpawnedVehicle", self.player, ent )
 	return ent
 end
 
@@ -79,6 +80,8 @@ e2function array createPortalPair(vector pos1, angle ang1, vector pos2, angle an
 	local portal1 = SeamlessPortalsCore.CreatePortal(self, Vector(pos1[1],pos1[2],pos1[3]), Angle(ang1[1], ang1[2], ang1[3]), true)
 	local portal2 = SeamlessPortalsCore.CreatePortal(self, Vector(pos2[1],pos2[2],pos2[3]), Angle(ang2[1], ang2[2], ang2[3]), true)
 	portal1:LinkPortal(portal2)
+	gamemode.Call( "PlayerSpawnedVehicle", self.player, portal1 )
+	gamemode.Call( "PlayerSpawnedVehicle", self.player, portal2 )
 
 	return {portal1, portal2}
 end
@@ -113,6 +116,14 @@ __e2setcost( 25 )
 e2function number entity:linkPortal(entity targetPortal)
 	if SeamlessPortalsCore.CanManipPortal(this, self.player) and SeamlessPortalsCore.CanManipPortal(targetPortal, self.player) then
 		this:LinkPortal(targetPortal)
+		return 1
+	end
+	return 0
+end
+
+e2function number entity:unlinkPortal()
+	if SeamlessPortalsCore.CanManipPortal(this, self.player) and SeamlessPortalsCore.CanManipPortal(targetPortal, self.player) then
+		this:unLinkPortal()
 		return 1
 	end
 	return 0

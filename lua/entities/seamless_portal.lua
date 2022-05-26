@@ -36,6 +36,14 @@ function ENT:LinkPortal(ent)
 	ent:SetExitPortal(self)
 end
 
+function ENT:UnlinkPortal()
+	local exitPortal = self:GetExitPortal()
+	if IsValid(exitPortal) then 
+		exitPortal:SetExitPortal(nil)
+	end
+	self:SetExitPortal(nil)
+end
+
 function ENT:SetSides(sides)
 	local shouldUpdatePhysmesh = self:GetSidesInternal() != sides
 	self:SetSidesInternal(math.Clamp(sides, 3, 100))
@@ -285,11 +293,14 @@ if CLIENT then
 	-- only render the portals that are in the frustum, or should be rendered
 	SeamlessPortals.ShouldRender = function(portal, eyePos, eyeAngle)
 		local portalPos, portalUp, exitSize = portal:GetPos(), portal:GetUp(), portal:GetExitSize()
-		local infrontPortal = (eyePos - portalPos):Dot(portalUp) > (-10 * exitSize[1]) -- true if behind the portal, false otherwise
-		local distPortal = eyePos:DistToSqr(portalPos) < SeamlessPortals.VarDrawDistance:GetFloat()^2 * exitSize[1] -- true if close enough
-		local portalLooking = (eyePos - portalPos):Dot(eyeAngle:Forward()) < 50 * exitSize[2] -- true if looking at the portal, false otherwise
-
-		return infrontPortal and distPortal and portalLooking
+		local max = math.max(exitSize[1], exitSize[2])
+		-- (eyePos - portalPos):Dot(portalUp) > (-10 * max) -- true if behind the portal, false otherwise
+		-- eyePos:DistToSqr(portalPos) < SeamlessPortals.VarDrawDistance:GetFloat()^2 * max -- true if close enough
+		-- (eyePos - portalPos):Dot(eyeAngle:Forward()) < 50 * max -- true if looking at the portal, false otherwise
+		-- why return on 1 line? well.. its faster
+		return ((eyePos - portalPos):Dot(portalUp) > (-10 * max) and 
+		eyePos:DistToSqr(portalPos) < SeamlessPortals.VarDrawDistance:GetFloat()^2 * max and 
+		(eyePos - portalPos):Dot(eyeAngle:Forward()) < 50 * max)
 	end
 
 	-- create meshes used for the portals
@@ -374,17 +385,12 @@ if CLIENT then
 
 	--funny flipped scene
 	local rendering = false
-	local cursedRT = GetRenderTarget("Portal_Flipscene", ScrW(), ScrH())
-	local cursedMat = CreateMaterial("Portal_Flipscene", "GMODScreenspace", {
-		["$basetexture"] = cursedRT:GetName(),
-	})
-
 	local mirrored = false
 	function SeamlessPortals.ToggleMirror(enable)
 		if enable then
 			hook.Add("PreRender", "portal_flip_scene", function()
 				rendering = true
-				render.PushRenderTarget(cursedRT)
+				render.PushRenderTarget(SeamlessPortals.PortalRTs[SeamlessPortals.MaxRTs])
 				render.RenderView({drawviewmodel = false})
 				render.PopRenderTarget()
 				rendering = false
@@ -392,7 +398,7 @@ if CLIENT then
 
 			hook.Add("PostDrawTranslucentRenderables", "portal_flip_scene", function(_, sky, sky3d)
 				if rendering or SeamlessPortals.Rendering then return end
-				render.SetMaterial(cursedMat)
+				render.SetMaterial(SeamlessPortals.PortalMaterials[SeamlessPortals.MaxRTs])
 				render.DrawScreenQuadEx(ScrW(), 0, -ScrW(), ScrH())
 
 				if LocalPlayer():Health() <= 0 then

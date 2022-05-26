@@ -21,7 +21,7 @@ local function updateCalcViews(finalPos, finalVel)
 	timer.Remove("portals_eye_fix_delay")	--just in case you enter the portal while the timer is running
 	
 	local addAngle = 1
-	finalPos = finalPos - finalVel * FrameTime() * 0.5	-- why does this work? idk but it feels nice, could be a source prediction thing
+	finalPos = finalPos - finalVel * FrameTime()	-- why does this work? idk but it feels nice, could be a source prediction thing
 	hook.Add("CalcView", "seamless_portals_fix", function(ply, origin, angle)
 		if ply:EyePos():DistToSqr(origin) > 10000 then return end
 		addAngle = addAngle * 0.9
@@ -76,7 +76,7 @@ local seamless_check = function(e) return !(e:GetClass() == "seamless_portal" or
 
 -- 'no collide' the player with the wall by shrinking the player's collision box
 local traceTable = {}
-local function editPlayerCollision(mv, ply)
+local function editPlayerCollision(mv, ply, t)
 	if ply.PORTAL_STUCK_OFFSET != 0 then
 		traceTable.start = ply:GetPos() + ply:GetVelocity() * 0.02
 	else
@@ -149,14 +149,13 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 		return 
 	end
 
+	editPlayerCollision(mv, ply)
+	
 	local plyPos = ply:EyePos()
 	traceTable.start = plyPos - mv:GetVelocity() * 0.02
 	traceTable.endpos = plyPos + mv:GetVelocity() * 0.02
 	traceTable.filter = ply
 	local tr = SeamlessPortals.TraceLine(traceTable)
-
-	editPlayerCollision(mv, ply)
-	
 	if !tr.Hit then return end
 	local hitPortal = tr.Entity
 	if hitPortal:GetClass() == "seamless_portal" and hitPortal.ExitPortal and hitPortal:GetExitPortal() and hitPortal:GetExitPortal():IsValid() then
