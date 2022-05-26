@@ -57,8 +57,14 @@ if ( CLIENT ) then
 	local zVar = CreateClientConVar("seamless_portal_size_z", "1", false, true, "Sets the size of the portal along the Z axis", 0.01, 10)
 	local sidesVar = CreateClientConVar("seamless_portal_sides", "4", false, true, "Sets the number of sides the portal has", 3, 100)
 	local backVar = CreateClientConVar("seamless_portal_backface", "1", false, true, "Sets whether to spawn with a backface or not", 0, 1)
-	local gtConvars = TOOL:BuildConVarList()
+	local gtConvars = {}
 
+	-- The tool is not using /ClientConVar/ that utilizes tool mode prefix. Populate manually
+	gtConvars["seamless_portal_size_x"  ] = 1
+	gtConvars["seamless_portal_size_y"  ] = 1
+	gtConvars["seamless_portal_size_z"  ] = 1
+	gtConvars["seamless_portal_sides"   ] = 4
+	gtConvars["seamless_portal_backface"] = 1
 
 	function TOOL.BuildCPanel(panel)
 		-- dvdvideo1234: We should not use AddControl
@@ -66,7 +72,7 @@ if ( CLIENT ) then
 		panel:Help   (language.GetPhrase("Tool.portal_creator_tool.desc"))
 		-- dvdvideo1234: Implement a proper preset storage
 		local preset = vgui.Create("ControlPresets", panel)
-		preset:SetPreset(gsTool)
+		preset:SetPreset("seamless_portal")
 		preset:AddOption("Default", gtConvars)
 		for k, v in pairs(table.GetKeys(gtConvars)) do preset:AddConVar(v) end
 		panel:AddItem(preset)
