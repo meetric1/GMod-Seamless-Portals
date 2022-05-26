@@ -71,16 +71,20 @@ if ( CLIENT ) then
 		panel:SetName(language.GetPhrase("Tool.portal_creator_tool.name"))
 		panel:Help   (language.GetPhrase("Tool.portal_creator_tool.desc"))
 		-- dvdvideo1234: Implement a proper preset storage
-		local preset = vgui.Create("ControlPresets", panel)
-		preset:SetPreset("seamless_portal")
-		preset:AddOption("Default", gtConvars)
-		for k, v in pairs(table.GetKeys(gtConvars)) do preset:AddConVar(v) end
-		panel:AddItem(preset)
+		local item = vgui.Create("ControlPresets", panel)
+		item:SetPreset("seamless_portal")
+		item:AddOption("Default", gtConvars)
+		for k, v in pairs(table.GetKeys(gtConvars)) do item:AddConVar(v) end
+		panel:AddItem(item)
 
-		panel:NumSlider("Portal Size X", "seamless_portal_size_x", 0.05, 10, 2)
-		panel:NumSlider("Portal Size Y", "seamless_portal_size_y", 0.05, 10, 2)
-		panel:NumSlider("Portal Size Z", "seamless_portal_size_z", 0.1, 10, 2)
-		panel:NumSlider("Portal Sides", "seamless_portal_sides", 3, 100, 0)
+		item = panel:NumSlider("Portal Size X", "seamless_portal_size_x", 0.05, 10, 2)
+		item:SetDefaultValue(gtConvars["seamless_portal_size_x"])
+		item = panel:NumSlider("Portal Size Y", "seamless_portal_size_y", 0.05, 10, 2)
+		item:SetDefaultValue(gtConvars["seamless_portal_size_y"])
+		item = panel:NumSlider("Portal Size Z", "seamless_portal_size_z", 0.1, 10, 2)
+		item:SetDefaultValue(gtConvars["seamless_portal_size_z"])
+		item = panel:NumSlider("Portal Sides", "seamless_portal_sides", 3, 100, 0)
+		item:SetDefaultValue(gtConvars["seamless_portal_sides"])
 		panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portal_backface")
 	end
 
