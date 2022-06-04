@@ -17,7 +17,7 @@ ENT.Spawnable    = true
 local gbSvFlag = bit.bor(FCVAR_ARCHIVE)
 -- create global table
 SeamlessPortals = SeamlessPortals or {}
-SeamlessPortals.VarDrawDistance = CreateClientConVar("seamless_portal_drawdistance", "2500", true, false, "Sets the size of the portal along the Y axis", 0)
+local varDrawDistance = CreateClientConVar("seamless_portal_drawdistance", "2500", true, false, "Sets the multiplier of how far a portal should render", 0)
 
 function ENT:SetupDataTables()
 	self:NetworkVar("Entity", 0, "ExitPortal")
@@ -299,7 +299,7 @@ if CLIENT then
 		-- (eyePos - portalPos):Dot(eyeAngle:Forward()) < 50 * max -- true if looking at the portal, false otherwise
 		-- why return on 1 line? well.. its faster
 		return ((eyePos - portalPos):Dot(portalUp) > (-10 * max) and 
-		eyePos:DistToSqr(portalPos) < SeamlessPortals.VarDrawDistance:GetFloat()^2 * max and 
+		eyePos:DistToSqr(portalPos) < varDrawDistance:GetFloat()^2 * max and 
 		(eyePos - portalPos):Dot(eyeAngle:Forward()) < 50 * max)
 	end
 
@@ -361,6 +361,8 @@ if CLIENT then
 			phys:SetMaterial("glass")
 			phys:SetPos(self:GetPos())
 			phys:SetAngles(self:GetAngles())
+		elseif self:GetVelocity() == Vector() then
+			self:UpdatePhysmesh()
 		end
 	end
 

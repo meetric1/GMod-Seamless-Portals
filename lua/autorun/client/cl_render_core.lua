@@ -49,8 +49,20 @@ end)
 
 -- update the rendertarget here since we cant do it in postdraw (cuz of infinite recursion)
 local nofunc = function() end
+local render_PushRenderTarget = render.PushRenderTarget
+local render_PopRenderTarget = render.PopRenderTarget
+local render_PushCustomClipPlane = render.PushCustomClipPlane
+local render_PopCustomClipPlane = render.PopCustomClipPlane
+local render_RenderView = render.RenderView
+local render_EnableClipping = render.EnableClipping
+
+local skipConvar = CreateClientConVar("seamlessportals_refreshrate", "1", false, false, "How many frames to skip before rendering the next portal", 1)
+local skip = 0
 hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov)
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
+	skip = (skip + 1) % skipConvar:GetInt()
+	if skip != 0 then return end
+
 	SeamlessPortals.Rendering = true
 	local oldHalo = halo.Add	-- black clipping plane fix
 	halo.Add = nofunc
@@ -68,18 +80,24 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov
 			renderViewTable.angles = editedAng
 			renderViewTable.fov = fov
 
+			//local pos1 = v:LocalToWorld(v:OBBMins()):ToScreen()
+			//local pos2 = v:LocalToWorld(v:OBBMaxs()):ToScreen()
+			//renderViewTable.x = v:LocalToWorld(Vector(-10, 0, 0)):ToScreen()
+
+
 			timesRendered = timesRendered + 1
 			v.PORTAL_RT_NUMBER = timesRendered	-- the number index of the rendertarget it will use in rendering
 
 			-- render the scene
 			local up = exitPortal:GetUp()
 			local oldClip = render.EnableClipping(true)
-			render.PushRenderTarget(SeamlessPortals.PortalRTs[timesRendered])
-			render.PushCustomClipPlane(up, up:Dot(exitPortal:GetPos() + up * 0.49))
-			render.RenderView(renderViewTable)
-			render.PopCustomClipPlane()
-			render.EnableClipping(oldClip)
-			render.PopRenderTarget()
+			render_PushRenderTarget(SeamlessPortals.PortalRTs[timesRendered])
+			render_PushCustomClipPlane(up, up:Dot(exitPortal:GetPos() + up * 0.49))
+			render_RenderView(renderViewTable)
+			render_PopCustomClipPlane()
+			render_EnableClipping(oldClip)
+			render_PopRenderTarget()
+
 		end
 	end
 

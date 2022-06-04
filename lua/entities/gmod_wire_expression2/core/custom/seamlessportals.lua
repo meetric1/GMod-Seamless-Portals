@@ -122,8 +122,8 @@ e2function number entity:linkPortal(entity targetPortal)
 end
 
 e2function number entity:unlinkPortal()
-	if SeamlessPortalsCore.CanManipPortal(this, self.player) and SeamlessPortalsCore.CanManipPortal(targetPortal, self.player) then
-		this:unLinkPortal()
+	if SeamlessPortalsCore.CanManipPortal(this, self.player) then
+		this:UnlinkPortal()
 		return 1
 	end
 	return 0

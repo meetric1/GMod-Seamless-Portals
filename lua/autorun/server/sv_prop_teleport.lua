@@ -61,11 +61,15 @@ hook.Add("Tick", "seamless_portal_teleport", function()
                 local _, editedVel = SeamlessPortals.TransformPortal(hitPortal, hitPortalExit, nil, constrainedProp:GetVelocity():Angle())
                 local max = math.Max(constrainedProp:GetVelocity():Length(), hitPortalExit:GetUp():Dot(-physenv.GetGravity() / 3))
                 constrainedProp:ForcePlayerDrop()
-                if constrainedProp:GetPhysicsObject():IsValid() then 
-                    constrainedProp:GetPhysicsObject():SetVelocity(editedVel:Forward() * max) 
+                local phys = constrainedProp:GetPhysicsObject()
+                if phys:IsValid() then 
+                    phys:SetVelocity(editedVel:Forward() * max)
+                    phys:SetPos(editedPos)
+                    phys:SetAngles(editedPropAng)
+                else
+                    constrainedProp:SetAngles(editedPropAng)
+                    constrainedProp:SetPos(editedPos)
                 end
-                constrainedProp:SetAngles(editedPropAng)
-                constrainedProp:SetPos(editedPos)
             end
         end
     end
