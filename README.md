@@ -1,12 +1,12 @@
-# GMod-Seamless-Portals
+# GMod-Seamless-Portals [![made with - mee++](https://img.shields.io/badge/made_with-mee%2B%2B-2ea44f)](https://)  
 [![](https://img.youtube.com/vi/lgiPHZdTGxs/0.jpg)](http://www.youtube.com/watch?v=lgiPHZdTGxs "")
 
 ### Description
-My seamless portals addon for Garry’s mod. This is a mod that adds an entity called the Seamless Portal, and a functioning portal gun!
+My seamless portals addon for Garryâ€™s mod. This is a mod that adds an entity called the Seamless Portal, and a functioning portal gun!
 You can spawn the Portals in the spawn menu, or by using the portal gun in the weapons tab.
 
 ### Installation
-To install this addon, download and unzip the contents and put it in your Garry’s mod addon folder
+To install this addon, download and unzip the contents and put it in your Garryâ€™s mod addon folder
 
 ### Features
  * More seamless
