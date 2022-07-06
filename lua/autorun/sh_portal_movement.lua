@@ -150,24 +150,25 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	end
 
 	editPlayerCollision(mv, ply)
-	
+
+	local plyVel = mv:GetVelocity()
 	local plyPos = ply:EyePos()
-	traceTable.start = plyPos - mv:GetVelocity() * 0.02
-	traceTable.endpos = plyPos + mv:GetVelocity() * 0.02
+	traceTable.start = plyPos - plyVel * 0.02
+	traceTable.endpos = plyPos + plyVel * 0.02
 	traceTable.filter = ply
 	local tr = SeamlessPortals.TraceLine(traceTable)
 	if !tr.Hit then return end
 	local hitPortal = tr.Entity
 	if hitPortal:GetClass() == "seamless_portal" and hitPortal.ExitPortal and hitPortal:GetExitPortal() and hitPortal:GetExitPortal():IsValid() then
-		if mv:GetVelocity():Dot(hitPortal:GetUp()) < 0 then
+		if plyVel:Dot(hitPortal:GetUp()) < 0 then
 			if ply.PORTAL_TELEPORTING then return end
 			freezePly = true
 
             -- wow look at all of this code just to teleport the player
 			local exitPortal = hitPortal:GetExitPortal()
 			local editedPos, editedAng = SeamlessPortals.TransformPortal(hitPortal, exitPortal, tr.HitPos, ply:EyeAngles())
-			local _, editedVelocity = SeamlessPortals.TransformPortal(hitPortal, exitPortal, nil, mv:GetVelocity():Angle())
-			local max = math.Max(mv:GetVelocity():Length(), exitPortal:GetUp():Dot(-physenv.GetGravity() / 3))
+			local _, editedVelocity = SeamlessPortals.TransformPortal(hitPortal, exitPortal, nil, plyVel:Angle())
+			local max = math.Max(plyVel:Length(), exitPortal:GetUp():Dot(-physenv.GetGravity() / 3))
 
 			--ground can fluxuate depending on how the user places the portals, so we need to make sure we're not going to teleport into the ground
 			local eyeHeight = (ply:EyePos() - ply:GetPos())

@@ -361,7 +361,7 @@ if CLIENT then
 			phys:SetMaterial("glass")
 			phys:SetPos(self:GetPos())
 			phys:SetAngles(self:GetAngles())
-		elseif self:GetVelocity() == Vector() then
+		elseif self:GetVelocity() == Vector() and !game.SinglePlayer() then
 			self:UpdatePhysmesh()
 		end
 	end
