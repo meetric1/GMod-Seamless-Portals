@@ -56,9 +56,9 @@ local render_PopCustomClipPlane = render.PopCustomClipPlane
 local render_RenderView = render.RenderView
 local render_EnableClipping = render.EnableClipping
 
-local skipConvar = CreateClientConVar("seamlessportals_refreshrate", "1", false, false, "How many frames to skip before rendering the next portal", 1)
+local skipConvar = CreateClientConVar("seamless_portals_refreshrate", "1", false, false, "How many frames to skip before rendering the next portal", 1)
 local skip = 0
-hook.Add("RenderScene", "seamless_portals_draw", function(eyePos, eyeAngles, fov)
+hook.Add("RenderScene", "seamless_portal_draw", function(eyePos, eyeAngles, fov)
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	skip = (skip + 1) % skipConvar:GetInt()
 	if skip != 0 then return end

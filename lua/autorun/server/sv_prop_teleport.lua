@@ -3,6 +3,7 @@
 
 local allEnts
 timer.Create("portals_ent_update", 0.25, 0, function()
+    if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
     local portals = ents.FindByClass("seamless_portal")
     allEnts = ents.GetAll()
 
