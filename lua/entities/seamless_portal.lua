@@ -51,9 +51,8 @@ function ENT:SetSides(sides)
 end
 
 -- custom size for portal
-local size_mult = Vector(math.sqrt(2), math.sqrt(2), 1)	// so the size is in source units (remember we are using sine/cosine)
 function ENT:SetSize(n)
-	self:SetSizeInternal(n * size_mult)	
+	self:SetSizeInternal(n)	
 	self:UpdatePhysmesh(n)
 end
 
@@ -85,6 +84,7 @@ local function incrementPortal(ent)
 				end)
 			end
 		end
+		ent:SetRenderBounds(-ent:GetSize(), ent:GetSize())
 	end
 	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
 end
@@ -145,6 +145,7 @@ function ENT:OnRemove()
 end
 
 -- theres gonna be a bunch of magic numbers in this rendering code, since garry decided a hunterplate should be 47.9 rendering units wide and 51 physical units
+local size_mult = Vector(math.sqrt(2), math.sqrt(2), 1)	// so the size is in source units (remember we are using sine/cosine)
 if CLIENT then
 	local drawMat = CreateMaterial("Seamless_Portal_BackfaceMat", "UnlitGeneric", {["$basetexture"] = "models/dav0r/hoverball"})
 	function ENT:GetRenderMesh()
@@ -157,7 +158,7 @@ if CLIENT then
 		local cam = cam
 	
 		-- render the outside frame
-		local portalSize = self:GetSize()
+		local portalSize = self:GetSize() * size_mult
 		local backface = self:GetDisableBackface()
 		if self.RENDER_MATRIX:GetTranslation() != self:GetPos() or self.RENDER_MATRIX:GetScale() != portalSize then
 			self.RENDER_MATRIX = Matrix()
@@ -233,8 +234,8 @@ function ENT:UpdatePhysmesh()
 		for side = 1, sides do
 			local side1 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), -1)
 			local side2 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), 0)
-			table.insert(finalMesh, side1 * self:GetSize())
-			table.insert(finalMesh, side2 * self:GetSize())
+			table.insert(finalMesh, side1 * self:GetSize() * size_mult)
+			table.insert(finalMesh, side2 * self:GetSize() * size_mult)
 		end
 		self:PhysicsInitConvex(finalMesh)
 		self:EnableCustomCollisions(true)
