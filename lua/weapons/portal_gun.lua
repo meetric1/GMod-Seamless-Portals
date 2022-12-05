@@ -55,6 +55,7 @@ local function seamlessCheck(e)
 	return !gtCheck[e:GetClass()]
 end
 
+local size_mult = Vector(math.sqrt(2), math.sqrt(2), 1)	// so the size is in source units (remember we are using sine/cosine)
 local function setPortalPlacement(owner, portal)
 	local ang = Angle() -- The portal angle
 	local pos = owner:GetShootPos()
@@ -78,10 +79,10 @@ local function setPortalPlacement(owner, portal)
 
 	-- extrude portal from the ground
 	local angTab = {
-		ang:Forward() * portal:GetSize()[1], 
-		-ang:Forward() * portal:GetSize()[1], 
-		ang:Right() * portal:GetSize()[2], 
-		-ang:Right() * portal:GetSize()[2]
+		ang:Forward() * portal:GetSize()[1] * size_mult[1], 
+		-ang:Forward() * portal:GetSize()[1] * size_mult[1], 
+		ang:Right() * portal:GetSize()[2] * size_mult[2], 
+		-ang:Right() * portal:GetSize()[2] * size_mult[2]
 	}
 	for i = 1, 4 do
 		local extr = SeamlessPortals.TraceLine({
