@@ -26,7 +26,7 @@ timer.Create("portals_ent_update", 0.25, 0, function()
             end
         end
 
-        if !closestPortal or closestPortalDist > 1000000 * closestPortal:GetExitSize()[3] then table.remove(allEnts, i) continue end     --over 100 units away from the portal, dont bother checking
+        if !closestPortal or closestPortalDist > 1000000 * closestPortal:GetSize()[3] then table.remove(allEnts, i) continue end     --over 100 units away from the portal, dont bother checking
         if (closestPortal:GetPos() - realPos):Dot(closestPortal:GetUp()) > 0 then table.remove(allEnts, i) continue end     --behind the portal, dont bother checking
     end
 end)
@@ -55,7 +55,7 @@ hook.Add("Tick", "seamless_portal_teleport", function()
         local hitPortal = tr.Entity
         if hitPortal:GetClass() != "seamless_portal" then return end
         local hitPortalExit = tr.Entity:GetExitPortal()
-        if hitPortalExit and hitPortalExit:IsValid() and obbMax[1] < hitPortal:GetExitSize()[1] * 45 and obbMax[2] < hitPortal:GetExitSize()[2] * 45 and prop:GetVelocity():Dot(hitPortal:GetUp()) < -0.5 then
+        if hitPortalExit and hitPortalExit:IsValid() and obbMax[1] < hitPortal:GetSize()[1] * 45 and obbMax[2] < hitPortal:GetSize()[2] * 45 and prop:GetVelocity():Dot(hitPortal:GetUp()) < -0.5 then
             local constrained = constraint.GetAllConstrainedEntities(prop)
             for k, constrainedProp in pairs(constrained) do
                 local editedPos, editedPropAng = SeamlessPortals.TransformPortal(hitPortal, hitPortalExit, constrainedProp:GetPos(), constrainedProp:GetAngles())
