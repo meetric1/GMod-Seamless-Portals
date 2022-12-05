@@ -84,8 +84,6 @@ local function incrementPortal(ent)
 					timer.Remove("seamless_portal_init" .. SeamlessPortals.PortalIndex)
 				end)
 			end
-		else
-			ent:SetRenderBounds(-ent:GetSize(), ent:GetSize())
 		end
 	end
 	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
@@ -172,7 +170,9 @@ if CLIENT then
 
 			portalSize[3] = 0
 			self.RENDER_MATRIX_FLAT = Matrix(self.RENDER_MATRIX:ToTable())
-			self.RENDER_MATRIX_FLAT:SetScale(portalSize)			
+			self.RENDER_MATRIX_FLAT:SetScale(portalSize)	
+			
+			self:SetRenderBounds(-self:GetSize(), self:GetSize())
 		end
 
 		if !backface then
@@ -241,11 +241,6 @@ function ENT:UpdatePhysmesh()
 		self:GetPhysicsObject():EnableMotion(false)
 		self:GetPhysicsObject():SetMaterial("glass")
 		self:GetPhysicsObject():SetMass(250)
-
-		if CLIENT then 
-			local mins, maxs = self:GetCollisionBounds()
-			self:SetRenderBounds(mins, maxs)
-		end
 	else
 		self:PhysicsDestroy()
 		self:EnableCustomCollisions(false)
