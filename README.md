@@ -40,7 +40,7 @@ To install this addon, download and unzip the contents and put it in your Garryâ
 |`portal:GetSize()`|Self-explanatory, default is `Vector(50, 50, 8)`|
 |`portal:GetExitPortal()`|Gets the portal's exit, `nil` or `NULL` entity if there is none|
 |`portal:GetDisableBackface()`|Self-explanatory, default is `false`|
-|`portal:GetRemoveExit(bool)`|Self-explanatory, default is `false`|
+|`portal:GetRemoveExit()`|Self-explanatory, default is `false`|
 
 ### Credits
  * Fafy2801 for finding a fix for the black skybox
