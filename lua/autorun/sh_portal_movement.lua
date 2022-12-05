@@ -105,7 +105,7 @@ local function editPlayerCollision(mv, ply, t)
 	local tr = util.TraceHull(traceTable)
 
 	-- getting this to work on the ground was a FUCKING headache
-	if !ply.PORTAL_STUCK_OFFSET and tr.Hit and tr.Entity:GetClass() == "seamless_portal" and tr.Entity.ExitPortal and tr.Entity:GetExitPortal() and tr.Entity:GetExitPortal():IsValid() then
+	if !ply.PORTAL_STUCK_OFFSET and tr.Hit and tr.Entity:GetClass() == "seamless_portal" and tr.Entity.GetExitPortal and IsValid(tr.Entity:GetExitPortal()) then
 		local secondaryOffset = 0
 		if tr.Entity:GetUp():Dot(Vector(0, 0, 1)) > 0.5 then		-- the portal is on the ground
 			traceTable.mins = Vector(0, 0, 0)
@@ -157,10 +157,12 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	traceTable.endpos = plyPos + plyVel * 0.02
 	traceTable.filter = ply
 	local tr = SeamlessPortals.TraceLine(traceTable)
+	//PrintTable(tr)
 	if !tr.Hit then return end
 	local hitPortal = tr.Entity
-	if hitPortal:GetClass() == "seamless_portal" and hitPortal.ExitPortal and hitPortal:GetExitPortal() and hitPortal:GetExitPortal():IsValid() then
+	if hitPortal:GetClass() == "seamless_portal" and hitPortal.GetExitPortal and IsValid(hitPortal:GetExitPortal()) then
 		if plyVel:Dot(hitPortal:GetUp()) < 0 then
+			
 			if ply.PORTAL_TELEPORTING then return end
 			freezePly = true
 
@@ -187,7 +189,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 				offset = editedPos
 			end
 
-			local exitSize = (exitPortal:GetExitSize()[1] / hitPortal:GetExitSize()[1])
+			local exitSize = (exitPortal:GetSize()[1] / hitPortal:GetSize()[1])
 			if ply.SCALE_MULTIPLIER then
 				if ply.SCALE_MULTIPLIER * exitSize != ply.SCALE_MULTIPLIER then
 					ply.SCALE_MULTIPLIER = math.Clamp(ply.SCALE_MULTIPLIER * exitSize, 0.01, 10)
@@ -209,12 +211,20 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 					ply:SetEyeAngles(editedAng)
 				end
 				
+				// infinite map support
+				if InfMap then
+					local final_pos_offset, chunk_offset = InfMap.localize_vector(finalPos)
+					finalPos = final_pos_offset
+					InfMap.prop_update_chunk(ply, chunk_offset)
+				end
+
 				mv:SetOrigin(finalPos)
+				
 				net.Start("PORTALS_FREEZE")
 				net.WriteBool(hitPortal == exitPortal)
 				net.Send(ply)
 			else
-				updateCalcViews(finalPos + (ply:EyePos() - ply:GetPos()), editedVelocity:Forward() * max * exitSize, (ply.SCALE_MULTIPLIER or 1) * exitSize)	--fix viewmodel lerping for a tiny bit
+				updateCalcViews(finalPos + eyeHeight, editedVelocity:Forward() * max * exitSize, (ply.SCALE_MULTIPLIER or 1) * exitSize)	--fix viewmodel lerping for a tiny bit
 				ply:SetEyeAngles(editedAng)
 				ply:SetPos(finalPos)
 

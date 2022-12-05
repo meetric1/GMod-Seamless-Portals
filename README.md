@@ -29,14 +29,14 @@ To install this addon, download and unzip the contents and put it in your Garryâ
 ### Developer API
 |Setters **(SERVER ONLY)**|Description|
 |:---|:---|
-|`ents.Create("seamless_portal")`|Spawns a portal|
+|`ents.Create("seamless_portal")`|Creates a portal entity|
 |`portal:LinkPortal(portal2)`|Links 2 portals together|
-|`portal:SetExitSize(vector)`|Sets the size of the portal|
+|`portal:SetSize(vector)`|Sets the size of the portal in source units|
 |`portal:SetDisableBackface(bool)`|Disables/Enables the back material on the portal|
 
 |Getters **(SHARED)**|Description|
 |:---|:---|
-|`portal:GetPortalSize()`|Self-explanatory, default is `Vector(1,1,1)`|
+|`portal:GetSize()`|Self-explanatory, default is `Vector(50, 50, 8)`|
 |`portal:GetExitPortal()`|Gets the portal's exit, `nil` or `NULL` entity if there is none|
 |`portal:GetDisableBackface()`|Self-explanatory, default is `false`|
 

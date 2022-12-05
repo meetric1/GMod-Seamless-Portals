@@ -59,7 +59,7 @@ local function setPortalPlacement(owner, portal)
 	local ang = Angle() -- The portal angle
 	local pos = owner:GetShootPos()
 	local aim = owner:GetAimVector()
-	local mul = 10 * portal:GetExitSize()[3]
+	local mul = portal:GetSize()[3] * 1.1
 
 	local tr = SeamlessPortals.TraceLine({
 		start = pos,
@@ -78,20 +78,20 @@ local function setPortalPlacement(owner, portal)
 
 	-- extrude portal from the ground
 	local angTab = {
-		ang:Forward() * portal:GetExitSize()[1], 
-		-ang:Forward() * portal:GetExitSize()[1], 
-		ang:Right() * portal:GetExitSize()[2], 
-		-ang:Right() * portal:GetExitSize()[2]
+		ang:Forward() * portal:GetSize()[1], 
+		-ang:Forward() * portal:GetSize()[1], 
+		ang:Right() * portal:GetSize()[2], 
+		-ang:Right() * portal:GetSize()[2]
 	}
 	for i = 1, 4 do
 		local extr = SeamlessPortals.TraceLine({
 			start = tr.HitPos + tr.HitNormal,
-			endpos = tr.HitPos + tr.HitNormal - angTab[i] * 67,
+			endpos = tr.HitPos + tr.HitNormal - angTab[i],
 			filter = seamlessCheck,
 		})
 
 		if extr.Hit then
-			tr.HitPos = tr.HitPos + angTab[i] * 67 * (1 - extr.Fraction)
+			tr.HitPos = tr.HitPos + angTab[i] * (1 - extr.Fraction)
 		end
 	end
 
@@ -117,7 +117,7 @@ function SWEP:PrimaryAttack()
 		self.Portal = ents.Create("seamless_portal")
 		self.Portal:Spawn()
 		self.Portal:LinkPortal(self.Portal2)
-		self.Portal:SetExitSize(Vector(0.75, 0.4, 1))
+		self.Portal:SetSize(Vector(33, 17, 8))
 		self.Portal:SetSides(50)
 	end
 
@@ -133,8 +133,9 @@ function SWEP:SecondaryAttack()
 		self.Portal2 = ents.Create("seamless_portal")
 		self.Portal2:Spawn()
 		self.Portal2:LinkPortal(self.Portal)
-		self.Portal2:SetExitSize(Vector(0.75, 0.4, 1))
+		self.Portal2:SetSize(Vector(33, 17, 8))
 		self.Portal2:SetSides(50)
+		self.Portal2:SetColor(Color(0, 255, 0))
 	end
 
 	setPortalPlacement(self.Owner, self.Portal2)

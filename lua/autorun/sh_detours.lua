@@ -36,7 +36,7 @@ SeamlessPortals.TraceLine = SeamlessPortals.TraceLine or util.TraceLine
 SeamlessPortals.NewTraceLine = function(data)
 	local tr = SeamlessPortals.TraceLine(data)
 	if tr.Entity:IsValid() then
-		if tr.Entity:GetClass() == "seamless_portal" and tr.Entity:GetExitPortal() and tr.Entity:GetExitPortal():IsValid() then
+		if tr.Entity:GetClass() == "seamless_portal" and IsValid(tr.Entity:GetExitPortal()) then
 			local hitPortal = tr.Entity
 			if tr.HitNormal:Dot(hitPortal:GetUp()) > 0 then
 				local editeddata = table.Copy(data)

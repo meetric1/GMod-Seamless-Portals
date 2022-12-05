@@ -17,11 +17,11 @@ ENT.Spawnable    = true
 local gbSvFlag = bit.bor(FCVAR_ARCHIVE)
 -- create global table
 SeamlessPortals = SeamlessPortals or {}
-local varDrawDistance = CreateClientConVar("seamless_portal_drawdistance", "2500", true, false, "Sets the multiplier of how far a portal should render", 0)
+local varDrawDistance = CreateClientConVar("seamless_portal_drawdistance", "250", true, false, "Sets the multiplier of how far a portal should render", 0)
 
 function ENT:SetupDataTables()
 	self:NetworkVar("Entity", 0, "ExitPortal")
-	self:NetworkVar("Vector", 0, "PortalSize")
+	self:NetworkVar("Vector", 0, "SizeInternal")
 	self:NetworkVar("Bool", 0, "DisableBackface")
 	self:NetworkVar("Int", 0, "SidesInternal")
 
@@ -31,7 +31,7 @@ function ENT:SetupDataTables()
 end
 
 function ENT:LinkPortal(ent)
-	if !ent or !ent:IsValid() then return end
+	if !IsValid(ent) then return end
 	self:SetExitPortal(ent)
 	ent:SetExitPortal(self)
 end
@@ -51,19 +51,22 @@ function ENT:SetSides(sides)
 end
 
 -- custom size for portal
-function ENT:SetExitSize(n)
-	local n = Vector(math.Clamp(n[1], 0.01, 10), math.Clamp(n[2], 0.01, 10), math.Clamp(n[3], 0.1, 10))
-	self:SetPortalSize(n)
+local size_mult = Vector(math.sqrt(2), math.sqrt(2), 1)	// so the size is in source units (remember we are using sine/cosine)
+function ENT:SetSize(n)
+	self:SetSizeInternal(n * size_mult)	
 	self:UpdatePhysmesh(n)
 end
 
--- (for older api compatibility)
-function ENT:ExitPortal()
-	return self:GetExitPortal()
+function ENT:SetRemoveExit(bool)
+	self.PORTAL_REMOVE_EXIT = bool
 end
 
-function ENT:GetExitSize()
-	return self:GetPortalSize()
+function ENT:GetRemoveExit(bool)
+	return self.PORTAL_REMOVE_EXIT
+end
+
+function ENT:GetSize()
+	return self:GetSizeInternal()
 end
 
 local function incrementPortal(ent)
@@ -82,8 +85,7 @@ local function incrementPortal(ent)
 				end)
 			end
 		else
-			local mins, maxs = ent:GetModelBounds()
-			ent:SetRenderBounds(mins * ent:GetExitSize() * 2, maxs * ent:GetExitSize() * 2)
+			ent:SetRenderBounds(-ent:GetSize(), ent:GetSize())
 		end
 	end
 	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
@@ -93,7 +95,7 @@ function ENT:Initialize()
 	if CLIENT then
 		incrementPortal(self)
 	else
-		self:SetModel("models/hunter/plates/plate2x2.mdl")
+		self:SetModel("models/Combine_Helicopter/helicopter_bomb01.mdl")
 		self:SetAngles(self:GetAngles() + Angle(90, 0, 0))
 		self:PhysicsInit(SOLID_VPHYSICS)
 		self:SetMoveType(MOVETYPE_VPHYSICS)
@@ -102,11 +104,12 @@ function ENT:Initialize()
 		self:SetRenderMode(RENDERMODE_TRANSCOLOR)
 		self:SetCollisionGroup(COLLISION_GROUP_WORLD)
 		self:DrawShadow(false)
+		self:SetRemoveExit(false)
 
-		if self:GetPortalSize() == Vector() then
-			self:SetExitSize(Vector(1, 1, 1))
+		if self:GetSize() == Vector() then
+			self:SetSize(Vector(50, 50, 8))
 		else
-			self:SetExitSize(self:GetExitSize())
+			self:SetSize(self:GetSize())
 		end
 
 		SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
@@ -116,7 +119,7 @@ end
 
 function ENT:SpawnFunction(ply, tr)
 	local portal1 = ents.Create("seamless_portal")
-	portal1:SetPos(tr.HitPos + tr.HitNormal * 150)
+	portal1:SetPos(tr.HitPos + tr.HitNormal * 160)
 	portal1:Spawn()
 
 	local portal2 = ents.Create("seamless_portal")
@@ -127,8 +130,9 @@ function ENT:SpawnFunction(ply, tr)
 
 	portal1:LinkPortal(portal2)
 	portal2:LinkPortal(portal1)
-	portal1.PORTAL_REMOVE_EXIT = true
-	portal2.PORTAL_REMOVE_EXIT = true
+
+	portal1:SetRemoveExit(true)
+	portal2:SetRemoveExit(true)
 
 	return portal1
 end
@@ -145,33 +149,38 @@ end
 -- theres gonna be a bunch of magic numbers in this rendering code, since garry decided a hunterplate should be 47.9 rendering units wide and 51 physical units
 if CLIENT then
 	local drawMat = CreateMaterial("Seamless_Portal_BackfaceMat", "UnlitGeneric", {["$basetexture"] = "models/dav0r/hoverball"})
+	function ENT:GetRenderMesh()
+		return {Mesh = SeamlessPortals.GetRenderMesh(self:GetSidesInternal())[1], Material = drawMat, Matrix = self.RENDER_MATRIX_LOCAL}
+	end
+
 	function ENT:Draw()
 		if halo.RenderedEntity() == self then return end
 		local render = render
 		local cam = cam
-		render.SetMaterial(drawMat)
-
+	
 		-- render the outside frame
-		local portalSize = self:GetPortalSize()
+		local portalSize = self:GetSize()
 		local backface = self:GetDisableBackface()
-		if self.RENDER_MATRIX:GetTranslation() != self:GetPos() then
+		if self.RENDER_MATRIX:GetTranslation() != self:GetPos() or self.RENDER_MATRIX:GetScale() != portalSize then
 			self.RENDER_MATRIX = Matrix()
-			self.RENDER_MATRIX:SetTranslation(self:GetPos() + self:GetUp() * 0.5)
+			self.RENDER_MATRIX:SetTranslation(self:GetPos())
 			self.RENDER_MATRIX:SetAngles(self:GetAngles())
-			self.RENDER_MATRIX:SetScale(portalSize * 66.6)
+			self.RENDER_MATRIX:SetScale(portalSize * 0.999)
+			
+			self.RENDER_MATRIX_LOCAL = Matrix()
+			self.RENDER_MATRIX_LOCAL:SetScale(portalSize)
+
+			portalSize[3] = 0
 			self.RENDER_MATRIX_FLAT = Matrix(self.RENDER_MATRIX:ToTable())
-			local p = portalSize; p[3] = 0
-			self.RENDER_MATRIX_FLAT:SetScale(p * 66.6)
+			self.RENDER_MATRIX_FLAT:SetScale(portalSize)			
 		end
 
 		if !backface then
-			cam.PushModelMatrix(self.RENDER_MATRIX)
-				SeamlessPortals.GetRenderMesh(self:GetSidesInternal())[1]:Draw()
-			cam.PopModelMatrix()
+			self:DrawModel()
 		end
-
+	
 		-- draw inside of portal
-		if SeamlessPortals.Rendering or !self:GetExitPortal() or !self:GetExitPortal():IsValid() or !SeamlessPortals.ShouldRender(self, EyePos(), EyeAngles()) then
+		if SeamlessPortals.Rendering or !IsValid(self:GetExitPortal()) or !SeamlessPortals.ShouldRender(self, EyePos(), EyeAngles()) then
 			if !backface then 
 				cam.PushModelMatrix(self.RENDER_MATRIX_FLAT)
 					SeamlessPortals.GetRenderMesh(self:GetSidesInternal())[2]:Draw()
@@ -179,7 +188,7 @@ if CLIENT then
 			end
 			return 
 		end
-		
+
 		-- do cursed stencil stuff
 		render.ClearStencil()
 		render.SetStencilEnable(true)
@@ -190,6 +199,7 @@ if CLIENT then
 		render.SetStencilZFailOperation(STENCIL_KEEP)
 		render.SetStencilPassOperation(STENCIL_REPLACE)
 		render.SetStencilCompareFunction(STENCIL_ALWAYS)
+		render.SetMaterial(drawMat)
 
 		-- draw inside of portal
 		cam.PushModelMatrix(self.RENDER_MATRIX)
@@ -202,7 +212,7 @@ if CLIENT then
 		render.SetStencilCompareFunction(STENCIL_EQUAL)
 
 		-- draw quad reversed if the portal is linked to itself
-		if self.ExitPortal and self:GetExitPortal() == self then
+		if self.GetExitPortal and self:GetExitPortal() == self then
 			render.DrawScreenQuadEx(ScrW(), 0, -ScrW(), ScrH())
 		else
 			render.DrawScreenQuadEx(0, 0, ScrW(), ScrH())
@@ -221,10 +231,10 @@ function ENT:UpdatePhysmesh()
 		local angleMul = 360 / sides
 		local degreeOffset = (sides * 90 + (sides % 4 != 0 and 0 or 45)) * (math.pi / 180)
 		for side = 1, sides do
-			local side1 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), -0.1)
-			local side2 = Vector(math.sin(math.rad((side + 1) * angleMul) + degreeOffset), math.cos(math.rad((side + 1) * angleMul) + degreeOffset), 0.01)
-			table.insert(finalMesh, side1 * self:GetExitSize() * 66.6)
-			table.insert(finalMesh, side2 * self:GetExitSize() * 66.6)
+			local side1 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), -1)
+			local side2 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), 0)
+			table.insert(finalMesh, side1 * self:GetSize())
+			table.insert(finalMesh, side2 * self:GetSize())
 		end
 		self:PhysicsInitConvex(finalMesh)
 		self:EnableCustomCollisions(true)
@@ -233,8 +243,8 @@ function ENT:UpdatePhysmesh()
 		self:GetPhysicsObject():SetMass(250)
 
 		if CLIENT then 
-			local mins, maxs = self:GetModelBounds()
-			self:SetRenderBounds(mins * self:GetExitSize() * 2, maxs * self:GetExitSize() * 2)
+			local mins, maxs = self:GetCollisionBounds()
+			self:SetRenderBounds(mins, maxs)
 		end
 	else
 		self:PhysicsDestroy()
@@ -250,14 +260,14 @@ end
 SeamlessPortals.PortalIndex = 0		-- the number of portals in the map
 SeamlessPortals.MaxRTs = 6			-- max amount of portals being rendered at a time
 SeamlessPortals.TransformPortal = function(a, b, pos, ang)
-	if !a or !b or !b:IsValid() or !a:IsValid() then return Vector(), Angle() end
+	if !IsValid(a) or !IsValid(b) then return Vector(), Angle() end
 	local editedPos = Vector()
 	local editedAng = Angle()
 
 	if pos then
-		editedPos = a:WorldToLocal(pos) * (b:GetExitSize()[1] / a:GetExitSize()[1])
+		editedPos = a:WorldToLocal(pos) * (b:GetSize()[1] / a:GetSize()[1])
 		editedPos = b:LocalToWorld(Vector(editedPos[1], -editedPos[2], -editedPos[3]))
-		editedPos = editedPos + b:GetUp()
+		editedPos = editedPos + b:GetUp() * 0.01	// so you dont become trapped
 	end
 
 	if ang then
@@ -292,15 +302,15 @@ end
 if CLIENT then
 	-- only render the portals that are in the frustum, or should be rendered
 	SeamlessPortals.ShouldRender = function(portal, eyePos, eyeAngle)
-		local portalPos, portalUp, exitSize = portal:GetPos(), portal:GetUp(), portal:GetExitSize()
+		local portalPos, portalUp, exitSize = portal:GetPos(), portal:GetUp(), portal:GetSize()
 		local max = math.max(exitSize[1], exitSize[2])
 		-- (eyePos - portalPos):Dot(portalUp) > (-10 * max) -- true if behind the portal, false otherwise
 		-- eyePos:DistToSqr(portalPos) < SeamlessPortals.VarDrawDistance:GetFloat()^2 * max -- true if close enough
 		-- (eyePos - portalPos):Dot(eyeAngle:Forward()) < 50 * max -- true if looking at the portal, false otherwise
 		-- why return on 1 line? well.. its faster
-		return ((eyePos - portalPos):Dot(portalUp) > (-10 * max) and 
+		return ((eyePos - portalPos):Dot(portalUp) > -max and 
 		eyePos:DistToSqr(portalPos) < varDrawDistance:GetFloat()^2 * max and 
-		(eyePos - portalPos):Dot(eyeAngle:Forward()) < 50 * max)
+		(eyePos - portalPos):Dot(eyeAngle:Forward()) < max)
 	end
 
 	-- create meshes used for the portals
@@ -315,9 +325,9 @@ if CLIENT then
 			local angleMul = 360 / sides
 			local degreeOffset = (sides * 90 + (sides % 4 != 0 and 0 or 45)) * (math.pi / 180)
 			for side = 1, sides do
-				local side1 = Vector(0, 0, -0.1)
-				local side2 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), -0.1)
-				local side3 = Vector(math.sin(math.rad((side + 1) * angleMul) + degreeOffset), math.cos(math.rad((side + 1) * angleMul) + degreeOffset), -0.1)
+				local side1 = Vector(0, 0, -1)
+				local side2 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), -1)
+				local side3 = Vector(math.sin(math.rad((side + 1) * angleMul) + degreeOffset), math.cos(math.rad((side + 1) * angleMul) + degreeOffset), -1)
 
 				local streach1 = (side / sides) * 4
 				local streach2 = ((side + 1) / sides) * 4
