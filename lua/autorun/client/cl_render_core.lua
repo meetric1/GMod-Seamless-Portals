@@ -73,7 +73,7 @@ hook.Add("RenderScene", "seamless_portal_draw", function(eyePos, eyeAngles, fov)
 		if timesRendered >= SeamlessPortals.MaxRTs - maxAm then break end
 		if !v:IsValid() or !v:GetExitPortal():IsValid() then continue end
 		
-		if timesRendered < SeamlessPortals.MaxRTs and SeamlessPortals.ShouldRender(v, eyePos, eyeAngles) then
+		if timesRendered < SeamlessPortals.MaxRTs and SeamlessPortals.ShouldRender(v, eyePos, eyeAngles, SeamlessPortals.GetDrawDistance()) then
 			local exitPortal = v:GetExitPortal()
 			local editedPos, editedAng = SeamlessPortals.TransformPortal(v, exitPortal, eyePos, eyeAngles)
 
