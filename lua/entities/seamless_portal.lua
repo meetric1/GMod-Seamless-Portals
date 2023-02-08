@@ -309,6 +309,18 @@ if CLIENT then
 		(eyePos - portalPos):Dot(eyeAngle:Forward()) < max)
 	end
 
+	-- this code creates the rendertargets to be used for the portals
+	SeamlessPortals.PortalRTs = {}
+	SeamlessPortals.PortalMaterials = {}
+
+	for i = 1, SeamlessPortals.MaxRTs do
+		SeamlessPortals.PortalRTs[i] = GetRenderTarget("SeamlessPortal" .. i, ScrW(), ScrH())
+		SeamlessPortals.PortalMaterials[i] = CreateMaterial("SeamlessPortalsMaterial" .. i, "GMODScreenspace", {
+			["$basetexture"] = SeamlessPortals.PortalRTs[i]:GetName(),
+			["$model"] = "1"
+		})
+	end
+
 	-- create meshes used for the portals
 	-- they can have a dynamic amount of sides
 	SeamlessPortals.PortalMeshes = {}
@@ -373,22 +385,12 @@ if CLIENT then
 	end
 
 	hook.Add("InitPostEntity", "seamless_portal_init", function()
-		for k, v in ipairs(ents.FindByClass("seamless_portal")) do
-			print("Initializing portal " .. v:EntIndex())
-			incrementPortal(v)
-		end
-
-		-- this code creates the rendertargets to be used for the portals
-		SeamlessPortals.PortalRTs = {}
-		SeamlessPortals.PortalMaterials = {}
-
-		for i = 1, SeamlessPortals.MaxRTs do
-			SeamlessPortals.PortalRTs[i] = GetRenderTarget("SeamlessPortal" .. i, ScrW(), ScrH())
-			SeamlessPortals.PortalMaterials[i] = CreateMaterial("SeamlessPortalsMaterial" .. i, "GMODScreenspace", {
-				["$basetexture"] = SeamlessPortals.PortalRTs[i]:GetName(),
-				["$model"] = "1"
-			})
-		end
+		timer.Simple(0, function()
+			for k, v in ipairs(ents.FindByClass("seamless_portal")) do
+				print("Initializing portal " .. v:EntIndex())
+				incrementPortal(v)
+			end
+		end)
 	end)
 
 	--funny flipped scene
