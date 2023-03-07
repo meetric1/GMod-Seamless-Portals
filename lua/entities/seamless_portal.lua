@@ -71,18 +71,16 @@ end
 local function incrementPortal(ent)
 	if CLIENT then	-- singleplayer is weird... dont generate a physmesh if its singleplayer
 		ent.RENDER_MATRIX = Matrix()
-		if !game.SinglePlayer() then
-			if ent.UpdatePhysmesh then
-				ent:UpdatePhysmesh()
-			else
-				-- takes a minute to try and find the portal, if it cant, oh well...
-				timer.Create("seamless_portal_init" .. SeamlessPortals.PortalIndex, 1, 60, function()
-					if !ent or !ent:IsValid() or !ent.UpdatePhysmesh then return end
+		if ent.UpdatePhysmesh then
+			ent:UpdatePhysmesh()
+		else
+			-- takes a minute to try and find the portal, if it cant, oh well...
+			timer.Create("seamless_portal_init" .. SeamlessPortals.PortalIndex, 1, 60, function()
+				if !ent or !ent:IsValid() or !ent.UpdatePhysmesh then return end
 
-					ent:UpdatePhysmesh()
-					timer.Remove("seamless_portal_init" .. SeamlessPortals.PortalIndex)
-				end)
-			end
+				ent:UpdatePhysmesh()
+				timer.Remove("seamless_portal_init" .. SeamlessPortals.PortalIndex)
+			end)
 		end
 		ent:SetRenderBounds(-ent:GetSize(), ent:GetSize())
 	end
@@ -220,6 +218,13 @@ if CLIENT then
 		end
 
 		render.SetStencilEnable(false)
+	end
+
+	-- hacky bullet fix
+	if game.SinglePlayer() then
+		function ENT:TestCollision(startpos, delta, isbox, extents, mask)
+			if bit.band(mask, CONTENTS_GRATE) != 0 then return true end
+		end
 	end
 end
 
@@ -379,7 +384,7 @@ if CLIENT then
 			phys:SetMaterial("glass")
 			phys:SetPos(self:GetPos())
 			phys:SetAngles(self:GetAngles())
-		elseif self:GetVelocity() == Vector() and !game.SinglePlayer() then
+		elseif self:GetVelocity() == Vector() then
 			self:UpdatePhysmesh()
 		end
 	end

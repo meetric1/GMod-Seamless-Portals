@@ -29,9 +29,6 @@ local renderViewTable = {
 timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	portals = ents.FindByClass("seamless_portal")
-	table.sort(portals, function(a, b) 
-		return a:GetPos():DistToSqr(EyePos()) < b:GetPos():DistToSqr(EyePos())
-	end)
 
 	-- update sky material (I guess it can change?)
 	if sky_name != sky_cvar:GetString() then
@@ -138,6 +135,13 @@ local function drawsky(pos, ang, size, size_2, color, materials)
 end
 
 hook.Add("PostDrawTranslucentRenderables", "seamless_portal_skybox", function()
+	//print("asd")
+	//for k, v in ipairs(ents.GetAll()) do
+	//	if v:GetNoDraw() then continue end
+	//	render.DrawWireframeBox(v:GetPos(), v:GetAngles(), v:OBBMins(), v:OBBMaxs())
+	//end
+//
+	//render.DrawWireframeBox(Vector(), Angle(), Vector(1, 1, 1) * -2^14, Vector(1, 1, 1) * 2^14, Color(0, 0, 255, 255))
 	if !SeamlessPortals.Rendering or util.IsSkyboxVisibleFromPoint(renderViewTable.origin) then return end
 	render.OverrideDepthEnable(true, false)
 	drawsky(renderViewTable.origin, angle_zero, skysize, -skysize * 2, color_white, sky_materials)
