@@ -158,7 +158,9 @@ if CLIENT then
 		-- render the outside frame
 		local portalSize = self:GetSize() * size_mult
 		local backface = self:GetDisableBackface()
-		if self.RENDER_MATRIX:GetTranslation() != self:GetPos() or self.RENDER_MATRIX:GetScale() != portalSize then
+		if self.RENDER_MATRIX:GetTranslation() != self:GetPos() or
+			 self.RENDER_MATRIX:GetScale() != portalSize
+		then
 			self.RENDER_MATRIX = Matrix()
 			self.RENDER_MATRIX:SetTranslation(self:GetPos())
 			self.RENDER_MATRIX:SetAngles(self:GetAngles())
@@ -179,7 +181,10 @@ if CLIENT then
 		end
 	
 		-- draw inside of portal
-		if SeamlessPortals.Rendering or !IsValid(self:GetExitPortal()) or !SeamlessPortals.ShouldRender(self, EyePos(), EyeAngles()) then
+		if SeamlessPortals.Rendering or
+		   !IsValid(self:GetExitPortal()) or
+		   !SeamlessPortals.ShouldRender(self, EyePos(), EyeAngles())
+		then
 			if !backface then 
 				cam.PushModelMatrix(self.RENDER_MATRIX_FLAT)
 					SeamlessPortals.GetRenderMesh(self:GetSidesInternal())[2]:Draw()
@@ -233,14 +238,17 @@ function ENT:UpdatePhysmesh()
 	self:PhysicsInit(6)
 	if self:GetPhysicsObject():IsValid() then
 		local finalMesh = {}
+		local psize = self:GetSize()
 		local sides = self:GetSidesInternal()
 		local angleMul = 360 / sides
 		local degreeOffset = (sides * 90 + (sides % 4 != 0 and 0 or 45)) * (math.pi / 180)
 		for side = 1, sides do
-			local side1 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), -1)
-			local side2 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), 0)
-			table.insert(finalMesh, side1 * self:GetSize() * size_mult)
-			table.insert(finalMesh, side2 * self:GetSize() * size_mult)
+			local sidx  = math.sin(math.rad(side * angleMul) + degreeOffset)
+			local sidy  = math.cos(math.rad(side * angleMul) + degreeOffset)
+			local side1 = Vector(sidx, sidy, -1)
+			local side2 = Vector(sidx, sidy,  0)
+			table.insert(finalMesh, side1 * psize * size_mult)
+			table.insert(finalMesh, side2 * psize * size_mult)
 		end
 		self:PhysicsInitConvex(finalMesh)
 		self:EnableCustomCollisions(true)
@@ -338,9 +346,12 @@ if CLIENT then
 			local angleMul = 360 / sides
 			local degreeOffset = (sides * 90 + (sides % 4 != 0 and 0 or 45)) * (math.pi / 180)
 			for side = 1, sides do
+				local sidex = math.rad(side * angleMul) + degreeOffset
+				local sidey = math.rad((side + 1) * angleMul) + degreeOffset
+
 				local side1 = Vector(0, 0, -1)
-				local side2 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), -1)
-				local side3 = Vector(math.sin(math.rad((side + 1) * angleMul) + degreeOffset), math.cos(math.rad((side + 1) * angleMul) + degreeOffset), -1)
+				local side2 = Vector(math.sin(sidex), math.cos(sidex), -1)
+				local side3 = Vector(math.sin(sidey), math.cos(sidey), -1)
 
 				local streach1 = (side / sides) * 4
 				local streach2 = ((side + 1) / sides) * 4

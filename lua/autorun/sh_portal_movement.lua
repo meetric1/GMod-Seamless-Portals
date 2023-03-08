@@ -4,6 +4,9 @@
 
 AddCSLuaFile()
 
+local vecUp = Vector(0, 0, 1)   -- Vector dot prodict
+local vecOs = Vector(0, 0, 0.1) -- Tiny Z offset
+
 local function updateScale(ply, scale)
     ply:SetModelScale(scale)
     ply:SetViewOffset(Vector(0, 0, 64 * scale))
@@ -77,14 +80,17 @@ local seamless_check = function(e) return !(e:GetClass() == "seamless_portal" or
 -- 'no collide' the player with the wall by shrinking the player's collision box
 local traceTable = {}
 local function editPlayerCollision(mv, ply, t)
+	local plyEye = ply:EyePos()
+	local plyPos = ply:GetPos()
+
 	if ply.PORTAL_STUCK_OFFSET != 0 then
-		traceTable.start = ply:GetPos() + ply:GetVelocity() * 0.02
+		traceTable.start = plyPos + ply:GetVelocity() * 0.02
 	else
-		traceTable.start = ply:GetPos()
+		traceTable.start = plyPos
 	end
 	traceTable.endpos = traceTable.start
 	traceTable.mins = Vector(-16, -16, 0)
-	traceTable.maxs = Vector(16, 16, 72 - (ply:Crouching() and 1 or 0) * 36)
+	traceTable.maxs = Vector( 16,  16, 72 - (ply:Crouching() and 1 or 0) * 36)
 	traceTable.filter = ply
 
 	if !ply.PORTAL_STUCK_OFFSET then
@@ -92,7 +98,7 @@ local function editPlayerCollision(mv, ply, t)
 	else
 		-- extrusion in case the player enables non-ground collision and manages to clip outside of the portal while they are falling (rare case)
 		if ply.PORTAL_STUCK_OFFSET != 0 then
-			local tr = SeamlessPortals.TraceLine({start = ply:EyePos(), endpos = ply:EyePos() - Vector(0, 0, 64), filter = ply})
+			local tr = SeamlessPortals.TraceLine({start = plyEye, endpos = plyEye - Vector(0, 0, 64), filter = ply})
 			if tr.Hit and tr.Entity:GetClass() != "seamless_portal" then
 				ply.PORTAL_STUCK_OFFSET = nil
 				mv:SetOrigin(tr.HitPos)
@@ -107,7 +113,7 @@ local function editPlayerCollision(mv, ply, t)
 	-- getting this to work on the ground was a FUCKING headache
 	if !ply.PORTAL_STUCK_OFFSET and tr.Hit and tr.Entity:GetClass() == "seamless_portal" and tr.Entity.GetExitPortal and IsValid(tr.Entity:GetExitPortal()) then
 		local secondaryOffset = 0
-		if tr.Entity:GetUp():Dot(Vector(0, 0, 1)) > 0.5 then		-- the portal is on the ground
+		if tr.Entity:GetUp():Dot(vecUp) > 0.5 then		-- the portal is on the ground
 			traceTable.mins = Vector(0, 0, 0)
 			traceTable.maxs = Vector(0, 0, 72)
 
@@ -116,13 +122,13 @@ local function editPlayerCollision(mv, ply, t)
 				return -- we accomplished nothing :DDDD
 			end
 
-			if tr.Entity:GetUp():Dot(Vector(0, 0, 1)) > 0.999 then
+			if tr.Entity:GetUp():Dot(vecUp) > 0.999 then
 				ply.PORTAL_STUCK_OFFSET = 72
 			else
 				ply.PORTAL_STUCK_OFFSET = 72
 				secondaryOffset = 36
 			end
-		elseif tr.Entity:GetUp():Dot(Vector(0, 0, 1)) < -0.9 then 
+		elseif tr.Entity:GetUp():Dot(vecUp) < -0.9 then
 			return 							-- the portal is on the ceiling
 		else
 			ply.PORTAL_STUCK_OFFSET = 0		-- the portal is not on the ground
@@ -151,10 +157,11 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 
 	editPlayerCollision(mv, ply)
 
+	local plyEye = ply:EyePos()
+	local plyPos = ply:GetPos()
 	local plyVel = mv:GetVelocity()
-	local plyPos = ply:EyePos()
-	traceTable.start = plyPos - plyVel * 0.02
-	traceTable.endpos = plyPos + plyVel * 0.02
+	traceTable.start  = plyEye - plyVel * 0.02
+	traceTable.endpos = plyEye + plyVel * 0.02
 	traceTable.filter = ply
 	local tr = SeamlessPortals.TraceLine(traceTable)
 	//PrintTable(tr)
@@ -173,10 +180,10 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			local max = math.Max(plyVel:Length(), exitPortal:GetUp():Dot(-physenv.GetGravity() / 3))
 
 			--ground can fluxuate depending on how the user places the portals, so we need to make sure we're not going to teleport into the ground
-			local eyeHeight = (ply:EyePos() - ply:GetPos())
+			local eyeHeight = (plyEye - plyPos)
 			local editedPos = editedPos - eyeHeight
 			traceTable.start = editedPos + eyeHeight
-			traceTable.endpos = editedPos - Vector(0, 0, 0.1)
+			traceTable.endpos = editedPos - vecOs
 			traceTable.filter = seamless_check
 			local floor_trace = SeamlessPortals.TraceLine(traceTable)
 			local finalPos = editedPos
@@ -198,7 +205,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 				end
 			end
 
-			finalPos = finalPos - (editedPos - offset) * exitSize + Vector(0, 0, 0.1)	-- small offset so we arent in the floor
+			finalPos = finalPos - (editedPos - offset) * exitSize + vecOs	-- small offset so we arent in the floor
 
 			-- apply final velocity
 			mv:SetVelocity(editedVelocity:Forward() * max * exitSize)
@@ -236,7 +243,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 
 			-- if they come out of a ground portal make the player hitbox tiny
 			ply.PORTAL_TELEPORTING = true
-			ply.PORTAL_STUCK_OFFSET = exitPortal:GetUp():Dot(Vector(0, 0, 1)) > 0.999 and 72 or 0
+			ply.PORTAL_STUCK_OFFSET = exitPortal:GetUp():Dot(vecUp) > 0.999 and 72 or 0
 			ply:SetHull(Vector(-4, -4, ply.PORTAL_STUCK_OFFSET), Vector(4, 4, 72 + ply.PORTAL_STUCK_OFFSET * 0.5))
 			ply:SetHullDuck(Vector(-4, -4, ply.PORTAL_STUCK_OFFSET), Vector(4, 4, 36 + ply.PORTAL_STUCK_OFFSET * 0.5))
 

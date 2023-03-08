@@ -11,7 +11,7 @@ timer.Create("portals_ent_update", 0.25, 0, function()
         local prop = allEnts[i]
         local removeEnt = false
         if !prop:IsValid() or !prop:GetPhysicsObject():IsValid() then table.remove(allEnts, i) continue end
-        if prop:GetVelocity() == Vector(0, 0, 0) then table.remove(allEnts, i) continue end
+        if prop:GetVelocity():IsZero() then table.remove(allEnts, i) continue end
         if prop:GetClass() == "player" or prop:GetClass() == "seamless_portal" then table.remove(allEnts, i) continue end
 
         local realPos = prop:LocalToWorld(prop:OBBCenter())

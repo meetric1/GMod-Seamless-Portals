@@ -40,7 +40,8 @@ SWEP.Secondary.Automatic = false
 ]]
 local function getSurfaceAngle(owner, norm)
 	local fwd = owner:GetAimVector()
-	local rgh = fwd:Cross(norm); fwd:Set(norm:Cross(rgh))
+	local rgh = fwd:Cross(norm)
+	      fwd:Set(norm:Cross(rgh))
 	return fwd:AngleEx(norm)
 end
 
@@ -58,14 +59,15 @@ end
 local size_mult = Vector(math.sqrt(2), math.sqrt(2), 1)	// so the size is in source units (remember we are using sine/cosine)
 local function setPortalPlacement(owner, portal)
 	local ang = Angle() -- The portal angle
+	local siz = portal:GetSize()
 	local pos = owner:GetShootPos()
 	local aim = owner:GetAimVector()
-	local mul = portal:GetSize()[3] * 1.1
+	local mul = siz[3] * 1.1
 
 	local tr = SeamlessPortals.TraceLine({
-		start = pos,
+		start  = pos,
 		endpos = pos + aim * 99999,
-		filter = seamlessCheck,
+		filter = seamlessCheck
 	})
 
 	-- Align portals on 45 degree surfaces
@@ -78,15 +80,16 @@ local function setPortalPlacement(owner, portal)
 	end
 
 	-- extrude portal from the ground
+	local af, au = ang:Forward(), ang:Right()
 	local angTab = {
-		ang:Forward() * portal:GetSize()[1] * size_mult[1], 
-		-ang:Forward() * portal:GetSize()[1] * size_mult[1], 
-		ang:Right() * portal:GetSize()[2] * size_mult[2], 
-		-ang:Right() * portal:GetSize()[2] * size_mult[2]
+		 af * siz[1] * size_mult[1],
+		-af * siz[1] * size_mult[1],
+		 au * siz[2] * size_mult[2],
+		-au * siz[2] * size_mult[2]
 	}
 	for i = 1, 4 do
 		local extr = SeamlessPortals.TraceLine({
-			start = tr.HitPos + tr.HitNormal,
+			start  = tr.HitPos + tr.HitNormal,
 			endpos = tr.HitPos + tr.HitNormal - angTab[i],
 			filter = seamlessCheck,
 		})
