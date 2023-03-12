@@ -4,7 +4,8 @@
 Before using Seamless Portals with Hammer, you have to install an additional FGD.
 Firstly, drop the seamless_portals.fgd file into your GarrysMod\bin folder.
 Then, for it to show up on Hammer, open Tools->Options->Game Configurations->Game Data files, press Add and choose the seamless_portals.fgd file.
-![](https://i.imgur.com/rbERoWP.png)
+
+![](https://i.imgur.com/tpkzAEG.png)
 
 ## Placing Portals
 You can create a portal by placing a seamless_portal entity.
@@ -16,11 +17,11 @@ The portal angles have to point from the portal surface side. You can see which 
 
 To connect portals, you have to name them with unique names and link them with the Linked Portal property.
 
-An example of two portals:
+### An example of two portals:
 ![](https://i.imgur.com/R8oYKH8.png)
 ![](https://i.imgur.com/yDXoxfJ.png)
 
 Now the portal is set up. If you compile the map with the addon turned on, you will see your portals working.
 
-Final result:
+### Final result:
 ![](https://i.imgur.com/pGVx7lb.png)
