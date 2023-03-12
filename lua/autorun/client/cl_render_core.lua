@@ -135,12 +135,6 @@ local function drawsky(pos, ang, size, size_2, color, materials)
 end
 
 hook.Add("PostDrawTranslucentRenderables", "seamless_portal_skybox", function()
-	//print("asd")
-	//for k, v in ipairs(ents.GetAll()) do
-	//	if v:GetNoDraw() then continue end
-	//	render.DrawWireframeBox(v:GetPos(), v:GetAngles(), v:OBBMins(), v:OBBMaxs())
-	//end
-//
 	//render.DrawWireframeBox(Vector(), Angle(), Vector(1, 1, 1) * -2^14, Vector(1, 1, 1) * 2^14, Color(0, 0, 255, 255))
 	if !SeamlessPortals.Rendering or util.IsSkyboxVisibleFromPoint(renderViewTable.origin) then return end
 	render.OverrideDepthEnable(true, false)

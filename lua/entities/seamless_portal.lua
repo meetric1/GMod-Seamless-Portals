@@ -145,7 +145,7 @@ end
 -- theres gonna be a bunch of magic numbers in this rendering code, since garry decided a hunterplate should be 47.9 rendering units wide and 51 physical units
 local size_mult = Vector(math.sqrt(2), math.sqrt(2), 1)	// so the size is in source units (remember we are using sine/cosine)
 if CLIENT then
-	local drawMat = CreateMaterial("Seamless_Portal_BackfaceMat", "UnlitGeneric", {["$basetexture"] = "models/dav0r/hoverball"})
+	local drawMat = Material("models/dav0r/hoverball")
 	function ENT:GetRenderMesh()
 		return {Mesh = SeamlessPortals.GetRenderMesh(self:GetSidesInternal())[1], Material = drawMat, Matrix = self.RENDER_MATRIX_LOCAL}
 	end
@@ -255,7 +255,7 @@ function ENT:UpdatePhysmesh()
 end
 
 function ENT:UpdateTransmitState()
-	return TRANSMIT_ALWAYS
+	return TRANSMIT_PVS
 end
 
 SeamlessPortals.PortalIndex = 0		-- the number of portals in the map
@@ -303,6 +303,7 @@ end
 if CLIENT then
 	-- only render the portals that are in the frustum, or should be rendered
 	SeamlessPortals.ShouldRender = function(portal, eyePos, eyeAngle)
+		if portal:IsDormant() then return false end
 		local portalPos, portalUp, exitSize = portal:GetPos(), portal:GetUp(), portal:GetSize()
 		local max = math.max(exitSize[1], exitSize[2])
 		-- (eyePos - portalPos):Dot(portalUp) > (-10 * max) -- true if behind the portal, false otherwise
