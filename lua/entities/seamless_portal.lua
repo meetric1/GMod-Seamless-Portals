@@ -79,6 +79,8 @@ if SERVER then
 			timer.Simple(0, function()
 				self:SetExitPortal(ents.FindByName(value)[1])
 			end)
+		elseif key == "backface" then
+			self:SetDisableBackface(value == "1")
 		elseif key == "size" then
 			self:SetSizeInternal(Vector(unpack(string.Split(value, " "))) / 2)
 		elseif outputs[key] then

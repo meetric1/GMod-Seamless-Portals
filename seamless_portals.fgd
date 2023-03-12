@@ -2,6 +2,11 @@
 [
 	size(vector)				: "Portal Size" : "100 100 16" : "Portal size in hammer units."
 	link(target_destination)	: "Linked Portal" : "" : "Another seamless portal entity to link to."
+	backface(choices) 			: "Backface" : 0 : "Toggle the portal's backface." =
+	[
+		0: "On"
+		1: "Off"
+	]
 
 	// Inputs
 	input Link(target_destination) : "Links a new portal. (Empty parameter will unlink the portal)"
