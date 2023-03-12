@@ -17,7 +17,7 @@ ENT.Spawnable    = true
 local gbSvFlag = bit.bor(FCVAR_ARCHIVE)
 -- create global table
 SeamlessPortals = SeamlessPortals or {}
-local varDrawDistance = CreateClientConVar("seamless_portal_drawdistance", "250", true, false, "Sets the multiplier of how far a portal should render", 0)
+local varDrawDistance = CreateClientConVar("seamless_portal_drawdistance", "250", true, true, "Sets the multiplier of how far a portal should render", 0)
 
 function ENT:SetupDataTables()
 	self:NetworkVar("Entity", 0, "ExitPortal")
@@ -201,7 +201,7 @@ if CLIENT then
 		end
 	
 		-- draw inside of portal
-		if SeamlessPortals.Rendering or !IsValid(self:GetExitPortal()) or !SeamlessPortals.ShouldRender(self, EyePos(), EyeAngles()) then
+		if SeamlessPortals.Rendering or !IsValid(self:GetExitPortal()) or !SeamlessPortals.ShouldRender(self, EyePos(), EyeAngles(), SeamlessPortals.GetDrawDistance()) then
 			if !backface then 
 				cam.PushModelMatrix(self.RENDER_MATRIX_FLAT)
 					SeamlessPortals.GetRenderMesh(self:GetSidesInternal())[2]:Draw()
@@ -321,20 +321,24 @@ SeamlessPortals.UpdateTraceline = function()
 	end
 end
 
+-- only render the portals that are in the frustum, or should be rendered
+SeamlessPortals.ShouldRender = function(portal, eyePos, eyeAngle, distance)
+  if portal:IsDormant() then return false end
+	local portalPos, portalUp, exitSize = portal:GetPos(), portal:GetUp(), portal:GetSize()
+	local max = math.max(exitSize[1], exitSize[2])
+	-- (eyePos - portalPos):Dot(portalUp) > (-10 * max) -- true if behind the portal, false otherwise
+	-- eyePos:DistToSqr(portalPos) < distance^2 * max -- true if close enough
+	-- (eyePos - portalPos):Dot(eyeAngle:Forward()) < 50 * max -- true if looking at the portal, false otherwise
+	-- why return on 1 line? well.. its faster
+	return ((eyePos - portalPos):Dot(portalUp) > -max and 
+	eyePos:DistToSqr(portalPos) < distance^2 * max and 
+	(eyePos - portalPos):Dot(eyeAngle:Forward()) < max)
+end
+
 -- set physmesh pos on client
 if CLIENT then
-	-- only render the portals that are in the frustum, or should be rendered
-	SeamlessPortals.ShouldRender = function(portal, eyePos, eyeAngle)
-		if portal:IsDormant() then return false end
-		local portalPos, portalUp, exitSize = portal:GetPos(), portal:GetUp(), portal:GetSize()
-		local max = math.max(exitSize[1], exitSize[2])
-		-- (eyePos - portalPos):Dot(portalUp) > (-10 * max) -- true if behind the portal, false otherwise
-		-- eyePos:DistToSqr(portalPos) < SeamlessPortals.VarDrawDistance:GetFloat()^2 * max -- true if close enough
-		-- (eyePos - portalPos):Dot(eyeAngle:Forward()) < 50 * max -- true if looking at the portal, false otherwise
-		-- why return on 1 line? well.. its faster
-		return ((eyePos - portalPos):Dot(portalUp) > -max and 
-		eyePos:DistToSqr(portalPos) < varDrawDistance:GetFloat()^2 * max and 
-		(eyePos - portalPos):Dot(eyeAngle:Forward()) < max)
+	SeamlessPortals.GetDrawDistance = function()
+		return varDrawDistance:GetFloat()
 	end
 
 	-- this code creates the rendertargets to be used for the portals
