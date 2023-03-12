@@ -160,91 +160,91 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	//PrintTable(tr)
 	if !tr.Hit then return end
 	local hitPortal = tr.Entity
-	if hitPortal:GetClass() == "seamless_portal" and hitPortal.GetExitPortal and IsValid(hitPortal:GetExitPortal()) then
-		if plyVel:Dot(hitPortal:GetUp()) < 0 then
-			
-			if ply.PORTAL_TELEPORTING then return end
-			freezePly = true
+	if hitPortal:GetClass() == "seamless_portal" and hitPortal.GetExitPortal and IsValid(hitPortal:GetExitPortal()) and plyVel:Dot(hitPortal:GetUp()) < 0 then	
+		if ply.PORTAL_TELEPORTING then return end
+		freezePly = true
 
-            -- wow look at all of this code just to teleport the player
-			local exitPortal = hitPortal:GetExitPortal()
-			local editedPos, editedAng = SeamlessPortals.TransformPortal(hitPortal, exitPortal, tr.HitPos, ply:EyeAngles())
-			local _, editedVelocity = SeamlessPortals.TransformPortal(hitPortal, exitPortal, nil, plyVel:Angle())
-			local max = math.Max(plyVel:Length(), exitPortal:GetUp():Dot(-physenv.GetGravity() / 3))
+        -- wow look at all of this code just to teleport the player
+		local exitPortal = hitPortal:GetExitPortal()
+		local editedPos, editedAng = SeamlessPortals.TransformPortal(hitPortal, exitPortal, tr.HitPos, ply:EyeAngles())
+		local _, editedVelocity = SeamlessPortals.TransformPortal(hitPortal, exitPortal, nil, plyVel:Angle())
+		local max = math.Max(plyVel:Length(), exitPortal:GetUp():Dot(-physenv.GetGravity() / 3))
 
-			--ground can fluxuate depending on how the user places the portals, so we need to make sure we're not going to teleport into the ground
-			local eyeHeight = (ply:EyePos() - ply:GetPos())
-			local editedPos = editedPos - eyeHeight
-			traceTable.start = editedPos + eyeHeight
-			traceTable.endpos = editedPos - Vector(0, 0, 0.1)
-			traceTable.filter = seamless_check
-			local floor_trace = SeamlessPortals.TraceLine(traceTable)
-			local finalPos = editedPos
+		--ground can fluxuate depending on how the user places the portals, so we need to make sure we're not going to teleport into the ground
+		local eyeHeight = (ply:EyePos() - ply:GetPos())
+		local editedPos = editedPos - eyeHeight
+		traceTable.start = editedPos + eyeHeight
+		traceTable.endpos = editedPos - Vector(0, 0, 0.1)
+		traceTable.filter = seamless_check
+		local floor_trace = SeamlessPortals.TraceLine(traceTable)
+		local finalPos = editedPos
 
-			-- dont do extrusion if the player is noclipping
-			local offset
-			if ply:GetMoveType() != MOVETYPE_NOCLIP then
-				offset = floor_trace.HitPos
-			else
-				offset = editedPos
-			end
-
-			local exitSize = (exitPortal:GetSize()[1] / hitPortal:GetSize()[1])
-			if ply.SCALE_MULTIPLIER then
-				if ply.SCALE_MULTIPLIER * exitSize != ply.SCALE_MULTIPLIER then
-					ply.SCALE_MULTIPLIER = math.Clamp(ply.SCALE_MULTIPLIER * exitSize, 0.01, 10)
-					finalPos = finalPos + (eyeHeight - eyeHeight * exitSize)
-					updateScale(ply, ply.SCALE_MULTIPLIER)
-				end
-			end
-
-			finalPos = finalPos - (editedPos - offset) * exitSize + Vector(0, 0, 0.1)	-- small offset so we arent in the floor
-
-			-- apply final velocity
-			mv:SetVelocity(editedVelocity:Forward() * max * exitSize)
-
-			-- send the client that the new position is valid
-			if SERVER then 
-				-- lerp fix for singleplayer
-				if game.SinglePlayer() then
-					ply:SetPos(finalPos)
-					ply:SetEyeAngles(editedAng)
-				end
-				
-				// infinite map support
-				if InfMap then
-					local final_pos_offset, chunk_offset = InfMap.localize_vector(finalPos)
-					finalPos = final_pos_offset
-					InfMap.prop_update_chunk(ply, chunk_offset)
-				end
-
-				mv:SetOrigin(finalPos)
-				
-				net.Start("PORTALS_FREEZE")
-				net.WriteBool(hitPortal == exitPortal)
-				net.Send(ply)
-			else
-				updateCalcViews(finalPos + eyeHeight, editedVelocity:Forward() * max * exitSize, (ply.SCALE_MULTIPLIER or 1) * exitSize)	--fix viewmodel lerping for a tiny bit
-				ply:SetEyeAngles(editedAng)
-				ply:SetPos(finalPos)
-
-				-- mirror dimension
-				if exitPortal == hitPortal then
-					SeamlessPortals.ToggleMirror(!SeamlessPortals.ToggleMirror())
-				end
-			end
-
-			-- if they come out of a ground portal make the player hitbox tiny
-			ply.PORTAL_TELEPORTING = true
-			ply.PORTAL_STUCK_OFFSET = exitPortal:GetUp():Dot(Vector(0, 0, 1)) > 0.999 and 72 or 0
-			ply:SetHull(Vector(-4, -4, ply.PORTAL_STUCK_OFFSET), Vector(4, 4, 72 + ply.PORTAL_STUCK_OFFSET * 0.5))
-			ply:SetHullDuck(Vector(-4, -4, ply.PORTAL_STUCK_OFFSET), Vector(4, 4, 36 + ply.PORTAL_STUCK_OFFSET * 0.5))
-
-			timer.Simple(0.03, function()
-				ply.PORTAL_TELEPORTING = false
-			end)
-
-			return true
+		-- dont do extrusion if the player is noclipping
+		local offset
+		if ply:GetMoveType() != MOVETYPE_NOCLIP then
+			offset = floor_trace.HitPos
+		else
+			offset = editedPos
 		end
+
+		local exitSize = (exitPortal:GetSize()[1] / hitPortal:GetSize()[1])
+		if ply.SCALE_MULTIPLIER then
+			if ply.SCALE_MULTIPLIER * exitSize != ply.SCALE_MULTIPLIER then
+				ply.SCALE_MULTIPLIER = math.Clamp(ply.SCALE_MULTIPLIER * exitSize, 0.01, 10)
+				finalPos = finalPos + (eyeHeight - eyeHeight * exitSize)
+				updateScale(ply, ply.SCALE_MULTIPLIER)
+			end
+		end
+
+		finalPos = finalPos - (editedPos - offset) * exitSize + Vector(0, 0, 0.1)	-- small offset so we arent in the floor
+
+		-- apply final velocity
+		mv:SetVelocity(editedVelocity:Forward() * max * exitSize)
+
+		-- send the client that the new position is valid
+		if SERVER then 
+			-- lerp fix for singleplayer
+			if game.SinglePlayer() then
+				ply:SetPos(finalPos)
+				ply:SetEyeAngles(editedAng)
+			end
+			
+			// infinite map support
+			if InfMap then
+				local final_pos_offset, chunk_offset = InfMap.localize_vector(finalPos)
+				finalPos = final_pos_offset
+				InfMap.prop_update_chunk(ply, chunk_offset)
+			end
+
+			mv:SetOrigin(finalPos)
+			
+			net.Start("PORTALS_FREEZE")
+			net.WriteBool(hitPortal == exitPortal)
+			net.Send(ply)
+
+			hitPortal:TriggerOutput("OnTeleportFrom", ply)
+			exitPortal:TriggerOutput("OnTeleportTo", ply)
+		else
+			updateCalcViews(finalPos + eyeHeight, editedVelocity:Forward() * max * exitSize, (ply.SCALE_MULTIPLIER or 1) * exitSize)	--fix viewmodel lerping for a tiny bit
+			ply:SetEyeAngles(editedAng)
+			ply:SetPos(finalPos)
+
+			-- mirror dimension
+			if exitPortal == hitPortal then
+				SeamlessPortals.ToggleMirror(!SeamlessPortals.ToggleMirror())
+			end
+		end
+
+		-- if they come out of a ground portal make the player hitbox tiny
+		ply.PORTAL_TELEPORTING = true
+		ply.PORTAL_STUCK_OFFSET = exitPortal:GetUp():Dot(Vector(0, 0, 1)) > 0.999 and 72 or 0
+		ply:SetHull(Vector(-4, -4, ply.PORTAL_STUCK_OFFSET), Vector(4, 4, 72 + ply.PORTAL_STUCK_OFFSET * 0.5))
+		ply:SetHullDuck(Vector(-4, -4, ply.PORTAL_STUCK_OFFSET), Vector(4, 4, 36 + ply.PORTAL_STUCK_OFFSET * 0.5))
+
+		timer.Simple(0.03, function()
+			ply.PORTAL_TELEPORTING = false
+		end)
+
+		return true
 	end
 end)
