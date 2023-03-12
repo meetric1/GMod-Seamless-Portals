@@ -38,7 +38,7 @@ end
 
 function ENT:UnlinkPortal()
 	local exitPortal = self:GetExitPortal()
-	if IsValid(exitPortal) then 
+	if IsValid(exitPortal) then
 		exitPortal:SetExitPortal(nil)
 	end
 	self:SetExitPortal(nil)
@@ -52,7 +52,7 @@ end
 
 -- custom size for portal
 function ENT:SetSize(n)
-	self:SetSizeInternal(n)	
+	self:SetSizeInternal(n)
 	self:UpdatePhysmesh(n)
 end
 
@@ -68,21 +68,43 @@ function ENT:GetSize()
 	return self:GetSizeInternal()
 end
 
+local outputs = {
+	["OnTeleportFrom"] = true,
+	["OnTeleportTo"] = true
+}
+
+if SERVER then
+	function ENT:KeyValue(key, value)
+		if key == "link" then
+			timer.Simple(0, function()
+				self:SetExitPortal(ents.FindByName(value)[1])
+			end)
+		elseif key == "size" then
+			self:SetSizeInternal(Vector(unpack(string.Split(value, " "))) / 2)
+		elseif outputs[key] then
+			self:StoreOutput(key, value)
+		end
+	end
+
+	function ENT:AcceptInput(input, activator, caller, data)
+		if input == "Link" then
+			self:SetExitPortal(ents.FindByName(data)[1])
+		end
+	end
+end
+
 local function incrementPortal(ent)
 	if CLIENT then	-- singleplayer is weird... dont generate a physmesh if its singleplayer
-		ent.RENDER_MATRIX = Matrix()
-		if !game.SinglePlayer() then
-			if ent.UpdatePhysmesh then
-				ent:UpdatePhysmesh()
-			else
-				-- takes a minute to try and find the portal, if it cant, oh well...
-				timer.Create("seamless_portal_init" .. SeamlessPortals.PortalIndex, 1, 60, function()
-					if !ent or !ent:IsValid() or !ent.UpdatePhysmesh then return end
+		if ent.UpdatePhysmesh then
+			ent:UpdatePhysmesh()
+		else
+			-- takes a minute to try and find the portal, if it cant, oh well...
+			timer.Create("seamless_portal_init" .. SeamlessPortals.PortalIndex, 1, 60, function()
+				if !ent or !ent:IsValid() or !ent.UpdatePhysmesh then return end
 
-					ent:UpdatePhysmesh()
-					timer.Remove("seamless_portal_init" .. SeamlessPortals.PortalIndex)
-				end)
-			end
+				ent:UpdatePhysmesh()
+				timer.Remove("seamless_portal_init" .. SeamlessPortals.PortalIndex)
+			end)
 		end
 		ent:SetRenderBounds(-ent:GetSize(), ent:GetSize())
 	end
@@ -90,9 +112,7 @@ local function incrementPortal(ent)
 end
 
 function ENT:Initialize()
-	if CLIENT then
-		incrementPortal(self)
-	else
+	if SERVER then
 		self:SetModel("models/Combine_Helicopter/helicopter_bomb01.mdl")
 		self:SetAngles(self:GetAngles() + Angle(90, 0, 0))
 		self:PhysicsInit(SOLID_VPHYSICS)
@@ -147,7 +167,7 @@ end
 -- theres gonna be a bunch of magic numbers in this rendering code, since garry decided a hunterplate should be 47.9 rendering units wide and 51 physical units
 local size_mult = Vector(math.sqrt(2), math.sqrt(2), 1)	// so the size is in source units (remember we are using sine/cosine)
 if CLIENT then
-	local drawMat = CreateMaterial("Seamless_Portal_BackfaceMat", "UnlitGeneric", {["$basetexture"] = "models/dav0r/hoverball"})
+	local drawMat = Material("models/dav0r/hoverball")
 	function ENT:GetRenderMesh()
 		return {Mesh = SeamlessPortals.GetRenderMesh(self:GetSidesInternal())[1], Material = drawMat, Matrix = self.RENDER_MATRIX_LOCAL}
 	end
@@ -221,6 +241,13 @@ if CLIENT then
 
 		render.SetStencilEnable(false)
 	end
+
+	-- hacky bullet fix
+	if game.SinglePlayer() then
+		function ENT:TestCollision(startpos, delta, isbox, extents, mask)
+			if bit.band(mask, CONTENTS_GRATE) != 0 then return true end
+		end
+	end
 end
 
 -- scale the physmesh
@@ -250,7 +277,7 @@ function ENT:UpdatePhysmesh()
 end
 
 function ENT:UpdateTransmitState()
-	return TRANSMIT_ALWAYS
+	return TRANSMIT_PVS
 end
 
 SeamlessPortals.PortalIndex = 0		-- the number of portals in the map
@@ -296,6 +323,7 @@ end
 
 -- only render the portals that are in the frustum, or should be rendered
 SeamlessPortals.ShouldRender = function(portal, eyePos, eyeAngle, distance)
+  if portal:IsDormant() then return false end
 	local portalPos, portalUp, exitSize = portal:GetPos(), portal:GetUp(), portal:GetSize()
 	local max = math.max(exitSize[1], exitSize[2])
 	-- (eyePos - portalPos):Dot(portalUp) > (-10 * max) -- true if behind the portal, false otherwise
@@ -311,6 +339,18 @@ end
 if CLIENT then
 	SeamlessPortals.GetDrawDistance = function()
 		return varDrawDistance:GetFloat()
+	end
+
+	-- this code creates the rendertargets to be used for the portals
+	SeamlessPortals.PortalRTs = {}
+	SeamlessPortals.PortalMaterials = {}
+
+	for i = 1, SeamlessPortals.MaxRTs do
+		SeamlessPortals.PortalRTs[i] = GetRenderTarget("SeamlessPortal" .. i, ScrW(), ScrH())
+		SeamlessPortals.PortalMaterials[i] = CreateMaterial("SeamlessPortalsMaterial" .. i, "GMODScreenspace", {
+			["$basetexture"] = SeamlessPortals.PortalRTs[i]:GetName(),
+			["$model"] = "1"
+		})
 	end
 
 	-- create meshes used for the portals
@@ -371,27 +411,17 @@ if CLIENT then
 			phys:SetMaterial("glass")
 			phys:SetPos(self:GetPos())
 			phys:SetAngles(self:GetAngles())
-		elseif self:GetVelocity() == Vector() and !game.SinglePlayer() then
+		elseif self:GetVelocity() == Vector() then
 			self:UpdatePhysmesh()
 		end
 	end
 
-	hook.Add("InitPostEntity", "seamless_portal_init", function()
-		for k, v in ipairs(ents.FindByClass("seamless_portal")) do
-			print("Initializing portal " .. v:EntIndex())
-			incrementPortal(v)
-		end
-
-		-- this code creates the rendertargets to be used for the portals
-		SeamlessPortals.PortalRTs = {}
-		SeamlessPortals.PortalMaterials = {}
-
-		for i = 1, SeamlessPortals.MaxRTs do
-			SeamlessPortals.PortalRTs[i] = GetRenderTarget("SeamlessPortal" .. i, ScrW(), ScrH())
-			SeamlessPortals.PortalMaterials[i] = CreateMaterial("SeamlessPortalsMaterial" .. i, "GMODScreenspace", {
-				["$basetexture"] = SeamlessPortals.PortalRTs[i]:GetName(),
-				["$model"] = "1"
-			})
+	hook.Add("NetworkEntityCreated", "seamless_portal_init", function(ent)
+		if ent:GetClass() == "seamless_portal" then
+			ent.RENDER_MATRIX = Matrix()
+			timer.Simple(0, function()
+				incrementPortal(ent)
+			end)
 		end
 	end)
 
