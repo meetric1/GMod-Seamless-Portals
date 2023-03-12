@@ -69,7 +69,6 @@ function ENT:GetSize()
 end
 
 local outputs = {
-	["OnLinked"] = true,
 	["OnTeleportFrom"] = true,
 	["OnTeleportTo"] = true
 }
