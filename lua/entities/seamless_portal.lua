@@ -68,9 +68,18 @@ function ENT:GetSize()
 	return self:GetSizeInternal()
 end
 
+function ENT:KeyValue(key, value)
+	if key == "link" then
+		timer.Simple(0, function()
+			self:SetExitPortal(ents.FindByName(value)[1])
+		end)
+	elseif key == "size" then
+		self:SetSizeInternal(Vector(unpack(string.Split(value, " "))) / 2)
+	end
+end
+
 local function incrementPortal(ent)
 	if CLIENT then	-- singleplayer is weird... dont generate a physmesh if its singleplayer
-		ent.RENDER_MATRIX = Matrix()
 		if ent.UpdatePhysmesh then
 			ent:UpdatePhysmesh()
 		else
@@ -88,9 +97,7 @@ local function incrementPortal(ent)
 end
 
 function ENT:Initialize()
-	if CLIENT then
-		incrementPortal(self)
-	else
+	if SERVER then
 		self:SetModel("models/Combine_Helicopter/helicopter_bomb01.mdl")
 		self:SetAngles(self:GetAngles() + Angle(90, 0, 0))
 		self:PhysicsInit(SOLID_VPHYSICS)
@@ -389,13 +396,13 @@ if CLIENT then
 		end
 	end
 
-	hook.Add("InitPostEntity", "seamless_portal_init", function()
-		timer.Simple(0, function()
-			for k, v in ipairs(ents.FindByClass("seamless_portal")) do
-				print("Initializing portal " .. v:EntIndex())
-				incrementPortal(v)
-			end
-		end)
+	hook.Add("NetworkEntityCreated", "seamless_portal_init", function(ent)
+		if ent:GetClass() == "seamless_portal" then
+			ent.RENDER_MATRIX = Matrix()
+			timer.Simple(0, function()
+				incrementPortal(ent)
+			end)
+		end
 	end)
 
 	--funny flipped scene
