@@ -38,7 +38,7 @@ end
 
 function ENT:UnlinkPortal()
 	local exitPortal = self:GetExitPortal()
-	if IsValid(exitPortal) then 
+	if IsValid(exitPortal) then
 		exitPortal:SetExitPortal(nil)
 	end
 	self:SetExitPortal(nil)
@@ -52,7 +52,7 @@ end
 
 -- custom size for portal
 function ENT:SetSize(n)
-	self:SetSizeInternal(n)	
+	self:SetSizeInternal(n)
 	self:UpdatePhysmesh(n)
 end
 
@@ -68,13 +68,29 @@ function ENT:GetSize()
 	return self:GetSizeInternal()
 end
 
-function ENT:KeyValue(key, value)
-	if key == "link" then
-		timer.Simple(0, function()
-			self:SetExitPortal(ents.FindByName(value)[1])
-		end)
-	elseif key == "size" then
-		self:SetSizeInternal(Vector(unpack(string.Split(value, " "))) / 2)
+local outputs = {
+	["OnLinked"] = true,
+	["OnTeleportFrom"] = true,
+	["OnTeleportTo"] = true
+}
+
+if SERVER then
+	function ENT:KeyValue(key, value)
+		if key == "link" then
+			timer.Simple(0, function()
+				self:SetExitPortal(ents.FindByName(value)[1])
+			end)
+		elseif key == "size" then
+			self:SetSizeInternal(Vector(unpack(string.Split(value, " "))) / 2)
+		elseif outputs[key] then
+			self:StoreOutput(key, value)
+		end
+	end
+
+	function ENT:AcceptInput(input, activator, caller, data)
+		if input == "Link" then
+			self:SetExitPortal(ents.FindByName(data)[1])
+		end
 	end
 end
 

@@ -2,4 +2,11 @@
 [
 	size(vector)				: "Portal Size" : "100 100 16" : "Portal size in hammer units."
 	link(target_destination)	: "Linked Portal" : "" : "Another seamless portal entity to link to."
+
+	// Inputs
+	input Link(target_destination) : "Links a new portal. (Empty parameter will unlink the portal)"
+
+	// Outputs
+	output OnTeleportFrom(target_destination)	: "When any entity is teleported from a portal to the linked partner."
+	output OnTeleportTo(target_destination)		: "When any entity is teleported from a linked partner to the portal."
 ]
