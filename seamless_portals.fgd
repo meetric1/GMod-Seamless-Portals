@@ -1,6 +1,6 @@
 @PointClass base(Targetname, Angles, GMODSandbox) iconsprite("editor/info_target.vmt") = seamless_portal : "Create a seamless portal"
 [
-	size(vector)				: "Portal Size" : "100 100 16" : "Portal size in hammer units."
+	size(vector)				: "Portal Size" : "100 100 8" : "Portal size in hammer units."
 	link(target_destination)	: "Linked Portal" : "" : "Another seamless portal entity to link to."
 	backface(choices) 			: "Backface" : 0 : "Toggle the portal's backface." =
 	[

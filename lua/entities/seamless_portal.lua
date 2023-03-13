@@ -82,7 +82,7 @@ if SERVER then
 		elseif key == "backface" then
 			self:SetDisableBackface(value == "1")
 		elseif key == "size" then
-			self:SetSizeInternal(Vector(unpack(string.Split(value, " "))) / 2)
+			self:SetSizeInternal(Vector(unpack(string.Split(value, " "))) * Vector(0.5, 0.5, 1))
 		elseif outputs[key] then
 			self:StoreOutput(key, value)
 		end
