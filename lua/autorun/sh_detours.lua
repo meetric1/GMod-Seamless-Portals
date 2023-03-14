@@ -38,7 +38,7 @@ SeamlessPortals.NewTraceLine = function(data)
 	if tr.Entity:IsValid() then
 		if tr.Entity:GetClass() == "seamless_portal" and IsValid(tr.Entity:GetExitPortal()) then
 			local hitPortal = tr.Entity
-			if tr.HitNormal:Dot(hitPortal:GetUp()) > 0 then
+			if tr.HitNormal:Dot(hitPortal:GetUp()) > 0.9 then
 				local editeddata = table.Copy(data)
 				editeddata.start = SeamlessPortals.TransformPortal(hitPortal, hitPortal:GetExitPortal(), tr.HitPos)
 				editeddata.endpos = SeamlessPortals.TransformPortal(hitPortal, hitPortal:GetExitPortal(), data.endpos)
