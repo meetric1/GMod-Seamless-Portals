@@ -332,7 +332,7 @@ SeamlessPortals.ShouldRender = function(portal, eyePos, eyeAngle, distance)
 	-- eyePos:DistToSqr(portalPos) < distance^2 * max -- true if close enough
 	-- (eyePos - portalPos):Dot(eyeAngle:Forward()) < 50 * max -- true if looking at the portal, false otherwise
 	-- why return on 1 line? well.. its faster
-	return ((eyePos - portalPos):Dot(portalUp) > -max and 
+	return ((eyePos - portalPos):Dot(portalUp) > -exitSize[3] and 
 	eyePos:DistToSqr(portalPos) < distance^2 * max and 
 	(eyePos - portalPos):Dot(eyeAngle:Forward()) < max)
 end
