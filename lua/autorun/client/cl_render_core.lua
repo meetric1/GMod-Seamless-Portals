@@ -53,7 +53,7 @@ local render_PopCustomClipPlane = render.PopCustomClipPlane
 local render_RenderView = render.RenderView
 local render_EnableClipping = render.EnableClipping
 
-local skipConvar = CreateClientConVar("seamless_portals_refreshrate", "1", false, false, "How many frames to skip before rendering the next portal", 1)
+local skipConvar = CreateClientConVar("seamless_portal_refreshrate", "1", false, false, "How many frames to skip before rendering the next portal", 1)
 local skip = 0
 hook.Add("RenderScene", "seamless_portal_draw", function(eyePos, eyeAngles, fov)
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
@@ -70,7 +70,7 @@ hook.Add("RenderScene", "seamless_portal_draw", function(eyePos, eyeAngles, fov)
 		if timesRendered >= SeamlessPortals.MaxRTs - maxAm then break end
 		if !v:IsValid() or !v:GetExitPortal():IsValid() then continue end
 		
-		if timesRendered < SeamlessPortals.MaxRTs and SeamlessPortals.ShouldRender(v, eyePos, eyeAngles) then
+		if timesRendered < SeamlessPortals.MaxRTs and SeamlessPortals.ShouldRender(v, eyePos, eyeAngles, SeamlessPortals.GetDrawDistance()) then
 			local exitPortal = v:GetExitPortal()
 			local editedPos, editedAng = SeamlessPortals.TransformPortal(v, exitPortal, eyePos, eyeAngles)
 
@@ -135,12 +135,6 @@ local function drawsky(pos, ang, size, size_2, color, materials)
 end
 
 hook.Add("PostDrawTranslucentRenderables", "seamless_portal_skybox", function()
-	//print("asd")
-	//for k, v in ipairs(ents.GetAll()) do
-	//	if v:GetNoDraw() then continue end
-	//	render.DrawWireframeBox(v:GetPos(), v:GetAngles(), v:OBBMins(), v:OBBMaxs())
-	//end
-//
 	//render.DrawWireframeBox(Vector(), Angle(), Vector(1, 1, 1) * -2^14, Vector(1, 1, 1) * 2^14, Color(0, 0, 255, 255))
 	if !SeamlessPortals.Rendering or util.IsSkyboxVisibleFromPoint(renderViewTable.origin) then return end
 	render.OverrideDepthEnable(true, false)
