@@ -329,14 +329,13 @@ end
 SeamlessPortals.ShouldRender = function(portal, eyePos, eyeAngle, distance)
   if portal:IsDormant() then return false end
 	local portalPos, portalUp, exitSize = portal:GetPos(), portal:GetUp(), portal:GetSize()
-	local max = math.max(exitSize[1], exitSize[2])
+	local max, eye = math.max(exitSize[1], exitSize[2]), (eyePos - portalPos)
 	-- (eyePos - portalPos):Dot(portalUp) > (-10 * max) -- true if behind the portal, false otherwise
 	-- eyePos:DistToSqr(portalPos) < distance^2 * max -- true if close enough
 	-- (eyePos - portalPos):Dot(eyeAngle:Forward()) < 50 * max -- true if looking at the portal, false otherwise
-	-- why return on 1 line? well.. its faster
-	return ((eyePos - portalPos):Dot(portalUp) > -exitSize[3] and 
-	eyePos:DistToSqr(portalPos) < distance^2 * max and 
-	(eyePos - portalPos):Dot(eyeAngle:Forward()) < max)
+	if(eye:Dot(portalUp) <= -exitSize[3]) then return false end -- First condition is not met so bail put
+	if(eye:LengthSqr() >= distance^2 * max) then return false end -- Second condition is not met so bail put
+	return (eye:Dot(eyeAngle:Forward()) < max) -- Decides the return value of the function
 end
 
 -- set physmesh pos on client
