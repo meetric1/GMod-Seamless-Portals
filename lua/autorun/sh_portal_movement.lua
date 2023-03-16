@@ -71,8 +71,9 @@ else
     end)
 end
 
-
-local seamless_check = function(e) return !(e:GetClass() == "seamless_portal" or e:GetClass() == "player") end    -- for traces
+local function seamless_check(e)
+	return (e:GetClass() ~= "seamless_portal" and e:GetClass() ~= "player")
+end -- for traces
 
 -- 'no collide' the player with the wall by shrinking the player's collision box
 local traceTable = {}
@@ -84,7 +85,7 @@ local function editPlayerCollision(mv, ply, t)
 	end
 	traceTable.endpos = traceTable.start
 	traceTable.mins = Vector(-16, -16, 0)
-	traceTable.maxs = Vector(16, 16, 72 - (ply:Crouching() and 1 or 0) * 36)
+	traceTable.maxs = Vector( 16,  16, 72 - (ply:Crouching() and 1 or 0) * 36)
 	traceTable.filter = ply
 
 	if !ply.PORTAL_STUCK_OFFSET then
@@ -105,9 +106,13 @@ local function editPlayerCollision(mv, ply, t)
 	local tr = util.TraceHull(traceTable)
 
 	-- getting this to work on the ground was a FUCKING headache
-	if !ply.PORTAL_STUCK_OFFSET and tr.Hit and tr.Entity:GetClass() == "seamless_portal" and tr.Entity.GetExitPortal and IsValid(tr.Entity:GetExitPortal()) then
+	if !ply.PORTAL_STUCK_OFFSET and tr.Hit and
+	   tr.Entity:GetClass() == "seamless_portal" and
+	   tr.Entity.GetExitPortal and IsValid(tr.Entity:GetExitPortal())
+	then
+		local dotUp = tr.Entity:GetUp():Dot(Vector(0, 0, 1))
 		local secondaryOffset = 0
-		if tr.Entity:GetUp():Dot(Vector(0, 0, 1)) > 0.5 then		-- the portal is on the ground
+		if dotUp > 0.5 then		-- the portal is on the ground
 			traceTable.mins = Vector(0, 0, 0)
 			traceTable.maxs = Vector(0, 0, 72)
 
@@ -116,13 +121,13 @@ local function editPlayerCollision(mv, ply, t)
 				return -- we accomplished nothing :DDDD
 			end
 
-			if tr.Entity:GetUp():Dot(Vector(0, 0, 1)) > 0.999 then
+			if dotUp > 0.999 then
 				ply.PORTAL_STUCK_OFFSET = 72
 			else
 				ply.PORTAL_STUCK_OFFSET = 72
 				secondaryOffset = 36
 			end
-		elseif tr.Entity:GetUp():Dot(Vector(0, 0, 1)) < -0.9 then 
+		elseif dotUp < -0.9 then
 			return 							-- the portal is on the ceiling
 		else
 			ply.PORTAL_STUCK_OFFSET = 0		-- the portal is not on the ground
@@ -160,11 +165,13 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	//PrintTable(tr)
 	if !tr.Hit then return end
 	local hitPortal = tr.Entity
-	if hitPortal:GetClass() == "seamless_portal" and hitPortal.GetExitPortal and IsValid(hitPortal:GetExitPortal()) and plyVel:Dot(hitPortal:GetUp()) < 0 then	
+	if hitPortal:GetClass() == "seamless_portal" and hitPortal.GetExitPortal and
+	   IsValid(hitPortal:GetExitPortal()) and plyVel:Dot(hitPortal:GetUp()) < 0
+	then
 		if ply.PORTAL_TELEPORTING then return end
 		freezePly = true
 
-        -- wow look at all of this code just to teleport the player
+		-- wow look at all of this code just to teleport the player
 		local exitPortal = hitPortal:GetExitPortal()
 		local editedPos, editedAng = SeamlessPortals.TransformPortal(hitPortal, exitPortal, tr.HitPos, ply:EyeAngles())
 		local _, editedVelocity = SeamlessPortals.TransformPortal(hitPortal, exitPortal, nil, plyVel:Angle())
