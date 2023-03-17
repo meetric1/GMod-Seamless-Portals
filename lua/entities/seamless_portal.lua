@@ -181,16 +181,24 @@ if CLIENT then
 		local portalSize = size * size_mult
 		local backface = self:GetDisableBackface()
 		if self.RENDER_MATRIX:GetTranslation() != self:GetPos() or self.RENDER_MATRIX:GetScale() != portalSize then
-			self.RENDER_MATRIX = Matrix()
+			self.RENDER_MATRIX:Identity()
 			self.RENDER_MATRIX:SetTranslation(self:GetPos())
 			self.RENDER_MATRIX:SetAngles(self:GetAngles())
 			self.RENDER_MATRIX:SetScale(portalSize * 0.999)
 			
-			self.RENDER_MATRIX_LOCAL = Matrix()
+			if self.RENDER_MATRIX_LOCAL then
+				self.RENDER_MATRIX_LOCAL:Identity()
+			else
+				self.RENDER_MATRIX_LOCAL = Matrix()
+			end
 			self.RENDER_MATRIX_LOCAL:SetScale(portalSize)
 
+			if not self.RENDER_MATRIX_FLAT then
+				self.RENDER_MATRIX_FLAT = Matrix()
+			end
+
 			portalSize[3] = 0
-			self.RENDER_MATRIX_FLAT = Matrix(self.RENDER_MATRIX:ToTable())
+			self.RENDER_MATRIX_FLAT:Set(self.RENDER_MATRIX)
 			self.RENDER_MATRIX_FLAT:SetScale(portalSize)	
 			
 			self:SetRenderBounds(-size, size)
