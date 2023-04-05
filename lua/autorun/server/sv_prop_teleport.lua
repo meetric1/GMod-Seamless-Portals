@@ -53,23 +53,25 @@ local function unfucked_setpos(constrainedProp, editedPos, editedPropAng, edited
     end
 end
 
-local seamless_check = function(e) return e:GetClass() == "seamless_portal" end    -- for traces
+-- Hash lookup is way faster than sting compare
+local seamless_table = {["seamless_portal"] = true}
+local seamless_check = function(e) return not (seamless_table[e:GetClass()] or false) end    -- for traces
 hook.Add("Tick", "seamless_portal_teleport", function()
     if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 or !allEnts then return end
     for _, prop in ipairs(allEnts) do
         if !prop or !prop:IsValid() then continue end
         if prop:IsPlayerHolding() then continue end
         local realPos = prop:GetPos()
-
+        local obbVel = prop:GetVelocity(); obbVel:Mul(0.02)
         -- can it go through the portal?
         local obbMin = prop:OBBMins()
         local obbMax = prop:OBBMaxs()
         local tr = util.TraceHull({
-            start = realPos - prop:GetVelocity() * 0.02,
-            endpos = realPos + prop:GetVelocity() * 0.02,
-            mins = obbMin,
-            maxs = obbMax,
-            filter = seamless_check,
+            start       = realPos - obbVel,
+            endpos      = realPos + obbVel,
+            mins        = obbMin,
+            maxs        = obbMax,
+            filter      = seamless_check,
             ignoreworld = true,
         })
 

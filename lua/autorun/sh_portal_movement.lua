@@ -71,8 +71,10 @@ else
     end)
 end
 
+-- Hash lookup is way faster than sting compare
+local seamless_table = {["seamless_portal"] = true, ["player"] = true}
 local function seamless_check(e)
-	return (e:GetClass() ~= "seamless_portal" and e:GetClass() ~= "player")
+	return not (seamless_table[e:GetClass()] or false)
 end -- for traces
 
 -- 'no collide' the player with the wall by shrinking the player's collision box
