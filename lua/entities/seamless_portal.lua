@@ -113,7 +113,7 @@ end
 
 function ENT:Initialize()
 	if SERVER then
-		self:SetModel("models/Combine_Helicopter/helicopter_bomb01.mdl")
+		self:SetModel("models/hunter/plates/plate2x2.mdl")
 		self:SetAngles(self:GetAngles() + Angle(90, 0, 0))
 		self:PhysicsInit(SOLID_VPHYSICS)
 		self:SetMoveType(MOVETYPE_VPHYSICS)
@@ -122,7 +122,6 @@ function ENT:Initialize()
 		self:SetRenderMode(RENDERMODE_TRANSCOLOR)
 		self:SetCollisionGroup(COLLISION_GROUP_WORLD)
 		self:DrawShadow(false)
-		self:SetRemoveExit(false)
 
 		if self:GetSize() == Vector() then
 			self:SetSize(Vector(50, 50, 8))
