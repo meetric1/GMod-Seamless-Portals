@@ -70,15 +70,13 @@ end
 
 local outputs = {
 	["OnTeleportFrom"] = true,
-	["OnTeleportTo"] = true
+	["OnTeleportTo"]   = true
 }
 
 if SERVER then
 	function ENT:KeyValue(key, value)
 		if key == "link" then
-			timer.Simple(0, function()
-				self:SetExitPortal(ents.FindByName(value)[1])
-			end)
+			timer.Simple(0, function() self:SetExitPortal(ents.FindByName(value)[1]) end)
 		elseif key == "backface" then
 			self:SetDisableBackface(value == "1")
 		elseif key == "size" then
@@ -178,24 +176,32 @@ if CLIENT then
 		if halo.RenderedEntity() == self then return end
 		local render = render
 		local cam = cam
-	
+		local size = self:GetSize()
 		-- render the outside frame
-		local portalSize = self:GetSize() * size_mult
+		local portalSize = size * size_mult
 		local backface = self:GetDisableBackface()
 		if self.RENDER_MATRIX:GetTranslation() != self:GetPos() or self.RENDER_MATRIX:GetScale() != portalSize then
-			self.RENDER_MATRIX = Matrix()
+			self.RENDER_MATRIX:Identity()
 			self.RENDER_MATRIX:SetTranslation(self:GetPos())
 			self.RENDER_MATRIX:SetAngles(self:GetAngles())
 			self.RENDER_MATRIX:SetScale(portalSize * 0.999)
 			
-			self.RENDER_MATRIX_LOCAL = Matrix()
+			if self.RENDER_MATRIX_LOCAL then
+				self.RENDER_MATRIX_LOCAL:Identity()
+			else
+				self.RENDER_MATRIX_LOCAL = Matrix()
+			end
 			self.RENDER_MATRIX_LOCAL:SetScale(portalSize)
 
+			if not self.RENDER_MATRIX_FLAT then
+				self.RENDER_MATRIX_FLAT = Matrix()
+			end
+
 			portalSize[3] = 0
-			self.RENDER_MATRIX_FLAT = Matrix(self.RENDER_MATRIX:ToTable())
+			self.RENDER_MATRIX_FLAT:Set(self.RENDER_MATRIX)
 			self.RENDER_MATRIX_FLAT:SetScale(portalSize)	
 			
-			self:SetRenderBounds(-self:GetSize(), self:GetSize())
+			self:SetRenderBounds(-size, size)
 		end
 
 		if !backface then
@@ -257,14 +263,18 @@ function ENT:UpdatePhysmesh()
 	self:PhysicsInit(6)
 	if self:GetPhysicsObject():IsValid() then
 		local finalMesh = {}
+		local size = self:GetSize()
 		local sides = self:GetSidesInternal()
 		local angleMul = 360 / sides
 		local degreeOffset = (sides * 90 + (sides % 4 != 0 and 0 or 45)) * (math.pi / 180)
 		for side = 1, sides do
-			local side1 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), -1)
-			local side2 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), 0)
-			table.insert(finalMesh, side1 * self:GetSize() * size_mult)
-			table.insert(finalMesh, side2 * self:GetSize() * size_mult)
+			local sidea = math.rad(side * angleMul) + degreeOffset
+			local sidex = math.sin(sidea)
+			local sidey = math.cos(sidea)
+			local side1 = Vector(sidex, sidey, -1)
+			local side2 = Vector(sidex, sidey,  0)
+			table.insert(finalMesh, side1 * size * size_mult)
+			table.insert(finalMesh, side2 * size * size_mult)
 		end
 		self:PhysicsInitConvex(finalMesh)
 		self:EnableCustomCollisions(true)
@@ -327,14 +337,13 @@ end
 SeamlessPortals.ShouldRender = function(portal, eyePos, eyeAngle, distance)
   if portal:IsDormant() then return false end
 	local portalPos, portalUp, exitSize = portal:GetPos(), portal:GetUp(), portal:GetSize()
-	local max = math.max(exitSize[1], exitSize[2])
+	local max, eye = math.max(exitSize[1], exitSize[2]), (eyePos - portalPos)
 	-- (eyePos - portalPos):Dot(portalUp) > (-10 * max) -- true if behind the portal, false otherwise
 	-- eyePos:DistToSqr(portalPos) < distance^2 * max -- true if close enough
 	-- (eyePos - portalPos):Dot(eyeAngle:Forward()) < 50 * max -- true if looking at the portal, false otherwise
-	-- why return on 1 line? well.. its faster
-	return ((eyePos - portalPos):Dot(portalUp) > -exitSize[3] and 
-	eyePos:DistToSqr(portalPos) < distance^2 * max and 
-	(eyePos - portalPos):Dot(eyeAngle:Forward()) < max)
+	if(eye:Dot(portalUp) <= -exitSize[3]) then return false end -- First condition is not met so bail put
+	if(eye:LengthSqr() >= distance^2 * max) then return false end -- Second condition is not met so bail put
+	return (eye:Dot(eyeAngle:Forward()) < max) -- Decides the return value of the function
 end
 
 -- set physmesh pos on client
@@ -368,8 +377,10 @@ if CLIENT then
 			local degreeOffset = (sides * 90 + (sides % 4 != 0 and 0 or 45)) * (math.pi / 180)
 			for side = 1, sides do
 				local side1 = Vector(0, 0, -1)
-				local side2 = Vector(math.sin(math.rad(side * angleMul) + degreeOffset), math.cos(math.rad(side * angleMul) + degreeOffset), -1)
-				local side3 = Vector(math.sin(math.rad((side + 1) * angleMul) + degreeOffset), math.cos(math.rad((side + 1) * angleMul) + degreeOffset), -1)
+				local sidex = math.rad(side * angleMul) + degreeOffset
+				local sidey = math.rad((side + 1) * angleMul) + degreeOffset
+				local side2 = Vector(math.sin(sidex), math.cos(sidex), -1)
+				local side3 = Vector(math.sin(sidey), math.cos(sidey), -1)
 
 				local streach1 = (side / sides) * 4
 				local streach2 = ((side + 1) / sides) * 4
