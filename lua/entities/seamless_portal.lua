@@ -4,7 +4,7 @@
 AddCSLuaFile()
 
 ENT.Type = "anim"
-ENT.Base = "base_gmodentity"
+ENT.Base = "base_anim"
 
 ENT.Category     = "Seamless Portals"
 ENT.PrintName    = "Seamless Portal"
@@ -12,7 +12,6 @@ ENT.Author       = "Mee"
 ENT.Purpose      = ""
 ENT.Instructions = ""
 ENT.Spawnable    = true
-
 
 local gbSvFlag = bit.bor(FCVAR_ARCHIVE)
 -- create global table

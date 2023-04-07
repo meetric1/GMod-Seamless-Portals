@@ -29,6 +29,9 @@ local renderViewTable = {
 timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	portals = ents.FindByClass("seamless_portal")
+	table.sort(portals, function(a, b) 
+		return a:GetPos():DistToSqr(EyePos()) < b:GetPos():DistToSqr(EyePos())
+	end)
 
 	-- update sky material (I guess it can change?)
 	if sky_name != sky_cvar:GetString() then
