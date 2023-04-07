@@ -27,8 +27,8 @@ end)
 local tabEffectClass = {["phys_unfreeze"] = true, ["phys_freeze"] = true}
 local oldUtilEffect = util.Effect
 local function effect(name, b, c, d)
-	 if SeamlessPortals.PortalIndex > 0 and
-	    name and tabEffectClass[name] then return end
+	if SeamlessPortals.PortalIndex > 0 and
+		name and tabEffectClass[name] then return end
 	oldUtilEffect(name, b, c, d)
 end
 util.Effect = effect
@@ -63,7 +63,6 @@ SeamlessPortals.NewTraceLine = function(data)
 	end
 	return tr
 end
-
 
 if SERVER then return end
 

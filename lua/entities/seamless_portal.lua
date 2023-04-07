@@ -334,7 +334,7 @@ end
 
 -- only render the portals that are in the frustum, or should be rendered
 SeamlessPortals.ShouldRender = function(portal, eyePos, eyeAngle, distance)
-  if portal:IsDormant() then return false end
+	if portal:IsDormant() then return false end
 	local portalPos, portalUp, exitSize = portal:GetPos(), portal:GetUp(), portal:GetSize()
 	local max, eye = math.max(exitSize[1], exitSize[2]), (eyePos - portalPos)
 	-- (eyePos - portalPos):Dot(portalUp) > (-10 * max) -- true if behind the portal, false otherwise

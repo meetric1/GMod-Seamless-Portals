@@ -41,7 +41,7 @@ SWEP.Secondary.Automatic = false
 local function getSurfaceAngle(owner, norm)
 	local fwd = owner:GetAimVector()
 	local rgh = fwd:Cross(norm)
-	      fwd:Set(norm:Cross(rgh))
+	fwd:Set(norm:Cross(rgh))
 	return fwd:AngleEx(norm)
 end
 

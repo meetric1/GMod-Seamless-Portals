@@ -133,10 +133,10 @@ elseif ( SERVER ) then
 		ent:SetDisableBackface(self:GetOwner():GetInfoNum("seamless_portal_backface", 1) == 0)
 		ent:SetSides(self:GetOwner():GetInfoNum("seamless_portal_sides", 4))
 		cleanup.Add(self:GetOwner(), "props", ent)
-        undo.Create("Seamless Portal")
-            undo.AddEntity(ent)
-            undo.SetPlayer(self:GetOwner())
-        undo.Finish()
+				undo.Create("Seamless Portal")
+						undo.AddEntity(ent)
+						undo.SetPlayer(self:GetOwner())
+				undo.Finish()
 		return true
 	end
 
