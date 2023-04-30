@@ -55,7 +55,7 @@ end
 
 -- Hash lookup is way faster than sting compare
 local seamless_table = {["seamless_portal"] = true}
-local seamless_check = function(e) return not (seamless_table[e:GetClass()] or false) end    -- for traces
+local seamless_check = function(e) return seamless_table[e:GetClass()] end    -- for traces
 hook.Add("Tick", "seamless_portal_teleport", function()
     if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 or !allEnts then return end
     for _, prop in ipairs(allEnts) do

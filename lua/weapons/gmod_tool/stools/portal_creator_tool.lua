@@ -49,8 +49,8 @@ if ( CLIENT ) then
 	language.Add("Tool.portal_creator_tool.right2", "Right Click: Create link to another portal")
 
 	-- yoink! smiley :)
-	local xVar = CreateClientConVar("seamless_portal_size_x", "50", false, true, "Sets the size of the portal along the X axis", 1, 500)
-	local yVar = CreateClientConVar("seamless_portal_size_y", "50", false, true, "Sets the size of the portal along the Y axis", 1, 500)
+	local xVar = CreateClientConVar("seamless_portal_size_x", "100", false, true, "Sets the size of the portal along the X axis", 1, 1000)
+	local yVar = CreateClientConVar("seamless_portal_size_y", "100", false, true, "Sets the size of the portal along the Y axis", 1, 1000)
 	local zVar = CreateClientConVar("seamless_portal_size_z", "8", false, true, "Sets the size of the portal along the Z axis", 1, 100)
 	local sidesVar = CreateClientConVar("seamless_portal_sides", "4", false, true, "Sets the number of sides the portal has", 3, 100)
 	local backVar = CreateClientConVar("seamless_portal_backface", "1", false, true, "Sets whether to spawn with a backface or not", 0, 1)
@@ -59,8 +59,8 @@ if ( CLIENT ) then
 		panel:AddControl("label", {
 			text = "Creates and links portals",
 		})
-		panel:NumSlider("Portal Size X", "seamless_portal_size_x", 1, 500, 1)
-		panel:NumSlider("Portal Size Y", "seamless_portal_size_y", 1, 500, 1)
+		panel:NumSlider("Portal Size X", "seamless_portal_size_x", 1, 1000, 1)
+		panel:NumSlider("Portal Size Y", "seamless_portal_size_y", 1, 1000, 1)
 		panel:NumSlider("Portal Size Z", "seamless_portal_size_z", 1, 100, 1)
 		panel:NumSlider("Portal Sides", "seamless_portal_sides", 3, 100, 0)
 		panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portal_backface")
@@ -95,8 +95,8 @@ if ( CLIENT ) then
 					return
 				end
 			end
-			local xScale = xVar:GetFloat()
-			local yScale = yVar:GetFloat()
+			local xScale = xVar:GetFloat() * 0.5
+			local yScale = yVar:GetFloat() * 0.5
 			local zScale = zVar:GetFloat()
 			render.SetColorMaterial()
 			render.DrawBox(pos, angles, Vector(-xScale, -yScale, -zScale), Vector(xScale, yScale, 0), green)
@@ -129,7 +129,7 @@ elseif ( SERVER ) then
 		local sizex = self:GetOwner():GetInfoNum("seamless_portal_size_x", 1)
 		local sizey = self:GetOwner():GetInfoNum("seamless_portal_size_y", 1)
 		local sizez = self:GetOwner():GetInfoNum("seamless_portal_size_z", 1)
-		ent:SetSize(Vector(math.Clamp(sizex, 1, 500), math.Clamp(sizey, 1, 500), math.Clamp(sizez, 1, 100)))	// no fun allowed
+		ent:SetSize(Vector(math.Clamp(sizex * 0.5, 1, 500), math.Clamp(sizey * 0.5, 1, 500), math.Clamp(sizez, 1, 100)))	// no fun allowed
 		ent:SetDisableBackface(self:GetOwner():GetInfoNum("seamless_portal_backface", 1) == 0)
 		ent:SetSides(self:GetOwner():GetInfoNum("seamless_portal_sides", 4))
 		cleanup.Add(self:GetOwner(), "props", ent)
