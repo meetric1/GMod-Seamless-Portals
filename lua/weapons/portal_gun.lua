@@ -123,6 +123,7 @@ function SWEP:DoSpawn(key)
 		ent:Spawn()
 		ent:SetSize(Vector(33, 17, 8))
 		ent:SetSides(50)
+		setPortalPlacement(self.Owner, ent)
 		self[key] = ent
 	end
 
@@ -137,7 +138,6 @@ function SWEP:PrimaryAttack()
 		ErrorNoHalt("Failed to create blue portal!"); return end
 	ent:SetColor(Color(0, 0, 255)) -- Blue
 	ent:LinkPortal(self.Portal2)
-	setPortalPlacement(self.Owner, ent)
 	self:SetNextPrimaryFire(CurTime() + 0.25)
 end
 
@@ -149,7 +149,6 @@ function SWEP:SecondaryAttack()
 		ErrorNoHalt("Failed to create orange portal!"); return end
 	ent:SetColor(Color(255, 165, 0)) -- Orange
 	ent:LinkPortal(self.Portal)
-	setPortalPlacement(self.Owner, ent)
 	self:SetNextSecondaryFire(CurTime() + 0.25)
 end
 
