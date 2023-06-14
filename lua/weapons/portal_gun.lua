@@ -113,38 +113,43 @@ function SWEP:ShootFX()
 	end
 end
 
+function SWEP:DoSpawn(key)
+	if not key then return NULL end
+	local ent = self[key]
+	if !ent or !ent:IsValid() then
+		ent = ents.Create("seamless_portal")
+		if !ent or !ent:IsValid() then return NULL end
+		ent:SetCreator(self:GetOwner())
+		ent:Spawn()
+		ent:SetSize(Vector(33, 17, 8))
+		ent:SetSides(50)
+		self[key] = ent
+	end
+
+	return ent
+end
+
 function SWEP:PrimaryAttack()
 	self:ShootFX()
 	if CLIENT then return end
-
-	if !self.Portal or !self.Portal:IsValid() then
-		self.Portal = ents.Create("seamless_portal")
-		self.Portal:SetCreator(self:GetOwner())
-		self.Portal:Spawn()
-		self.Portal:LinkPortal(self.Portal2)
-		self.Portal:SetSize(Vector(33, 17, 8))
-		self.Portal:SetSides(50)
-	end
-
-	setPortalPlacement(self.Owner, self.Portal)
+	local ent = self:DoSpawn("Portal")
+	if !ent or !ent:IsValid() then SafeRemoveEntity(ent)
+		ErrorNoHalt("Failed to create blue portal!"); return end
+	ent:SetColor(Color(0, 0, 255)) -- Blue
+	ent:LinkPortal(self.Portal2)
+	setPortalPlacement(self.Owner, ent)
 	self:SetNextPrimaryFire(CurTime() + 0.25)
 end
 
 function SWEP:SecondaryAttack()
 	self:ShootFX()
 	if CLIENT then return end
-
-	if !self.Portal2 or !self.Portal2:IsValid() then
-		self.Portal2 = ents.Create("seamless_portal")
-		self.Portal2:SetCreator(self:GetOwner())
-		self.Portal2:Spawn()
-		self.Portal2:LinkPortal(self.Portal)
-		self.Portal2:SetSize(Vector(33, 17, 8))
-		self.Portal2:SetSides(50)
-		self.Portal2:SetColor(Color(0, 255, 0))
-	end
-
-	setPortalPlacement(self.Owner, self.Portal2)
+	local ent = self:DoSpawn("Portal2")
+	if !ent or !ent:IsValid() then SafeRemoveEntity(ent)
+		ErrorNoHalt("Failed to create orange portal!"); return end
+	ent:SetColor(Color(255, 165, 0)) -- Orange
+	ent:LinkPortal(self.Portal)
+	setPortalPlacement(self.Owner, ent)
 	self:SetNextSecondaryFire(CurTime() + 0.25)
 end
 
