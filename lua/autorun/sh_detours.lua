@@ -64,7 +64,6 @@ SeamlessPortals.NewTraceLine = function(data)
 	return tr
 end
 
-
 if SERVER then return end
 
 -- sound detour

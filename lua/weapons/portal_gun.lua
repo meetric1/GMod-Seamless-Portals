@@ -119,6 +119,7 @@ function SWEP:PrimaryAttack()
 
 	if !self.Portal or !self.Portal:IsValid() then
 		self.Portal = ents.Create("seamless_portal")
+		self.Portal:SetCreator(self:GetOwner())
 		self.Portal:Spawn()
 		self.Portal:LinkPortal(self.Portal2)
 		self.Portal:SetSize(Vector(33, 17, 8))
@@ -135,6 +136,7 @@ function SWEP:SecondaryAttack()
 
 	if !self.Portal2 or !self.Portal2:IsValid() then
 		self.Portal2 = ents.Create("seamless_portal")
+		self.Portal2:SetCreator(self:GetOwner())
 		self.Portal2:Spawn()
 		self.Portal2:LinkPortal(self.Portal)
 		self.Portal2:SetSize(Vector(33, 17, 8))
