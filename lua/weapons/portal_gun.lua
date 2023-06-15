@@ -33,7 +33,7 @@ SWEP.Secondary.Ammo = "none"
 SWEP.Secondary.Automatic = false
 
 --[[
- * Calculate surface normal angle by using cross products
+ * Calculates surface normal angle by using cross products
  * owner > The player that does the trace
  * norm  > The trace hit surface normal vector
  * Returns the angle tangent to the surface hit position
@@ -56,7 +56,8 @@ local function seamlessCheck(e)
 	return !gtCheck[e:GetClass()]
 end
 
-local size_mult = Vector(math.sqrt(2), math.sqrt(2), 1)	// so the size is in source units (remember we are using sine/cosine)
+-- so the size is in source units (remember we are using sine/cosine)
+local size_mult = Vector(math.sqrt(2), math.sqrt(2), 1)
 local function setPortalPlacement(owner, portal)
 	local ang = Angle() -- The portal angle
 	local siz = portal:GetSize()
@@ -79,7 +80,7 @@ local function setPortalPlacement(owner, portal)
 		ang:Set(getSurfaceAngle(owner, tr.HitNormal))
 	end
 
-	-- extrude portal from the ground
+	-- Extrude portal from the ground
 	local af, au = ang:Forward(), ang:Right()
 	local angTab = {
 		 af * siz[1] * size_mult[1],
@@ -99,7 +100,11 @@ local function setPortalPlacement(owner, portal)
 		end
 	end
 
-	portal:SetPos((tr.HitPos + mul * tr.HitNormal))	--20
+	pos:Set(tr.HitNormal)
+	pos:Mul(mul)
+	pos:Add(tr.HitPos)
+
+	portal:SetPos(pos)
 	portal:SetAngles(ang)
 	if CPPI then portal:CPPISetOwner(owner) end
 end
@@ -123,45 +128,43 @@ function SWEP:DoSpawn(key)
 		ent:Spawn()
 		ent:SetSize(Vector(33, 17, 8))
 		ent:SetSides(50)
-		setPortalPlacement(self.Owner, ent)
 		self[key] = ent
 	end
-
 	return ent
 end
 
-function SWEP:PrimaryAttack()
+function SWEP:ClearSpawn(base, link)
+	if CLIENT then return end
+	if base then SafeRemoveEntity(self[base]) end
+	if link then SafeRemoveEntity(self[link]) end
+end
+
+function SWEP:DoLink(base, link, colr)
 	self:ShootFX()
 	if CLIENT then return end
-	local ent = self:DoSpawn("Portal")
-	if !ent or !ent:IsValid() then SafeRemoveEntity(ent)
-		ErrorNoHalt("Failed to create blue portal!"); return end
-	ent:SetColor(Color(0, 0, 255)) -- Blue
-	ent:LinkPortal(self.Portal2)
+	local ent = self:DoSpawn(base)
+	if !ent or !ent:IsValid() then self:ClearSpawn(base)
+		ErrorNoHalt("Failed to create "..base.." > "..link.."!"); return end
+	ent:SetColor(colr)
+	ent:LinkPortal(self[link])
+	setPortalPlacement(self.Owner, ent)
 	self:SetNextPrimaryFire(CurTime() + 0.25)
 end
 
+function SWEP:PrimaryAttack()
+	self:DoLink("Portal1", "Portal2", Color(0, 0, 255))
+end
+
 function SWEP:SecondaryAttack()
-	self:ShootFX()
-	if CLIENT then return end
-	local ent = self:DoSpawn("Portal2")
-	if !ent or !ent:IsValid() then SafeRemoveEntity(ent)
-		ErrorNoHalt("Failed to create orange portal!"); return end
-	ent:SetColor(Color(255, 165, 0)) -- Orange
-	ent:LinkPortal(self.Portal)
-	self:SetNextSecondaryFire(CurTime() + 0.25)
+	self:DoLink("Portal2", "Portal1", Color(255, 165, 0))
 end
 
 function SWEP:OnRemove()
-	if CLIENT then return end
-	SafeRemoveEntity(self.Portal)
-	SafeRemoveEntity(self.Portal2)
+	self:ClearSpawn("Portal1", "Portal2")
 end
 
 function SWEP:Reload()
-	if CLIENT then return end
-	SafeRemoveEntity(self.Portal)
-	SafeRemoveEntity(self.Portal2)
+	self:ClearSpawn("Portal1", "Portal2")
 end
 
 -- Index the global table
