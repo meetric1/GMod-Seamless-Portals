@@ -72,9 +72,10 @@ if ( CLIENT ) then
 			if self:GetStage() == 2 then
 				local target = self:GetLinkTarget()
 				if IsValid(target) then
-					local from = target:GetPos()
 					local to = pos
-					local tr = self.Owner:GetEyeTrace()
+					local ply = self:GetOwner()
+					local from = target:GetPos()
+					local tr = ply:GetEyeTrace()
 					-- the tower of if statements
 					if tr.Hit then
 						local ent = tr.Entity

@@ -111,7 +111,7 @@ end
 
 function SWEP:ShootFX()
 	self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
-	self.Owner:SetAnimation(PLAYER_ATTACK1)
+	self:GetOwner():SetAnimation(PLAYER_ATTACK1)
 
 	if CLIENT and IsFirstTimePredicted() then
 		EmitSound("NPC_Vortigaunt.Shoot", self:GetPos(), self:EntIndex(), CHAN_AUTO, 0.25)	-- quieter for client
@@ -147,7 +147,7 @@ function SWEP:DoLink(base, link, colr)
 		ErrorNoHalt("Failed to create "..base.." > "..link.."!"); return end
 	ent:SetColor(colr)
 	ent:LinkPortal(self[link])
-	setPortalPlacement(self.Owner, ent)
+	setPortalPlacement(self:GetOwner(), ent)
 	self:SetNextPrimaryFire(CurTime() + 0.25)
 end
 
