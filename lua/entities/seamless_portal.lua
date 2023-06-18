@@ -93,6 +93,7 @@ if SERVER then
 	end
 end
 
+local size_mult = Vector(math.sqrt(2), math.sqrt(2), 1)	// so the size is in source units (remember we are using sine/cosine)
 local function incrementPortal(ent)
 	if CLIENT then	-- singleplayer is weird... dont generate a physmesh if its singleplayer
 		if ent.UpdatePhysmesh then
@@ -106,7 +107,9 @@ local function incrementPortal(ent)
 				timer.Remove("seamless_portal_init" .. SeamlessPortals.PortalIndex)
 			end)
 		end
-		ent:SetRenderBounds(-ent:GetSize(), ent:GetSize())
+
+		local size = ent:GetSize() * size_mult
+		ent:SetRenderBounds(-size, size)
 	end
 	SeamlessPortals.PortalIndex = SeamlessPortals.PortalIndex + 1
 end
@@ -164,7 +167,6 @@ function ENT:OnRemove()
 end
 
 -- theres gonna be a bunch of magic numbers in this rendering code, since garry decided a hunterplate should be 47.9 rendering units wide and 51 physical units
-local size_mult = Vector(math.sqrt(2), math.sqrt(2), 1)	// so the size is in source units (remember we are using sine/cosine)
 if CLIENT then
 	local drawMat = Material("models/dav0r/hoverball")
 	function ENT:GetRenderMesh()
@@ -195,12 +197,12 @@ if CLIENT then
 			if not self.RENDER_MATRIX_FLAT then
 				self.RENDER_MATRIX_FLAT = Matrix()
 			end
+			
+			self:SetRenderBounds(-portalSize, portalSize)
 
 			portalSize[3] = 0
 			self.RENDER_MATRIX_FLAT:Set(self.RENDER_MATRIX)
 			self.RENDER_MATRIX_FLAT:SetScale(portalSize)	
-			
-			self:SetRenderBounds(-size, size)
 		end
 
 		if !backface then

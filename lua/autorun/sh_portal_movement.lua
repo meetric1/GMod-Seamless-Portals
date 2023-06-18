@@ -74,7 +74,7 @@ end
 -- Hash lookup is way faster than sting compare
 local seamless_table = {["seamless_portal"] = true, ["player"] = true}
 local function seamless_check(e)
-	return not (seamless_table[e:GetClass()] or false)
+	return not (seamless_table[e:GetClass()] or e:GetCollisionGroup() == COLLISION_GROUP_WORLD)
 end -- for traces
 
 -- 'no collide' the player with the wall by shrinking the player's collision box
@@ -147,6 +147,7 @@ local function editPlayerCollision(mv, ply, t)
 end
 
 -- teleport players
+local seamless_check2 = function(e) return e:GetClass() == "seamless_portal" end
 hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
     if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then 
 		if ply.PORTAL_STUCK_OFFSET then
@@ -162,7 +163,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	local plyPos = ply:EyePos()
 	traceTable.start = plyPos - plyVel * 0.02
 	traceTable.endpos = plyPos + plyVel * 0.02
-	traceTable.filter = ply
+	traceTable.filter = seamless_check2
 	local tr = SeamlessPortals.TraceLine(traceTable)
 	//PrintTable(tr)
 	if !tr.Hit then return end
@@ -181,19 +182,17 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 
 		--ground can fluxuate depending on how the user places the portals, so we need to make sure we're not going to teleport into the ground
 		local eyeHeight = (ply:EyePos() - ply:GetPos())
-		local editedPos = editedPos - eyeHeight
-		traceTable.start = editedPos + eyeHeight
-		traceTable.endpos = editedPos - Vector(0, 0, 0.1)
-		traceTable.filter = seamless_check
-		local floor_trace = SeamlessPortals.TraceLine(traceTable)
-		local finalPos = editedPos
+		local finalPos = editedPos - eyeHeight
 
 		-- dont do extrusion if the player is noclipping
-		local offset
+		local offset = Vector()
 		if ply:GetMoveType() != MOVETYPE_NOCLIP then
-			offset = floor_trace.HitPos
-		else
-			offset = editedPos
+			traceTable.start = editedPos
+			traceTable.endpos = finalPos - Vector(0, 0, 0.01)
+			traceTable.filter = seamless_check
+			local tr = SeamlessPortals.TraceLine(traceTable)
+			// extrude feet so the player isnt stuck
+			offset = tr.HitPos - finalPos
 		end
 
 		local exitSize = (exitPortal:GetSize()[1] / hitPortal:GetSize()[1])
@@ -205,7 +204,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			end
 		end
 
-		finalPos = finalPos - (editedPos - offset) * exitSize + Vector(0, 0, 0.1)	-- small offset so we arent in the floor
+		finalPos = finalPos + offset * exitSize + Vector(0, 0, 0.1)	-- small offset so we arent in the floor
 
 		-- apply final velocity
 		mv:SetVelocity(editedVelocity:Forward() * max * exitSize)
