@@ -145,7 +145,6 @@ function SWEP:DoSpawn(key)
 end
 
 function SWEP:ClearSpawn(base, link)
-	if CLIENT then return end
 	if base then SafeRemoveEntity(self[base]) end
 	if link then SafeRemoveEntity(self[link]) end
 end
