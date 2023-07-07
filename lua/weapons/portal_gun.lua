@@ -109,12 +109,23 @@ local function setPortalPlacement(owner, portal)
 	if CPPI then portal:CPPISetOwner(owner) end
 end
 
-function SWEP:ShootFX()
-	self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
-	self:GetOwner():SetAnimation(PLAYER_ATTACK1)
-
-	if CLIENT and IsFirstTimePredicted() then
-		EmitSound("NPC_Vortigaunt.Shoot", self:GetPos(), self:EntIndex(), CHAN_AUTO, 0.25)	-- quieter for client
+function SWEP:ShootFX(sfx, rel)
+	if rel then
+		self:SendWeaponAnim(ACT_VM_RELOAD)
+		self:GetOwner():SetAnimation(PLAYER_RELOAD)
+	else
+		self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
+		self:GetOwner():SetAnimation(PLAYER_ATTACK1)
+	end
+	if IsFirstTimePredicted() then
+		local sfx = tostring(sfx or ""):Trim()
+		if game.SinglePlayer() then
+			self:EmitSound(sfx, 60, 100, 0.25, CHAN_AUTO)	-- quieter for client
+		else
+			if CLIENT then
+				self:EmitSound(sfx, 60, 100, 0.25, CHAN_AUTO)	-- quieter for client
+			end
+		end
 	end
 end
 
@@ -140,8 +151,6 @@ function SWEP:ClearSpawn(base, link)
 end
 
 function SWEP:DoLink(base, link, colr)
-	self:ShootFX()
-	if CLIENT then return end
 	local ent = self:DoSpawn(base)
 	if !ent or !ent:IsValid() then self:ClearSpawn(base)
 		ErrorNoHalt("Failed to create "..base.." > "..link.."!"); return end
@@ -152,11 +161,15 @@ function SWEP:DoLink(base, link, colr)
 end
 
 function SWEP:PrimaryAttack()
+	self:ShootFX("NPC_Vortigaunt.Shoot")
+	if CLIENT then return end
 	self:DoLink("Portal1", "Portal2", Color(0, 0, 255))
 end
 
 function SWEP:SecondaryAttack()
-	self:DoLink("Portal2", "Portal1", Color(255, 165, 0))
+	self:ShootFX("NPC_Vortigaunt.Shoot")
+	if CLIENT then return end
+	self:DoLink("Portal2", "Portal1", Color(0, 255, 0))
 end
 
 function SWEP:OnRemove()
@@ -164,6 +177,8 @@ function SWEP:OnRemove()
 end
 
 function SWEP:Reload()
+	self:ShootFX("NPC_Vortigaunt.Swing", true)
+	if CLIENT then return end
 	self:ClearSpawn("Portal1", "Portal2")
 end
 
