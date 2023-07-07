@@ -153,7 +153,7 @@ end
 function SWEP:DoLink(base, link, colr)
 	local ent = self:DoSpawn(base)
 	if !ent or !ent:IsValid() then self:ClearSpawn(base)
-		ErrorNoHalt("Failed to create "..base.." > "..link.."!"); return end
+		ErrorNoHalt("Failed linking seamless portal "..base.." > "..link.."!\n"); return end
 	ent:SetColor(colr)
 	ent:LinkPortal(self[link])
 	setPortalPlacement(self:GetOwner(), ent)
