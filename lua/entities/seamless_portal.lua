@@ -140,10 +140,12 @@ end
 function ENT:SpawnFunction(ply, tr)
 	local portal1 = ents.Create("seamless_portal")
 	portal1:SetPos(tr.HitPos + tr.HitNormal * 160)
+	portal1:SetCreator(ply)
 	portal1:Spawn()
 
 	local portal2 = ents.Create("seamless_portal")
 	portal2:SetPos(tr.HitPos + tr.HitNormal * 50)
+	portal2:SetCreator(ply)
 	portal2:Spawn()
 
 	if CPPI then portal2:CPPISetOwner(ply) end

@@ -33,7 +33,7 @@ SWEP.Secondary.Ammo = "none"
 SWEP.Secondary.Automatic = false
 
 --[[
- * Calculate surface normal angle by using cross products
+ * Calculates surface normal angle by using cross products
  * owner > The player that does the trace
  * norm  > The trace hit surface normal vector
  * Returns the angle tangent to the surface hit position
@@ -56,7 +56,8 @@ local function seamlessCheck(e)
 	return !gtCheck[e:GetClass()]
 end
 
-local size_mult = Vector(math.sqrt(2), math.sqrt(2), 1)	// so the size is in source units (remember we are using sine/cosine)
+-- so the size is in source units (remember we are using sine/cosine)
+local size_mult = Vector(math.sqrt(2), math.sqrt(2), 1)
 local function setPortalPlacement(owner, portal)
 	local ang = Angle() -- The portal angle
 	local siz = portal:GetSize()
@@ -79,7 +80,7 @@ local function setPortalPlacement(owner, portal)
 		ang:Set(getSurfaceAngle(owner, tr.HitNormal))
 	end
 
-	-- extrude portal from the ground
+	-- Extrude portal from the ground
 	local af, au = ang:Forward(), ang:Right()
 	local angTab = {
 		 af * siz[1] * size_mult[1],
@@ -99,63 +100,85 @@ local function setPortalPlacement(owner, portal)
 		end
 	end
 
-	portal:SetPos((tr.HitPos + mul * tr.HitNormal))	--20
+	pos:Set(tr.HitNormal)
+	pos:Mul(mul)
+	pos:Add(tr.HitPos)
+
+	portal:SetPos(pos)
 	portal:SetAngles(ang)
 	if CPPI then portal:CPPISetOwner(owner) end
 end
 
-function SWEP:ShootFX()
-	self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
-	self.Owner:SetAnimation(PLAYER_ATTACK1)
-
-	if CLIENT and IsFirstTimePredicted() then
-		EmitSound("NPC_Vortigaunt.Shoot", self:GetPos(), self:EntIndex(), CHAN_AUTO, 0.25)	-- quieter for client
+function SWEP:ShootFX(sfx, rel)
+	if rel then
+		self:SendWeaponAnim(ACT_VM_RELOAD)
+		self:GetOwner():SetAnimation(PLAYER_RELOAD)
+	else
+		self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
+		self:GetOwner():SetAnimation(PLAYER_ATTACK1)
+	end
+	if IsFirstTimePredicted() then
+		local sfx = tostring(sfx or ""):Trim()
+		if game.SinglePlayer() then
+			self:EmitSound(sfx, 60, 100, 0.25, CHAN_AUTO)	-- quieter for client
+		else
+			if CLIENT then
+				self:EmitSound(sfx, 60, 100, 0.25, CHAN_AUTO)	-- quieter for client
+			end
+		end
 	end
 end
 
-function SWEP:PrimaryAttack()
-	self:ShootFX()
-	if CLIENT then return end
-
-	if !self.Portal or !self.Portal:IsValid() then
-		self.Portal = ents.Create("seamless_portal")
-		self.Portal:Spawn()
-		self.Portal:LinkPortal(self.Portal2)
-		self.Portal:SetSize(Vector(33, 17, 8))
-		self.Portal:SetSides(50)
+function SWEP:DoSpawn(key)
+	if not key then return NULL end
+	local ent = self[key]
+	if !ent or !ent:IsValid() then
+		ent = ents.Create("seamless_portal")
+		if !ent or !ent:IsValid() then return NULL end
+		ent:SetCreator(self:GetOwner())
+		ent:Spawn()
+		ent:SetSize(Vector(33, 17, 8))
+		ent:SetSides(50)
+		self[key] = ent
 	end
+	return ent
+end
 
-	setPortalPlacement(self.Owner, self.Portal)
+function SWEP:ClearSpawn(base, link)
+	if base then SafeRemoveEntity(self[base]) end
+	if link then SafeRemoveEntity(self[link]) end
+end
+
+function SWEP:DoLink(base, link, colr)
+	local ent = self:DoSpawn(base)
+	if !ent or !ent:IsValid() then self:ClearSpawn(base)
+		ErrorNoHalt("Failed linking seamless portal "..base.." > "..link.."!\n"); return end
+	ent:SetColor(colr)
+	ent:LinkPortal(self[link])
+	setPortalPlacement(self:GetOwner(), ent)
 	self:SetNextPrimaryFire(CurTime() + 0.25)
 end
 
-function SWEP:SecondaryAttack()
-	self:ShootFX()
+function SWEP:PrimaryAttack()
+	self:ShootFX("NPC_Vortigaunt.Shoot")
 	if CLIENT then return end
+	self:DoLink("Portal1", "Portal2", Color(0, 0, 255))
+end
 
-	if !self.Portal2 or !self.Portal2:IsValid() then
-		self.Portal2 = ents.Create("seamless_portal")
-		self.Portal2:Spawn()
-		self.Portal2:LinkPortal(self.Portal)
-		self.Portal2:SetSize(Vector(33, 17, 8))
-		self.Portal2:SetSides(50)
-		self.Portal2:SetColor(Color(0, 255, 0))
-	end
-
-	setPortalPlacement(self.Owner, self.Portal2)
-	self:SetNextSecondaryFire(CurTime() + 0.25)
+function SWEP:SecondaryAttack()
+	self:ShootFX("NPC_Vortigaunt.Shoot")
+	if CLIENT then return end
+	self:DoLink("Portal2", "Portal1", Color(0, 255, 0))
 end
 
 function SWEP:OnRemove()
-	if CLIENT then return end
-	SafeRemoveEntity(self.Portal)
-	SafeRemoveEntity(self.Portal2)
+	self:ClearSpawn("Portal1", "Portal2")
 end
 
 function SWEP:Reload()
+	self:ShootFX("NPC_Vortigaunt.Swing", true)
 	if CLIENT then return end
-	SafeRemoveEntity(self.Portal)
-	SafeRemoveEntity(self.Portal2)
+	self:ClearSpawn("Portal1", "Portal2")
 end
 
 -- Index the global table

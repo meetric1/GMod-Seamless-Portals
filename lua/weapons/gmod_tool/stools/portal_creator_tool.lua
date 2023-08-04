@@ -11,23 +11,22 @@ TOOL.LinkTarget = NULL
 
 -- yoink! smiley :)
 local function VectorAngle(vec1, vec2)
-	local costheta = vec1:Dot(vec2) / (vec1:Length() * vec2:Length())
-	local theta = math.acos(costheta)
-	return math.deg(theta)
+	local cosTh = vec1:Dot(vec2) / (vec1:Length() * vec2:Length())
+	return math.deg(math.acos(cosTh))
 end
 
 function TOOL:GetPlacementPosition(tr)
-	if not tr then tr = self:GetOwner():GetEyeTrace() end
+	local ply = self:GetOwner()
+	if not tr then tr = ply:GetEyeTrace() end
 	if not tr.Hit then return false end
 	-- yoink! smiley :)
-	local rotatedAng = tr.HitNormal:Angle() + Angle(90, 0, 0)
-
+	local rotAng = tr.HitNormal:Angle(); rotAng.p = rotAng.p + 90
 	local elevationangle = VectorAngle(vector_up, tr.HitNormal)
 	if elevationangle < 1 or (elevationangle > 179 and elevationangle < 181) then 
-		rotatedAng.y = self:GetOwner():EyeAngles().y + 180
+		rotAng.y = ply:EyeAngles().y + 180
 	end
 	--
-	return (tr.HitPos + tr.HitNormal * (self:GetOwner():GetInfoNum("seamless_portal_size_z", 1) + 1)), rotatedAng
+	return (tr.HitPos + tr.HitNormal * (ply:GetInfoNum("seamless_portal_size_z", 1) + 1)), rotAng
 end
 
 function TOOL:GetLinkTarget()
@@ -56,9 +55,7 @@ if ( CLIENT ) then
 	local backVar = CreateClientConVar("seamless_portal_backface", "1", false, true, "Sets whether to spawn with a backface or not", 0, 1)
 
 	function TOOL.BuildCPanel(panel)
-		panel:AddControl("label", {
-			text = "Creates and links portals",
-		})
+		panel:AddControl("label", {text = "Creates and links portals"})
 		panel:NumSlider("Portal Size X", "seamless_portal_size_x", 1, 1000, 1)
 		panel:NumSlider("Portal Size Y", "seamless_portal_size_y", 1, 1000, 1)
 		panel:NumSlider("Portal Size Z", "seamless_portal_size_z", 1, 100, 1)
@@ -68,16 +65,17 @@ if ( CLIENT ) then
 
 	local beamMat = Material("cable/blue_elec")
 	function TOOL:DrawHUD()
-		local pos, angles = self:GetPlacementPosition()
+		local pos, ang = self:GetPlacementPosition()
 		if not pos then return end
 		--
 		cam.Start3D()
 			if self:GetStage() == 2 then
 				local target = self:GetLinkTarget()
 				if IsValid(target) then
-					local from = target:GetPos()
 					local to = pos
-					local tr = self.Owner:GetEyeTrace()
+					local ply = self:GetOwner()
+					local from = target:GetPos()
+					local tr = ply:GetEyeTrace()
 					-- the tower of if statements
 					if tr.Hit then
 						local ent = tr.Entity
@@ -99,7 +97,7 @@ if ( CLIENT ) then
 			local yScale = yVar:GetFloat() * 0.5
 			local zScale = zVar:GetFloat()
 			render.SetColorMaterial()
-			render.DrawBox(pos, angles, Vector(-xScale, -yScale, -zScale), Vector(xScale, yScale, 0), green)
+			render.DrawBox(pos, ang, Vector(-xScale, -yScale, -zScale), Vector(xScale, yScale, 0), green)
 		cam.End3D()
 	end
 
@@ -118,24 +116,28 @@ elseif ( SERVER ) then
 	end
 
 	function TOOL:LeftClick(trace)
-		local pos, angles = self:GetPlacementPosition(trace)
+		local pos, ang = self:GetPlacementPosition(trace)
 		if not pos then return false end
 		local ent = ents.Create("seamless_portal")
+		if not IsValid(ent) then return false end
+		local ply = self:GetOwner()
+		ang.p = ang.p + 270
 		ent:SetPos(pos)
-		ent:SetAngles(angles + Angle(270, 0, 0))
+		ent:SetAngles(ang)
+		ent:SetCreator(ply)
 		ent:Spawn()
-		if CPPI then ent:CPPISetOwner(self:GetOwner()) end
-		-- yoink! smiley
-		local sizex = self:GetOwner():GetInfoNum("seamless_portal_size_x", 1)
-		local sizey = self:GetOwner():GetInfoNum("seamless_portal_size_y", 1)
-		local sizez = self:GetOwner():GetInfoNum("seamless_portal_size_z", 1)
-		ent:SetSize(Vector(math.Clamp(sizex * 0.5, 1, 500), math.Clamp(sizey * 0.5, 1, 500), math.Clamp(sizez, 1, 100)))	// no fun allowed
-		ent:SetDisableBackface(self:GetOwner():GetInfoNum("seamless_portal_backface", 1) == 0)
-		ent:SetSides(self:GetOwner():GetInfoNum("seamless_portal_sides", 4))
-		cleanup.Add(self:GetOwner(), "props", ent)
+		if CPPI then ent:CPPISetOwner(ply) end
+		-- yoink! smiley, no fun allowed
+		local sizex = math.Clamp(ply:GetInfoNum("seamless_portal_size_x", 1) * 0.5, 1, 500)
+		local sizey = math.Clamp(ply:GetInfoNum("seamless_portal_size_y", 1) * 0.5, 1, 500)
+		local sizez = math.Clamp(ply:GetInfoNum("seamless_portal_size_z", 1), 1, 100)
+		ent:SetSize(Vector(sizex, sizey, sizez))
+		ent:SetDisableBackface(ply:GetInfoNum("seamless_portal_backface", 1) == 0)
+		ent:SetSides(ply:GetInfoNum("seamless_portal_sides", 4))
+		cleanup.Add(ply, "props", ent)
         undo.Create("Seamless Portal")
             undo.AddEntity(ent)
-            undo.SetPlayer(self:GetOwner())
+            undo.SetPlayer(ply)
         undo.Finish()
 		return true
 	end
@@ -148,7 +150,7 @@ elseif ( SERVER ) then
 	function TOOL:GetTarget(trace)
 		if not trace.Hit then return NULL end
 		local ent = trace.Entity
-		if not ent then return NULL end
+		if not IsValid(ent) then return NULL end
 		if ent:GetClass() ~= "seamless_portal" then return NULL end
 		if CPPI then
 			if not ent:CPPICanTool(self:GetOwner(), "portal_creator_tool") then return NULL end
@@ -166,15 +168,21 @@ elseif ( SERVER ) then
 		if (stage <= 1) then
 			self:SetLinkTarget(ent)
 			self:SetStage(2)
-		else
+		else -- Linking a portal to itself for mirror dimension
 			local linkTarget = self:GetLinkTarget()
-			--[[if (ent:EntIndex() == linkTarget:EntIndex()) then
-				self:SetStage(1)
-				return false
-			end]]
 			-- LinkPortal already contains an IsValid check
 			ent:LinkPortal(linkTarget)
 			self:SetStage(1)
+		end
+		return true
+	end
+
+	function TOOL:Reload(trace)
+		local ent = self:GetTarget(trace)
+		if not IsValid(ent) then return false end
+		local ply = self:GetOwner()
+		if ply:IsAdmin() or ent:GetCreator() == ply
+			then SafeRemoveEntity(ent)
 		end
 		return true
 	end
