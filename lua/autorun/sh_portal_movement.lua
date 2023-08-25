@@ -22,7 +22,7 @@ local function updateCalcViews(finalPos, finalVel)
 	
 	local addAngle = 1
 	finalPos = finalPos - finalVel * FrameTime()	-- why does this work? idk but it feels nice, could be a source prediction thing
-	hook.Add("CalcView", "seamless_portals_fix", function(ply, origin, angle)
+	hook.Add("CalcView", "seamless_portals_fix", function(ply, origin, angle, fov)
 		if ply:EyePos():DistToSqr(origin) > 10000 then return end
 		addAngle = addAngle * 0.9
 		angle.r = angle.r * addAngle
@@ -35,12 +35,26 @@ local function updateCalcViews(finalPos, finalVel)
 			finalPos = ply:EyePos()
 			SeamlessPortals.DrawPlayerInView = false
 		end
+		
+		local wep = ply:GetActiveWeapon()
+		if wep:IsValid() then
+			if isfunction(wep.CalcView) then
+				local origin, angles, fov = wep:CalcView(ply, Vector(finalPos), Angle(angle), fov)
+				finalPos = origin
+				angle = angles
+			end
+		end
 
 		return {origin = finalPos, angles = angle}
 	end)
 
     -- weapons sometimes glitch out a bit when you teleport, since the weapon angle is wrong
 	hook.Add("CalcViewModelView", "seamless_portals_fix", function(wep, vm, oldPos, oldAng, pos, ang)
+		if wep:IsValid() and isfunction(wep.CalcViewModelView) then
+			local _pos, _ang = wep:CalcViewModelView(vm, Vector(oldPos), Angle(oldAng), Vector(pos), Angle(ang))
+			finalPos = _pos
+			ang = _ang
+		end
 		ang.r = ang.r * addAngle
 		return finalPos, ang
 	end)
