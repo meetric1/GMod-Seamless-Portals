@@ -244,7 +244,9 @@ if CLIENT then
 		render.SetStencilCompareFunction(STENCIL_EQUAL)
 
 		-- draw quad reversed if the portal is linked to itself
-		if self.GetExitPortal and self:GetExitPortal() == self then
+		local flip = self.GetExitPortal and self:GetExitPortal() == self
+		if SeamlessPortals.ToggleMirror() then flip = !flip end
+		if flip then
 			render.DrawScreenQuadEx(ScrW(), 0, -ScrW(), ScrH())
 		else
 			render.DrawScreenQuadEx(0, 0, ScrW(), ScrH())
@@ -445,51 +447,39 @@ if CLIENT then
 	local rendering = false
 	local mirrored = false
 	function SeamlessPortals.ToggleMirror(enable)
-		if enable then
-			hook.Add("PreRender", "portal_flip_scene", function()
-				rendering = true
-				render.PushRenderTarget(SeamlessPortals.PortalRTs[SeamlessPortals.MaxRTs])
-				render.RenderView({drawviewmodel = false})
-				render.PopRenderTarget()
-				rendering = false
-			end)
+		if enable == nil then return mirrored end -- 2024 mee here: what the fuck is this
+		mirrored = enable 
 
-			hook.Add("PostDrawTranslucentRenderables", "portal_flip_scene", function(_, sky, sky3d)
-				if rendering or SeamlessPortals.Rendering then return end
-				render.SetMaterial(SeamlessPortals.PortalMaterials[SeamlessPortals.MaxRTs])
-				render.DrawScreenQuadEx(ScrW(), 0, -ScrW(), ScrH())
+		if (!enable) then
+			hook.Remove("PreDrawViewModels", "FlippedWorld")
+			hook.Remove("InputMouseApply", "FlippedWorld")
+			hook.Remove("CreateMove", "FlippedWorld")
 
-				if LocalPlayer():Health() <= 0 then
-					SeamlessPortals.ToggleMirror(false)
-				end
-			end)
-
-			-- invert mouse x
-			hook.Add("InputMouseApply", "portal_flip_scene", function(cmd, x, y, ang)
-				if LocalPlayer():WaterLevel() < 3 then
-					cmd:SetViewAngles(ang + Angle(0, x / 22.5, 0))
-				end
-			end)
-
-			-- invert movement x
-			hook.Add("CreateMove", "portal_flip_scene", function(cmd)
-				if LocalPlayer():WaterLevel() < 3 then
-					cmd:SetSideMove(-cmd:GetSideMove())
-				end
-			end)
-
-			mirrored = true
-		elseif enable == false then
-			hook.Remove("PreRender", "portal_flip_scene")
-			hook.Remove("PostDrawTranslucentRenderables", "portal_flip_scene")
-			hook.Remove("InputMouseApply", "portal_flip_scene")
-			hook.Remove("CreateMove", "portal_flip_scene")
-
-			mirrored = false
+			return mirrored
 		end
+	
+		hook.Add("PreDrawViewModels", "FlippedWorld", function(_, sky, sky3d)
+			render.UpdateScreenEffectTexture()
+			render.DrawTextureToScreenRect(render.GetScreenEffectTexture(), ScrW(), 0, -ScrW(), ScrH())
+
+			if LocalPlayer():Health() <= 0 then
+				SeamlessPortals.ToggleMirror(false)
+			end
+		end)
+	
+		-- invert mouse x
+		hook.Add("InputMouseApply", "FlippedWorld", function(cmd, x, y, ang)
+			cmd:SetViewAngles(ang + Angle(0, x / 22.5, 0))
+		end)
+	
+		-- invert movement x
+		hook.Add("CreateMove", "FlippedWorld", function(cmd)
+			cmd:SetSideMove(-cmd:GetSideMove())
+		end)
 
 		return mirrored
 	end
+	
 
 	SeamlessPortals.ToggleMirror(false)
 end
