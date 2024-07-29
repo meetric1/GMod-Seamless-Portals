@@ -16,7 +16,17 @@ ENT.Spawnable    = true
 local gbSvFlag = bit.bor(FCVAR_ARCHIVE)
 -- create global table
 SeamlessPortals = SeamlessPortals or {}
+
 local varDrawDistance = CreateClientConVar("seamless_portal_drawdistance", "250", true, true, "Sets the multiplier of how far a portal should render", 0)
+
+local function setDupeLink(ply, ent, dat)
+	if(CLIENT) then return true end
+	if(not (ply and ply:IsValid())) then return end
+	ent.PORTAL_DUPE_LINK = table.Copy(dat)
+	duplicator.StoreEntityModifier(ent, "seamless_portal_dupelink", ent.PORTAL_DUPE_LINK)
+end
+
+duplicator.RegisterEntityModifier("seamless_portal_dupelink", setDupeLink)
 
 function ENT:SetupDataTables()
 	self:NetworkVar("Entity", 0, "ExitPortal")
@@ -33,6 +43,7 @@ function ENT:LinkPortal(ent)
 	if !IsValid(ent) then return end
 	self:SetExitPortal(ent)
 	ent:SetExitPortal(self)
+	setDupeLink(self:GetCreator(), self, {From = self:EntIndex(), To = ent:EntIndex()})
 end
 
 function ENT:UnlinkPortal()
@@ -73,15 +84,21 @@ local outputs = {
 }
 
 if SERVER then
+
 	function ENT:PostEntityPaste(ply, ent, cre)
 		if(not (ply and ply:IsValid())) then return end
-		local portal1, portal2 = self, cre[idx]
-		if(not (portal1 and portal1:IsValid())) then return end
-		if(not (portal2 and portal2:IsValid())) then return end
-		portal1:LinkPortal(portal2)
-		portal2:LinkPortal(portal1)
-		portal1:SetRemoveExit(portal1:GetRemoveExit())
-		portal2:SetRemoveExit(portal2:GetRemoveExit())
+		for key, ent in pairs(cre) do
+			local link = ent.PORTAL_DUPE_LINK
+			if(link) then
+				local portal1, portal2 = cre[link.From], cre[link.To]
+				if(portal1 and portal2 and portal1:IsValid() and portal2:IsValid()) then
+					portal1:LinkPortal(portal2)
+					portal2:LinkPortal(portal1)
+					portal1:SetRemoveExit(true)
+					portal2:SetRemoveExit(true)
+				end
+			end
+		end
 	end
 
 	function ENT:KeyValue(key, value)
