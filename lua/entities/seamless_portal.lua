@@ -80,8 +80,8 @@ if SERVER then
 		if(not (portal2 and portal2:IsValid())) then return end
 		portal1:LinkPortal(portal2)
 		portal2:LinkPortal(portal1)
-		portal1:SetRemoveExit(true)
-		portal2:SetRemoveExit(true)
+		portal1:SetRemoveExit(portal1:GetRemoveExit())
+		portal2:SetRemoveExit(portal2:GetRemoveExit())
 	end
 
 	function ENT:KeyValue(key, value)
