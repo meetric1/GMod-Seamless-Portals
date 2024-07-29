@@ -73,6 +73,17 @@ local outputs = {
 }
 
 if SERVER then
+	function ENT:PostEntityPaste(ply, ent, cre)
+		if(not (ply and ply:IsValid())) then return end
+		local portal1, portal2 = self, cre[idx]
+		if(not (portal1 and portal1:IsValid())) then return end
+		if(not (portal2 and portal2:IsValid())) then return end
+		portal1:LinkPortal(portal2)
+		portal2:LinkPortal(portal1)
+		portal1:SetRemoveExit(true)
+		portal2:SetRemoveExit(true)
+	end
+
 	function ENT:KeyValue(key, value)
 		if key == "link" then
 			timer.Simple(0, function() self:SetExitPortal(ents.FindByName(value)[1]) end)
