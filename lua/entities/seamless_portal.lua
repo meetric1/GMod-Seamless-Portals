@@ -89,7 +89,7 @@ if SERVER then
 		if(not (ply and ply:IsValid())) then return end
 		for key, ent in pairs(cre) do
 			local link = ent.PORTAL_DUPE_LINK
-			if(link) then
+			if(link and link.From and link.To) then
 				local portal1, portal2 = cre[link.From], cre[link.To]
 				if(portal1 and portal2 and portal1:IsValid() and portal2:IsValid()) then
 					portal1:LinkPortal(portal2)
