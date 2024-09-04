@@ -52,6 +52,7 @@ function ENT:UnlinkPortal()
 		exitPortal:SetExitPortal(nil)
 	end
 	self:SetExitPortal(nil)
+	setDupeLink(self:GetCreator(), self, {From = nil, To = nil})
 end
 
 function ENT:SetSides(sides)
