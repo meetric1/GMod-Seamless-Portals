@@ -37,12 +37,10 @@ local function updateCalcViews(finalPos, finalVel)
 		end
 		
 		local wep = ply:GetActiveWeapon()
-		if wep:IsValid() then
-			if isfunction(wep.CalcView) then
-				local origin, angles, fov = wep:CalcView(ply, Vector(finalPos), Angle(angle), fov)
-				finalPos = origin
-				angle = angles
-			end
+		if wep:IsValid() and isfunction(wep.CalcView) then
+			local origin, angles, fov = wep:CalcView(ply, Vector(finalPos), Angle(angle), fov)
+			finalPos = origin
+			angle = angles
 		end
 
 		return {origin = finalPos, angles = angle}
