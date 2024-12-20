@@ -21,31 +21,33 @@ local function updateCalcViews(finalPos, finalVel)
 	timer.Remove("portals_eye_fix_delay")	--just in case you enter the portal while the timer is running
 	
 	local addAngle = 1
+	local wPos = Vector()
 	finalPos = finalPos - finalVel * FrameTime()	-- why does this work? idk but it feels nice, could be a source prediction thing
 	hook.Add("CalcView", "seamless_portals_fix", function(ply, origin, angle, fov)
-		if ply:EyePos():DistToSqr(origin) > 10000 then return end
+		local ePos = ply:EyePos()
+		if ePos:DistToSqr(origin) > 10000 then return end
 		addAngle = addAngle * 0.9
 		angle.r = angle.r * addAngle
 
-		-- position ping compensation
+		-- position ping compensation -- using real velocity for getting the actual feeling of the player position rather than guessing
 		if freezePly and ply:Ping() > 5 then
 			finalPos = finalPos + finalVel * FrameTime()
             SeamlessPortals.DrawPlayerInView = true
 		else
-			finalPos = ply:GetPos() + ply:GetCurrentViewOffset()
+			finalPos = ePos
 			SeamlessPortals.DrawPlayerInView = false
 		end
 		origin.x = finalPos.x
 		origin.y = finalPos.y
 		origin.z = finalPos.z
-		finalPos = origin
+		wPos = origin
 	end)
 
     -- weapons sometimes glitch out a bit when you teleport, since the weapon angle is wrong
 	hook.Add("CalcViewModelView", "seamless_portals_fix", function(wep, vm, oldPos, oldAng, pos, ang)
-		pos.x = pos.x + (finalPos.x - pos.x)
-		pos.y = pos.y + (finalPos.y - pos.y)
-		pos.z = pos.z + (finalPos.z - pos.z)
+		pos.x = pos.x + (wPos.x - pos.x)
+		pos.y = pos.y + (wPos.y - pos.y)
+		pos.z = pos.z + (wPos.z - pos.z)
 		ang.r = ang.r * addAngle
 	end)
 
