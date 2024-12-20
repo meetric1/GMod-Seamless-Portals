@@ -70,7 +70,7 @@ if SERVER then return end
 hook.Add("EntityEmitSound", "seamless_portals_detour_sound", function(t)
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	for k, v in ipairs(ents.FindByClass("seamless_portal")) do
-		local exitportal = v:GetExitPortal()
+		local exitportal = v.GetExitPortal and v:GetExitPortal()
 		if !v.ExitPortal or !exitportal or !exitportal:IsValid() or !exitportal.GetExitSize then continue end
 		if !t.Pos or !t.Entity or t.Entity == NULL then continue end
 		if t.Pos:DistToSqr(v:GetPos()) < 50000 * exitportal:GetExitSize()[1] and (t.Pos - v:GetPos()):Dot(v:GetUp()) > 0 then

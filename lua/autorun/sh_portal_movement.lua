@@ -32,14 +32,20 @@ local function updateCalcViews(finalPos, finalVel)
 			finalPos = finalPos + finalVel * FrameTime()
             SeamlessPortals.DrawPlayerInView = true
 		else
-			finalPos = ply:EyePos()
+			finalPos = ply:GetPos() + ply:GetCurrentViewOffset()
 			SeamlessPortals.DrawPlayerInView = false
 		end
-		origin = finalPos
+		origin.x = finalPos.x
+		origin.y = finalPos.y
+		origin.z = finalPos.z
+		finalPos = origin
 	end)
 
     -- weapons sometimes glitch out a bit when you teleport, since the weapon angle is wrong
 	hook.Add("CalcViewModelView", "seamless_portals_fix", function(wep, vm, oldPos, oldAng, pos, ang)
+		pos.x = pos.x + (finalPos.x - pos.x)
+		pos.y = pos.y + (finalPos.y - pos.y)
+		pos.z = pos.z + (finalPos.z - pos.z)
 		ang.r = ang.r * addAngle
 	end)
 
