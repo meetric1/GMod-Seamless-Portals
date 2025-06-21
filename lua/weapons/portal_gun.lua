@@ -2,11 +2,10 @@ SWEP.Base = "weapon_base"
 SWEP.PrintName = "Portal Gun"
 
 SWEP.ViewModel = "models/weapons/c_irifle.mdl"
-SWEP.ViewModelFlip = false
-SWEP.UseHands = true
-
 SWEP.WorldModel = "models/weapons/w_irifle.mdl"
 
+SWEP.ViewModelFlip = false
+SWEP.UseHands = true
 
 SWEP.Weight = 5
 SWEP.AutoSwichTo = true
