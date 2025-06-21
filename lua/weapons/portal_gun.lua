@@ -6,7 +6,7 @@ SWEP.ViewModelFlip = false
 SWEP.UseHands = true
 
 SWEP.WorldModel = "models/weapons/w_irifle.mdl"
-SWEP.SetHoldType = "pistol"
+
 
 SWEP.Weight = 5
 SWEP.AutoSwichTo = true
@@ -179,6 +179,14 @@ function SWEP:Reload()
 	self:ShootFX("NPC_Vortigaunt.Swing", true)
 	if CLIENT then return end
 	self:ClearSpawn("Portal1", "Portal2")
+end
+
+function SWEP:Initialize()
+	self:SetHoldType("ar2")
+end
+
+function SWEP:Deploy()
+	self:SetHoldType("ar2")
 end
 
 -- Index the global table
