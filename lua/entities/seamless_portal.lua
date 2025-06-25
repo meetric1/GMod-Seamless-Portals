@@ -20,8 +20,9 @@ SeamlessPortals = SeamlessPortals or {}
 local varDrawDistance = CreateClientConVar("seamless_portal_drawdistance", "250", true, true, "Sets the multiplier of how far a portal should render", 0)
 
 local function setDupeLink(ply, ent, dat)
-	if(CLIENT) then return true end
-	if(not (ply and ply:IsValid())) then return end
+	if CLIENT then return true end
+	if not ply then return end
+	if not ply:IsValid() then return end
 	ent.PORTAL_DUPE_LINK = table.Copy(dat)
 	duplicator.StoreEntityModifier(ent, "seamless_portal_dupelink", ent.PORTAL_DUPE_LINK)
 end
@@ -87,10 +88,11 @@ local outputs = {
 if SERVER then
 
 	function ENT:PostEntityPaste(ply, ent, cre)
-		if(not (ply and ply:IsValid())) then return end
+		if not ply then return end
+		if not ply:IsValid() then return end
 		for key, ent in pairs(cre) do
 			local link = ent.PORTAL_DUPE_LINK
-			if(link and link.From and link.To) then
+			if link and link.From and link.To  then
 				local portal1, portal2 = cre[link.From], cre[link.To]
 				if(portal1 and portal2 and portal1:IsValid() and portal2:IsValid()) then
 					portal1:LinkPortal(portal2)
@@ -217,7 +219,7 @@ if CLIENT then
 			self.RENDER_MATRIX:SetTranslation(self:GetPos())
 			self.RENDER_MATRIX:SetAngles(self:GetAngles())
 			self.RENDER_MATRIX:SetScale(portalSize * 0.999)
-			
+
 			if self.RENDER_MATRIX_LOCAL then
 				self.RENDER_MATRIX_LOCAL:Identity()
 			else
@@ -228,26 +230,26 @@ if CLIENT then
 			if not self.RENDER_MATRIX_FLAT then
 				self.RENDER_MATRIX_FLAT = Matrix()
 			end
-			
+
 			self:SetRenderBounds(-portalSize, portalSize)
 
 			portalSize[3] = 0
 			self.RENDER_MATRIX_FLAT:Set(self.RENDER_MATRIX)
-			self.RENDER_MATRIX_FLAT:SetScale(portalSize)	
+			self.RENDER_MATRIX_FLAT:SetScale(portalSize)
 		end
 
 		if !backface then
 			self:DrawModel()
 		end
-	
+
 		-- draw inside of portal
 		if SeamlessPortals.Rendering or !IsValid(self:GetExitPortal()) or !SeamlessPortals.ShouldRender(self, EyePos(), EyeAngles(), SeamlessPortals.GetDrawDistance()) then
-			if !backface then 
+			if !backface then
 				cam.PushModelMatrix(self.RENDER_MATRIX_FLAT)
 					SeamlessPortals.GetRenderMesh(self:GetSidesInternal())[2]:Draw()
 				cam.PopModelMatrix()
 			end
-			return 
+			return
 		end
 
 		-- do cursed stencil stuff
@@ -347,7 +349,7 @@ SeamlessPortals.TransformPortal = function(a, b, pos, ang)
 	-- mirror portal
 	if a == b then
 		if pos then
-			editedPos = a:LocalToWorld(a:WorldToLocal(pos) * Vector(1, 1, -1)) 
+			editedPos = a:LocalToWorld(a:WorldToLocal(pos) * Vector(1, 1, -1))
 		end
 
 		if ang then
@@ -434,7 +436,7 @@ if CLIENT then
 				table.insert(invMeshTable, {pos = side2, u = 0, v = 0})
 				table.insert(invMeshTable, {pos = side3, u = 1, v = 0})
 				table.insert(invMeshTable, {pos = side1, u = 0, v = 1})
-				
+
 				table.insert(invMeshTable, {pos = side2, u = streach1, v = 0})
 				table.insert(invMeshTable, {pos = Vector(side2[1], side2[2], 0), u = streach1, v = 1})
 				table.insert(invMeshTable, {pos = side3, u = streach2, v = 0})
@@ -442,7 +444,7 @@ if CLIENT then
 				table.insert(invMeshTable, {pos = side3, u = streach2, v = 0})
 				table.insert(invMeshTable, {pos = Vector(side2[1], side2[2], 0), u = streach1, v = 1})
 				table.insert(invMeshTable, {pos = Vector(side3[1], side3[2], 0), u = streach2, v = 1})
-				
+
 			end
 			SeamlessPortals.PortalMeshes[sides][1]:BuildFromTriangles(meshTable)
 			SeamlessPortals.PortalMeshes[sides][2]:BuildFromTriangles(invMeshTable)
@@ -477,7 +479,7 @@ if CLIENT then
 	local mirrored = false
 	function SeamlessPortals.ToggleMirror(enable)
 		if enable == nil then return mirrored end -- 2024 mee here: what the fuck is this
-		mirrored = enable 
+		mirrored = enable
 
 		if (!enable) then
 			hook.Remove("PreDrawViewModels", "FlippedWorld")
@@ -486,7 +488,7 @@ if CLIENT then
 
 			return mirrored
 		end
-	
+
 		hook.Add("PreDrawViewModels", "FlippedWorld", function(_, sky, sky3d)
 			render.UpdateScreenEffectTexture()
 			render.DrawTextureToScreenRect(render.GetScreenEffectTexture(), ScrW(), 0, -ScrW(), ScrH())
@@ -495,12 +497,12 @@ if CLIENT then
 				SeamlessPortals.ToggleMirror(false)
 			end
 		end)
-	
+
 		-- invert mouse x
 		hook.Add("InputMouseApply", "FlippedWorld", function(cmd, x, y, ang)
 			cmd:SetViewAngles(ang + Angle(0, x / 22.5, 0))
 		end)
-	
+
 		-- invert movement x
 		hook.Add("CreateMove", "FlippedWorld", function(cmd)
 			cmd:SetSideMove(-cmd:GetSideMove())
@@ -508,7 +510,7 @@ if CLIENT then
 
 		return mirrored
 	end
-	
+
 
 	SeamlessPortals.ToggleMirror(false)
 end
