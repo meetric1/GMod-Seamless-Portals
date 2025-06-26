@@ -88,19 +88,19 @@ local outputs = {
 if SERVER then
 
 	function ENT:PostEntityPaste(ply, ent, cre)
-		if not ply then return end
-		if not ply:IsValid() then return end
+		if not IsValid(ply) then return end
 		for key, ent in pairs(cre) do
 			local link = ent.PORTAL_DUPE_LINK
-			if link and link.From and link.To  then
-				local portal1, portal2 = cre[link.From], cre[link.To]
-				if(portal1 and portal2 and portal1:IsValid() and portal2:IsValid()) then
-					portal1:LinkPortal(portal2)
-					portal2:LinkPortal(portal1)
-					portal1:SetRemoveExit(true)
-					portal2:SetRemoveExit(true)
-				end
-			end
+			if not link then break end
+			if not link.To then break end
+			if not link.From then break end
+			local portal1, portal2 = cre[link.From], cre[link.To]
+			if not IsValid(portal1) then break end
+			if not IsValid(portal2) then break end
+			portal1:LinkPortal(portal2)
+			portal2:LinkPortal(portal1)
+			portal1:SetRemoveExit(true)
+			portal2:SetRemoveExit(true)
 		end
 	end
 
