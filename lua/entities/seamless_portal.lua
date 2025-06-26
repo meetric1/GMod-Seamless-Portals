@@ -21,8 +21,7 @@ local varDrawDistance = CreateClientConVar("seamless_portal_drawdistance", "250"
 
 local function setDupeLink(ply, ent, dat)
 	if CLIENT then return true end
-	if not ply then return end
-	if not ply:IsValid() then return end
+	if not IsValid(ply) then return end
 	ent.PORTAL_DUPE_LINK = table.Copy(dat)
 	duplicator.StoreEntityModifier(ent, "seamless_portal_dupelink", ent.PORTAL_DUPE_LINK)
 end
@@ -44,7 +43,7 @@ function ENT:LinkPortal(ent)
 	if !IsValid(ent) then return end
 	self:SetExitPortal(ent)
 	ent:SetExitPortal(self)
-	setDupeLink(self:GetCreator(), self, {From = self:EntIndex(), To = ent:EntIndex()})
+	setDupeLink(self:GetCreator(), self, {Sors = self:EntIndex(), Dest = ent:EntIndex()})
 end
 
 function ENT:UnlinkPortal()
@@ -53,7 +52,7 @@ function ENT:UnlinkPortal()
 		exitPortal:SetExitPortal(nil)
 	end
 	self:SetExitPortal(nil)
-	setDupeLink(self:GetCreator(), self, {From = nil, To = nil})
+	setDupeLink(self:GetCreator(), self, {Sors = nil, Dest = nil})
 end
 
 function ENT:SetSides(sides)
@@ -92,15 +91,13 @@ if SERVER then
 		for key, ent in pairs(cre) do
 			local link = ent.PORTAL_DUPE_LINK
 			if not link then break end
-			if not link.To then break end
-			if not link.From then break end
-			local portal1, portal2 = cre[link.From], cre[link.To]
-			if not IsValid(portal1) then break end
-			if not IsValid(portal2) then break end
-			portal1:LinkPortal(portal2)
-			portal2:LinkPortal(portal1)
-			portal1:SetRemoveExit(true)
-			portal2:SetRemoveExit(true)
+			if not link.Sors then break end
+			if not link.Dest then break end
+			local sors, dest = cre[link.Sors], cre[link.Dest]
+			if not IsValid(sors) then break end
+			if not IsValid(dest) then break end
+			sors:LinkPortal(dest)
+			sors:SetRemoveExit(true)
 		end
 	end
 
