@@ -22,7 +22,8 @@ local varDrawDistance = CreateClientConVar("seamless_portal_drawdistance", "250"
 local function setDupeLink(ply, ent, dat)
 	if CLIENT then return true end
 	if not IsValid(ply) then return end
-	ent.PORTAL_DUPE_LINK = table.Copy(dat)
+	ent.PORTAL_DUPE_LINK = ent.PORTAL_DUPE_LINK or {}
+	ent.PORTAL_DUPE_LINK = table.Merge(ent.PORTAL_DUPE_LINK, dat, true)
 	duplicator.StoreEntityModifier(ent, "seamless_portal_dupelink", ent.PORTAL_DUPE_LINK)
 end
 
@@ -52,7 +53,7 @@ function ENT:UnlinkPortal()
 		exitPortal:SetExitPortal(nil)
 	end
 	self:SetExitPortal(nil)
-	setDupeLink(self:GetCreator(), self, {Sors = nil, Dest = nil})
+	setDupeLink(self:GetCreator(), self, {Sors = false, Dest = false})
 end
 
 function ENT:SetSides(sides)
@@ -69,6 +70,7 @@ end
 
 function ENT:SetRemoveExit(bool)
 	self.PORTAL_REMOVE_EXIT = bool
+  setDupeLink(self:GetCreator(), self, {Reme = true})
 end
 
 function ENT:GetRemoveExit(bool)
@@ -97,7 +99,7 @@ if SERVER then
 			if not IsValid(sors) then break end
 			if not IsValid(dest) then break end
 			sors:LinkPortal(dest)
-			sors:SetRemoveExit(true)
+			sors:SetRemoveExit(tobool(link.Reme))
 		end
 	end
 
