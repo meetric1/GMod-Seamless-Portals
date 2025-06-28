@@ -5,21 +5,21 @@
 AddCSLuaFile()
 
 local function updateScale(ply, scale)
-    ply:SetModelScale(scale)
-    ply:SetViewOffset(Vector(0, 0, 64 * scale))
-    ply:SetViewOffsetDucked(Vector(0, 0, 64 * scale / 2))
+	ply:SetModelScale(scale)
+	ply:SetViewOffset(Vector(0, 0, 64 * scale))
+	ply:SetViewOffsetDucked(Vector(0, 0, 64 * scale / 2))
 
-    if scale < 0.11 then
-        ply:SetCrouchedWalkSpeed(0.83)
-    else
-        ply:SetCrouchedWalkSpeed(0.3)
-    end
+	if scale < 0.11 then
+		ply:SetCrouchedWalkSpeed(0.83)
+	else
+		ply:SetCrouchedWalkSpeed(0.3)
+	end
 end
 
 local freezePly = false
 local function updateCalcViews(finalPos, finalVel)
 	timer.Remove("portals_eye_fix_delay")	--just in case you enter the portal while the timer is running
-	
+
 	local addAngle = 1
 	local wPos = Vector()
 	finalPos = finalPos - finalVel * FrameTime()	-- why does this work? idk but it feels nice, could be a source prediction thing
@@ -32,26 +32,22 @@ local function updateCalcViews(finalPos, finalVel)
 		-- position ping compensation -- using real velocity for getting the actual feeling of the player position rather than guessing
 		if freezePly and ply:Ping() > 5 then
 			finalPos = finalPos + finalVel * FrameTime()
-            SeamlessPortals.DrawPlayerInView = true
+			SeamlessPortals.DrawPlayerInView = true
 		else
 			finalPos = ePos
 			SeamlessPortals.DrawPlayerInView = false
 		end
-		origin.x = finalPos.x
-		origin.y = finalPos.y
-		origin.z = finalPos.z
-		wPos = origin
+		origin:Set(finalPos)
+		wPos:Set(origin)
 	end)
 
-    -- weapons sometimes glitch out a bit when you teleport, since the weapon angle is wrong
+	-- weapons sometimes glitch out a bit when you teleport, since the weapon angle is wrong
 	hook.Add("CalcViewModelView", "seamless_portals_fix", function(wep, vm, oldPos, oldAng, pos, ang)
-		pos.x = pos.x + (wPos.x - pos.x)
-		pos.y = pos.y + (wPos.y - pos.y)
-		pos.z = pos.z + (wPos.z - pos.z)
+		pos:Set(wPos)
 		ang.r = ang.r * addAngle
 	end)
 
-    -- finish eyeangle lerp
+	-- finish eyeangle lerp
 	timer.Create("portals_eye_fix_delay", 0.5, 1, function()
 		local ang = LocalPlayer():EyeAngles()
 		ang.r = 0
@@ -64,17 +60,17 @@ end
 -- this indicates wheather the player is 'teleporting' and waiting for the server to give the OK that the client position is valid
 -- (only a problem with users that have higher ping)
 if SERVER then
-    util.AddNetworkString("PORTALS_FREEZE")
+	util.AddNetworkString("PORTALS_FREEZE")
 else
-    net.Receive("PORTALS_FREEZE", function()
-		if game.SinglePlayer() then 
-			updateCalcViews(Vector(), Vector())
-			if net.ReadBool() then
-				SeamlessPortals.ToggleMirror(!SeamlessPortals.ToggleMirror())
-			end
-		end 	--singleplayer fixes (cuz stupid move hook isnt clientside in singleplayer)
-        freezePly = false
-    end)
+	net.Receive("PORTALS_FREEZE", function()
+	if game.SinglePlayer() then
+		updateCalcViews(Vector(), Vector())
+		if net.ReadBool() then
+			SeamlessPortals.ToggleMirror(!SeamlessPortals.ToggleMirror())
+		end
+	end --singleplayer fixes (cuz stupid move hook isnt clientside in singleplayer)
+		freezePly = false
+	end)
 end
 
 -- Hash lookup is way faster than sting compare
@@ -106,7 +102,7 @@ local function editPlayerCollision(mv, ply, t)
 				ply.PORTAL_STUCK_OFFSET = nil
 				mv:SetOrigin(tr.HitPos)
 				ply:ResetHull()
-				return 
+				return
 			end
 		end
 	end
@@ -136,9 +132,9 @@ local function editPlayerCollision(mv, ply, t)
 				secondaryOffset = 36
 			end
 		elseif dotUp < -0.9 then
-			return 							-- the portal is on the ceiling
+			return -- the portal is on the ceiling
 		else
-			ply.PORTAL_STUCK_OFFSET = 0		-- the portal is not on the ground
+			ply.PORTAL_STUCK_OFFSET = 0 -- the portal is not on the ground
 		end
 
 		ply:SetHull(Vector(-4, -4, 0 + ply.PORTAL_STUCK_OFFSET), Vector(4, 4, 72 + secondaryOffset))
@@ -148,19 +144,19 @@ local function editPlayerCollision(mv, ply, t)
 		ply:ResetHull()
 		ply.PORTAL_STUCK_OFFSET = nil
 	end
-	
+
 	traceTable.ignoreworld = false
 end
 
 -- teleport players
 local seamless_check2 = function(e) return e:GetClass() == "seamless_portal" end
 hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
-    if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then 
+	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then
 		if ply.PORTAL_STUCK_OFFSET then
 			ply:ResetHull()
 			ply.PORTAL_STUCK_OFFSET = nil
 		end
-		return 
+		return
 	end
 
 	editPlayerCollision(mv, ply)
@@ -216,13 +212,13 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 		mv:SetVelocity(editedVelocity:Forward() * max * exitSize)
 
 		-- send the client that the new position is valid
-		if SERVER then 
+		if SERVER then
 			-- lerp fix for singleplayer
 			if game.SinglePlayer() then
 				ply:SetPos(finalPos)
 				ply:SetEyeAngles(editedAng)
 			end
-			
+
 			// infinite map support
 			if InfMap then
 				local final_pos_offset, chunk_offset = InfMap.localize_vector(finalPos)
@@ -231,7 +227,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			end
 
 			mv:SetOrigin(finalPos)
-			
+
 			net.Start("PORTALS_FREEZE")
 			net.WriteBool(hitPortal == exitPortal)
 			net.Send(ply)
