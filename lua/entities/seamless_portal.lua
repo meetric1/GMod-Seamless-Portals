@@ -16,8 +16,9 @@ ENT.Spawnable    = true
 local gbSvFlag = bit.bor(FCVAR_ARCHIVE)
 -- create global table
 SeamlessPortals = SeamlessPortals or {}
+SeamlessPortals.PortalIndex = 0
 
-local varDrawDistance = CreateClientConVar("seamless_portal_drawdistance", "250", true, true, "Sets the multiplier of how far a portal should render", 0)
+local varDrawDistance = CreateClientConVar("seamless_portal_drawdistance", 250, true, true, "Sets the multiplier of how far a portal should render", 0)
 
 local function setDupeLink(ply, ent, dat)
 	if CLIENT then return true end
@@ -44,7 +45,7 @@ function ENT:LinkPortal(ent)
 	if !IsValid(ent) then return end
 	self:SetExitPortal(ent)
 	ent:SetExitPortal(self)
-	setDupeLink(self:GetCreator(), self, {Sors = self:EntIndex(), Dest = ent:EntIndex()})
+	setDupeLink(self:GetCreator(), self, {Dest = ent:EntIndex()})
 end
 
 function ENT:UnlinkPortal()
@@ -53,7 +54,7 @@ function ENT:UnlinkPortal()
 		exitPortal:SetExitPortal(nil)
 	end
 	self:SetExitPortal(nil)
-	setDupeLink(self:GetCreator(), self, {Sors = false, Dest = false})
+	setDupeLink(self:GetCreator(), self, {Dest = false})
 end
 
 function ENT:SetSides(sides)
@@ -90,21 +91,17 @@ if SERVER then
 
 	function ENT:PostEntityPaste(ply, ent, cre)
 		if not IsValid(ply) then return end
-		for key, ent in pairs(cre) do
-			-- Validate dupe data table
-			local link = ent.PORTAL_DUPE_LINK
-			if not link then break end
-			-- Check source portal
-			if not link.Sors then break end
-			local sors = cre[link.Sors]
-			if not IsValid(sors) then break end
-			-- Check destination portal
-			if not link.Dest then break end
+		-- Validate dupe data table
+		local link = ent.PORTAL_DUPE_LINK
+		if not link then return end
+		-- Check destination portal
+		if link.Dest != nil then
 			local dest = cre[link.Dest]
-			if not IsValid(dest) then break end
-			-- Create link and load remove exit
-			sors:LinkPortal(dest)
-			sors:SetRemoveExit(tobool(link.Reme))
+			if IsValid(dest) then ent:LinkPortal(dest) end
+		end
+		-- Create link and load remove exit
+		if link.Reme != nil then
+			ent:SetRemoveExit(tobool(link.Reme))
 		end
 	end
 
