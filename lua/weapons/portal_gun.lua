@@ -32,6 +32,9 @@ SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Ammo = "none"
 SWEP.Secondary.Automatic = false
 
+if SERVER then
+	SWEP.Portal = {} -- Store swep portals
+end
 --[[
  * Calculates surface normal angle by using cross products
  * owner > The player that does the trace
@@ -82,21 +85,22 @@ local function setPortalPlacement(owner, portal)
 
 	-- Extrude portal from the ground
 	local af, au = ang:Forward(), ang:Right()
+	local vf, vu = Vector(af), Vector(au)
+	local vh = tr.HitPos + tr.HitNormal
+	vf:Mul(siz[1] * size_mult[1])
+	vu:Mul(siz[2] * size_mult[2])
 	local angTab = {
-		 af * siz[1] * size_mult[1],
-		-af * siz[1] * size_mult[1],
-		 au * siz[2] * size_mult[2],
-		-au * siz[2] * size_mult[2]
+		vf, vf:GetNegated(),
+		vu, vu:GetNegated()
 	}
 	for i = 1, 4 do
 		local extr = SeamlessPortals.TraceLine({
-			start  = tr.HitPos + tr.HitNormal,
-			endpos = tr.HitPos + tr.HitNormal - angTab[i],
+			start  = vh,
+			endpos = vh - angTab[i],
 			filter = seamlessCheck,
 		})
-
 		if extr.Hit then
-			tr.HitPos = tr.HitPos + angTab[i] * (1 - extr.Fraction)
+			tr.HitPos:Add(angTab[i] * (1 - extr.Fraction))
 		end
 	end
 
@@ -129,32 +133,37 @@ function SWEP:ShootFX(sfx, rel)
 	end
 end
 
-function SWEP:DoSpawn(key)
-	if not key then return NULL end
-	local ent = self[key]
+function SWEP:DoSpawn(new)
+	if CLIENT then return NULL end
+	if not new then return NULL end
+	local por = self.Portal
+	local ent = por[new]
 	if !ent or !ent:IsValid() then
 		ent = ents.Create("seamless_portal")
 		if !ent or !ent:IsValid() then return NULL end
+		ent.DoNotDuplicate = true -- Disable duping
 		ent:SetCreator(self:GetOwner())
 		ent:Spawn()
 		ent:SetSize(Vector(33, 17, 8))
 		ent:SetSides(50)
-		self[key] = ent
+		por[new] = ent
 	end
 	return ent
 end
 
 function SWEP:ClearSpawn(base, link)
-	if base then SafeRemoveEntity(self[base]) end
-	if link then SafeRemoveEntity(self[link]) end
+	local por = self.Portal
+	if base then SafeRemoveEntity(por[base]) end
+	if link then SafeRemoveEntity(por[link]) end
 end
 
 function SWEP:DoLink(base, link, colr)
-	local ent = self:DoSpawn(base)
+	if CLIENT then return end
+	local ent, por = self:DoSpawn(base), self.Portal
 	if !ent or !ent:IsValid() then self:ClearSpawn(base)
 		ErrorNoHalt("Failed linking seamless portal "..base.." > "..link.."!\n"); return end
 	ent:SetColor(colr)
-	ent:LinkPortal(self[link])
+	ent:LinkPortal(por[link])
 	setPortalPlacement(self:GetOwner(), ent)
 	self:SetNextPrimaryFire(CurTime() + 0.25)
 end
@@ -162,23 +171,24 @@ end
 function SWEP:PrimaryAttack()
 	self:ShootFX("NPC_Vortigaunt.Shoot")
 	if CLIENT then return end
-	self:DoLink("Portal1", "Portal2", Color(0, 0, 255))
+	self:DoLink(1, 2, Color(0, 0, 255))
 end
 
 function SWEP:SecondaryAttack()
 	self:ShootFX("NPC_Vortigaunt.Shoot")
 	if CLIENT then return end
-	self:DoLink("Portal2", "Portal1", Color(0, 255, 0))
+	self:DoLink(2, 1, Color(0, 255, 0))
 end
 
 function SWEP:OnRemove()
-	self:ClearSpawn("Portal1", "Portal2")
+	self:ClearSpawn(1, 2)
+	table.Empty(self.Portal)
 end
 
 function SWEP:Reload()
 	self:ShootFX("NPC_Vortigaunt.Swing", true)
 	if CLIENT then return end
-	self:ClearSpawn("Portal1", "Portal2")
+	self:OnRemove()
 end
 
 -- Index the global table

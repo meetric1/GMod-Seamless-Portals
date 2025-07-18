@@ -58,9 +58,9 @@ function ENT:UnlinkPortal()
 end
 
 function ENT:SetSides(sides)
-	local shouldUpdatePhysmesh = self:GetSidesInternal() != sides
+	local umesh = self:GetSidesInternal() != sides
 	self:SetSidesInternal(math.Clamp(sides, 3, 100))
-	if shouldUpdatePhysmesh then self:UpdatePhysmesh() end
+	if umesh then self:UpdatePhysmesh() end
 end
 
 -- custom size for portal
