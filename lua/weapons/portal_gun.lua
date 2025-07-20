@@ -32,9 +32,6 @@ SWEP.Secondary.DefaultClip = -1
 SWEP.Secondary.Ammo = "none"
 SWEP.Secondary.Automatic = false
 
-if SERVER then
-	SWEP.Portal = {} -- Store swep portals
-end
 --[[
  * Calculates surface normal angle by using cross products
  * owner > The player that does the trace
@@ -113,6 +110,15 @@ local function setPortalPlacement(owner, portal)
 	if CPPI then portal:CPPISetOwner(owner) end
 end
 
+function SWEP:GetAlloc()
+	local por = self.Portal
+	if !por then
+		self.Portal = {}
+		por = self.Portal
+	end
+	return por
+end
+
 function SWEP:ShootFX(sfx, rel)
 	if rel then
 		self:SendWeaponAnim(ACT_VM_RELOAD)
@@ -136,7 +142,7 @@ end
 function SWEP:DoSpawn(new)
 	if CLIENT then return NULL end
 	if not new then return NULL end
-	local por = self.Portal
+	local por = self:GetAlloc()
 	local ent = por[new]
 	if !ent or !ent:IsValid() then
 		ent = ents.Create("seamless_portal")
@@ -152,14 +158,14 @@ function SWEP:DoSpawn(new)
 end
 
 function SWEP:ClearSpawn(base, link)
-	local por = self.Portal
+	local por = self:GetAlloc()
 	if base then SafeRemoveEntity(por[base]) end
 	if link then SafeRemoveEntity(por[link]) end
 end
 
 function SWEP:DoLink(base, link, colr)
 	if CLIENT then return end
-	local ent, por = self:DoSpawn(base), self.Portal
+	local ent, por = self:DoSpawn(base), self:GetAlloc()
 	if !ent or !ent:IsValid() then self:ClearSpawn(base)
 		ErrorNoHalt("Failed linking seamless portal "..base.." > "..link.."!\n"); return end
 	ent:SetColor(colr)
@@ -182,7 +188,7 @@ end
 
 function SWEP:OnRemove()
 	self:ClearSpawn(1, 2)
-	table.Empty(self.Portal)
+	table.Empty(self:GetAlloc())
 end
 
 function SWEP:Reload()
