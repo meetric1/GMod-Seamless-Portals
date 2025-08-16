@@ -186,15 +186,19 @@ function SWEP:SecondaryAttack()
 	self:DoLink(2, 1, Color(0, 255, 0))
 end
 
-function SWEP:OnRemove()
+function SWEP:ClearAlloc()
 	self:ClearSpawn(1, 2)
 	table.Empty(self:GetAlloc())
+end
+
+function SWEP:OnRemove()
+	self:ClearAlloc()
 end
 
 function SWEP:Reload()
 	self:ShootFX("NPC_Vortigaunt.Swing", true)
 	if CLIENT then return end
-	self:OnRemove()
+	self:ClearAlloc()
 end
 
 -- Index the global table

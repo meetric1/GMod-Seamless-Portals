@@ -18,7 +18,7 @@ local gbSvFlag = bit.bor(FCVAR_ARCHIVE)
 SeamlessPortals = SeamlessPortals or {}
 SeamlessPortals.PortalIndex = 0
 
-local varDrawDistance = CreateClientConVar("seamless_portal_drawdistance", 250, true, true, "Sets the multiplier of how far a portal should render", 0)
+local varDrawDistance = CreateClientConVar("seamless_portal_drawdistance", "250", true, true, "Sets the multiplier of how far a portal should render", 0)
 
 local function setDupeLink(ply, ent, dat)
 	if CLIENT then return true end
