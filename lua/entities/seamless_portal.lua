@@ -44,28 +44,34 @@ function ENT:LinkPortal(ent)
 	if !IsValid(ent) then return end
 	self:SetExitPortal(ent)
 	ent:SetExitPortal(self)
-	setDupeLink(self:GetCreator(), self, {Sors = self:EntIndex(), Dest = ent:EntIndex()})
+	setDupeLink(self:GetCreator(), self, {Dest = ent:EntIndex()})
 end
 
 function ENT:UnlinkPortal()
-	local exitPortal = self:GetExitPortal()
-	if IsValid(exitPortal) then
-		exitPortal:SetExitPortal(nil)
+	local exit = self:GetExitPortal()
+	if IsValid(exit) then
+		exit:SetExitPortal(nil)
 	end
 	self:SetExitPortal(nil)
-	setDupeLink(self:GetCreator(), self, {Sors = false, Dest = false})
+	setDupeLink(self:GetCreator(), self, {Dest = false})
 end
 
 function ENT:SetSides(sides)
-	local shouldUpdatePhysmesh = self:GetSidesInternal() != sides
+	local umesh = (self:GetSidesInternal() != sides)
 	self:SetSidesInternal(math.Clamp(sides, 3, 100))
-	if shouldUpdatePhysmesh then self:UpdatePhysmesh() end
+	if umesh then self:UpdatePhysmesh() end
+	setDupeLink(self:GetCreator(), self, {Side = sides})
 end
 
 -- custom size for portal
-function ENT:SetSize(n)
-	self:SetSizeInternal(n)
-	self:UpdatePhysmesh(n)
+function ENT:SetSize(v)
+	self:SetSizeInternal(v)
+	self:UpdatePhysmesh(v)
+	setDupeLink(self:GetCreator(), self, {Size = v})
+end
+
+function ENT:GetSize()
+	return self:GetSizeInternal()
 end
 
 function ENT:SetRemoveExit(bool)
@@ -77,10 +83,6 @@ function ENT:GetRemoveExit(bool)
 	return self.PORTAL_REMOVE_EXIT
 end
 
-function ENT:GetSize()
-	return self:GetSizeInternal()
-end
-
 local outputs = {
 	["OnTeleportFrom"] = true,
 	["OnTeleportTo"]   = true
@@ -90,22 +92,26 @@ if SERVER then
 
 	function ENT:PostEntityPaste(ply, ent, cre)
 		if not IsValid(ply) then return end
-		for key, ent in pairs(cre) do
 			-- Validate dupe data table
-			local link = ent.PORTAL_DUPE_LINK
-			if not link then break end
-			-- Check source portal
-			if not link.Sors then break end
-			local sors = cre[link.Sors]
-			if not IsValid(sors) then break end
-			-- Check destination portal
-			if not link.Dest then break end
+		local link = self.PORTAL_DUPE_LINK
+		if not link then return end
+		-- Check destination portal
+		if link.Dest then
 			local dest = cre[link.Dest]
-			if not IsValid(dest) then break end
-			-- Create link and load remove exit
-			sors:LinkPortal(dest)
-			sors:SetRemoveExit(tobool(link.Reme))
+			if IsValid(dest) then
+				self:LinkPortal(dest)
+			end
 		end
+		-- Check portal sides
+		if link.Side then
+			self:SetSides(link.Side)
+		end
+		-- Check portal size
+		if link.Size then
+			self:SetSize(link.Size)
+		end
+		-- Create link and load remove exit
+		self:SetRemoveExit(tobool(link.Reme))
 	end
 
 	function ENT:KeyValue(key, value)
@@ -223,10 +229,9 @@ if CLIENT then
 		}
 	end
 
+	local cam, render = cam, render
 	function ENT:Draw()
 		if halo.RenderedEntity() == self then return end
-		local render = render
-		local cam = cam
 		local size = self:GetSize()
 		-- Render the outside frame
 		local portalSize = size * size_mult
@@ -319,26 +324,28 @@ end
 -- Scale the phys mesh
 function ENT:UpdatePhysmesh()
 	self:PhysicsInit(6)
-	if self:GetPhysicsObject():IsValid() then
+	local phys = self:GetPhysicsObject()
+	if phys:IsValid() then
 		local finalMesh = {}
+		local angMul = (360 / sides)
 		local sizev = self:GetSize() * size_mult
 		local sides = self:GetSidesInternal()
-		local angleMul = 360 / sides
-		local degreeOffset = (sides * 90 + (sides % 4 != 0 and 0 or 45)) * (math.pi / 180)
+		local angPick = (sides % 4 != 0 and 0 or 45)
+		local degOffset =  math.rad(sides * 90 + angPick)
 		for side = 1, sides do
-			local sidea = math.rad(side * angleMul) + degreeOffset
-			local sidex = math.sin(sidea)
-			local sidey = math.cos(sidea)
+			local sidea = math.rad(side * angMul) + degOffset
+			local sidex, sidey = math.sin(sidea), math.cos(sidea)
 			local side1 = Vector(sidex, sidey, -1)
 			local side2 = Vector(sidex, sidey,  0)
-			table.insert(finalMesh, side1 * sizev)
-			table.insert(finalMesh, side2 * sizev)
+			side1:Mul(sizev); side2:Mul(sizev)
+			table.insert(finalMesh, side1)
+			table.insert(finalMesh, side2)
 		end
 		self:PhysicsInitConvex(finalMesh)
 		self:EnableCustomCollisions(true)
-		self:GetPhysicsObject():EnableMotion(false)
-		self:GetPhysicsObject():SetMaterial("glass")
-		self:GetPhysicsObject():SetMass(250)
+		phys:EnableMotion(false)
+		phys:SetMaterial("glass")
+		phys:SetMass(250)
 	else
 		self:PhysicsDestroy()
 		self:EnableCustomCollisions(false)
@@ -429,14 +436,14 @@ if CLIENT then
 		if !SeamlessPortals.PortalMeshes[sides] then
 			SeamlessPortals.PortalMeshes[sides] = {Mesh(), Mesh()}
 
-			local meshTable = {}
-			local invMeshTable = {}
-			local angleMul = 360 / sides
-			local degreeOffset = (sides * 90 + (sides % 4 != 0 and 0 or 45)) * (math.pi / 180)
+			local meshTable, invMeshTable = {}, {}
+			local angMul = (360 / sides)
+			local angPick = (sides % 4 != 0 and 0 or 45)
+			local degOffset = math.rad(sides * 90 + angPick)
 			for side = 1, sides do
 				local side1 = Vector(0, 0, -1)
-				local sidex = math.rad(side * angleMul) + degreeOffset
-				local sidey = math.rad((side + 1) * angleMul) + degreeOffset
+				local sidex = math.rad(side * angMul) + degOffset
+				local sidey = math.rad((side + 1) * angMul) + degOffset
 				local side2 = Vector(math.sin(sidex), math.cos(sidex), -1)
 				local side3 = Vector(math.sin(sidey), math.cos(sidey), -1)
 
@@ -500,7 +507,7 @@ if CLIENT then
 	local rendering = false
 	local mirrored = false
 	function SeamlessPortals.ToggleMirror(enable)
-		if enable == nil then return mirrored end -- 2024 mee here: what the fuck is this
+		if enable == nil then return mirrored end -- 2024 Mee here: what the fuck is this
 		mirrored = enable
 
 		if (!enable) then
@@ -511,7 +518,7 @@ if CLIENT then
 			return mirrored
 		end
 
-		hook.Add("PreDrawViewModels", "FlippedWorld", function(_, sky, sky3d)
+		hook.Add("PreDrawViewModels", "FlippedWorld", function()
 			render.UpdateScreenEffectTexture()
 			render.DrawTextureToScreenRect(render.GetScreenEffectTexture(), ScrW(), 0, -ScrW(), ScrH())
 
