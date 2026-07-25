@@ -29,13 +29,14 @@ local function updateCalcViews(finalPos, finalVel)
 		addAngle = addAngle * 0.9
 		angle.r = angle.r * addAngle
 
+		--print(freezePly)
 		-- position ping compensation -- using real velocity for getting the actual feeling of the player position rather than guessing
-		if freezePly and ply:Ping() >= 5 then
+		if freezePly and ply:Ping() > 5 then
 			finalPos = finalPos + finalVel * FrameTime()
-			SeamlessPortals.DrawPlayerInView = true
+			SeamlessPortals.DrawPlayerInView = false
 		else
 			finalPos = ePos
-			SeamlessPortals.DrawPlayerInView = false
+			SeamlessPortals.DrawPlayerInView = true
 		end
 		origin:Set(finalPos)
 		wPos:Set(origin)
@@ -54,6 +55,7 @@ local function updateCalcViews(finalPos, finalVel)
 		LocalPlayer():SetEyeAngles(ang)
 		hook.Remove("CalcView", "seamless_portals_fix")
 		hook.Remove("CalcViewModelView", "seamless_portals_fix")
+		SeamlessPortals.DrawPlayerInView = true
 	end)
 end
 
@@ -63,12 +65,12 @@ if SERVER then
 	util.AddNetworkString("PORTALS_FREEZE")
 else
 	net.Receive("PORTALS_FREEZE", function()
-	if game.SinglePlayer() then
-		updateCalcViews(Vector(), Vector())
-		if net.ReadBool() then
-			SeamlessPortals.ToggleMirror(!SeamlessPortals.ToggleMirror())
-		end
-	end --singleplayer fixes (cuz stupid move hook isnt clientside in singleplayer)
+		if game.SinglePlayer() then
+			updateCalcViews(Vector(), Vector())
+			if net.ReadBool() then
+				SeamlessPortals.ToggleMirror(!SeamlessPortals.ToggleMirror())
+			end
+		end --singleplayer fixes (cuz stupid move hook isnt clientside in singleplayer)
 		freezePly = false
 	end)
 end

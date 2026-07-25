@@ -23,22 +23,12 @@ hook.Add("EntityFireBullets", "seamless_portal_detour_bullet", function(entity, 
 	end
 end)
 
--- effect detour (Thanks to WasabiThumb)
-local tabEffectClass = {["phys_unfreeze"] = true, ["phys_freeze"] = true}
-local oldUtilEffect = util.Effect
-local function effect(name, b, c, d)
-	 if SeamlessPortals.PortalIndex > 0 and
-	    name and tabEffectClass[name] then return end
-	oldUtilEffect(name, b, c, d)
-end
-util.Effect = effect
-
 -- super simple traceline detour
 SeamlessPortals = SeamlessPortals or {}
 SeamlessPortals.TraceLine = SeamlessPortals.TraceLine or util.TraceLine
 SeamlessPortals.NewTraceLine = function(data)
 	local tr = SeamlessPortals.TraceLine(data)
-	if tr.Entity:IsValid() then
+	if IsValid(tr.Entity) then
 		if tr.Entity:GetClass() == "seamless_portal" and IsValid(tr.Entity:GetExitPortal()) then
 			local hitPortal = tr.Entity
 			if tr.HitNormal:Dot(hitPortal:GetUp()) > 0.9 then
@@ -69,10 +59,11 @@ if SERVER then return end
 -- sound detour
 hook.Add("EntityEmitSound", "seamless_portals_detour_sound", function(t)
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
+
 	for k, v in ipairs(ents.FindByClass("seamless_portal")) do
 		local exitportal = v.GetExitPortal and v:GetExitPortal()
 		if !v.ExitPortal or !exitportal or !exitportal:IsValid() or !exitportal.GetExitSize then continue end
-		if !t.Pos or !t.Entity or t.Entity == NULL then continue end
+		if !t.Pos or !IsValid(t.Entity) then continue end
 		if t.Pos:DistToSqr(v:GetPos()) < 50000 * exitportal:GetExitSize()[1] and (t.Pos - v:GetPos()):Dot(v:GetUp()) > 0 then
 			local newPos = SeamlessPortals.TransformPortal(v, exitportal, t.Pos, Angle())
 			local oldPos = t.Entity:GetPos() or Vector()

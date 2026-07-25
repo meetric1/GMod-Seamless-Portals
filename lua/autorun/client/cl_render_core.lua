@@ -1,20 +1,93 @@
--- this is the rendering code for the portals, some references from: https://github.com/MattJeanes/world-portals
+-- this is the rendering code for the portals. Rewritten on 7/25/2026
 
 AddCSLuaFile()
 
 if SERVER then return end
 
-local sky_cvar = GetConVar("sv_skyname")
-local sky_name = ""
+-- Skybox doesn't render when inside of the world, so we must manually draw it ourselves.
+local sky_convar = GetConVar("sv_skyname")
+local sky_name = nil
 local sky_materials = {}
+local sky_directions = {
+	Vector(-1,  0,  0),
+	Vector( 1,  0,  0),
+	Vector( 0, -1,  0),
+	Vector( 0,  1,  0),
+	Vector( 0,  0, -1),
+	Vector( 0,  0,  1),
+}
 
-local portals = {}
-local oldHalo = 0
-local timesRendered = 0
+local function update_sky()
+	local new_sky_name = sky_convar:GetString()
+	if sky_name == new_sky_name then return end
+	sky_name = new_sky_name
 
-local skysize = 16384	--2^14, default zfar limit
-local angle_zero = Angle(0, 0, 0)
+	local prefix = "skybox/" .. sky_name
+	sky_materials[1] = Material(prefix .. "rt")
+	sky_materials[2] = Material(prefix .. "lf")
+	sky_materials[3] = Material(prefix .. "bk")
+	sky_materials[4] = Material(prefix .. "ft")
+	sky_materials[5] = Material(prefix .. "up")
+	sky_materials[6] = Material(prefix .. "dn")
+end
 
+update_sky() -- TODO: should this be called more than once?
+
+-- draw the 2d skybox in place of the black (Thanks to Fafy2801 for the sky material reference)
+local function draw_sky(eye_pos)
+	for i, dir in ipairs(sky_directions) do
+		render.SetMaterial(sky_materials[i])
+		--render.SetMaterial(Material("models/props_combine/combine_interface_disp"))
+		render.DrawQuadEasy(eye_pos - dir * 9.96, dir, 20, 20, color_white, i >= 5 and 0 or 180)
+	end
+end
+
+hook.Add("PreDrawOpaqueRenderables", "seamless_portal_skybox", function(_, sky, sky3d)
+	local eye_pos = EyePos()
+	if util.IsSkyboxVisibleFromPoint(eye_pos) or !SeamlessPortals.Rendering then return end
+
+	-- the "skybox" may get clipped
+	local clip = render.EnableClipping(false)
+	render.DepthRange(1, 2)
+		draw_sky(eye_pos)
+	render.DepthRange(0, 1)
+	render.EnableClipping(clip)
+end)
+
+-- prevent portals from "snipping" the sky in half
+local sky_clip = false
+hook.Add("PreDrawSkyBox", "seamless_portal_skybox", function()
+	if !SeamlessPortals.Rendering then return end
+
+	sky_clip = render.EnableClipping(false)
+end)
+
+hook.Add("PostDrawSkyBox", "seamless_portal_skybox", function()
+	if !SeamlessPortals.Rendering then return end
+
+	render.EnableClipping(sky_clip)
+end)
+
+-- The implementation of halos sucks.
+-- We must disable clipping so that the framebuffer doesn't become corrupted
+-- we only do this during portal rendering, so it shouldnt affect other operations,
+-- since the clip state gets set back after rendering
+hook.Add("PreDrawEffects", "", function()
+	if !SeamlessPortals.Rendering then return end
+
+	render.EnableClipping(false)
+end)
+
+-- draw the player in renderview
+hook.Add("ShouldDrawLocalPlayer", "seamless_portal_drawplayer", function()
+	if SeamlessPortals.Rendering and SeamlessPortals.DrawPlayerInView then
+		return true
+	end
+end)
+
+local maxRender = CreateClientConVar("seamless_portal_maxrender", "6", true, false, "maximum number of portals to render per frame", 0)
+local skipConvar = CreateClientConVar("seamless_portal_refreshrate", "1", false, false, "How many frames to skip when rendering portals", 1)
+local skip = 0
 local renderViewTable = {
 	x = 0,
 	y = 0,
@@ -23,124 +96,73 @@ local renderViewTable = {
 	origin = Vector(),
 	angles = Angle(),
 	drawviewmodel = false,
+	view = 2,
 }
 
--- sort the portals by distance since draw functions do not obey the z buffer
-timer.Create("seamless_portal_distance_fix", 0.25, 0, function()
-	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
-	portals = ents.FindByClass("seamless_portal")
-	table.sort(portals, function(a, b) 
-		return a:GetPos():DistToSqr(EyePos()) < b:GetPos():DistToSqr(EyePos())
-	end)
-
-	-- update sky material (I guess it can change?)
-	if sky_name != sky_cvar:GetString() then
-		sky_name = sky_cvar:GetString()
-
-		local prefix = "skybox/" .. sky_name
-		sky_materials[1] = Material(prefix .. "bk")
-		sky_materials[2] = Material(prefix .. "dn")
-		sky_materials[3] = Material(prefix .. "ft")
-		sky_materials[4] = Material(prefix .. "lf")
-		sky_materials[5] = Material(prefix .. "rt")
-		sky_materials[6] = Material(prefix .. "up")
-	end
-end)
-
--- update the rendertarget here since we cant do it in postdraw (cuz of infinite recursion)
-local nofunc = function() end
-local render_PushRenderTarget = render.PushRenderTarget
-local render_PopRenderTarget = render.PopRenderTarget
-local render_PushCustomClipPlane = render.PushCustomClipPlane
-local render_PopCustomClipPlane = render.PopCustomClipPlane
-local render_RenderView = render.RenderView
-local render_EnableClipping = render.EnableClipping
-
-local skipConvar = CreateClientConVar("seamless_portal_refreshrate", "1", false, false, "How many frames to skip before rendering the next portal", 1)
-local skip = 0
+local framebuffer = GetRenderTarget("seamless_portals_framebuffer", ScrW(), ScrH())
+local no_function = function() end
 hook.Add("RenderScene", "seamless_portal_draw", function(eyePos, eyeAngles, fov)
-	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
+	--if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
+
 	skip = (skip + 1) % skipConvar:GetInt()
 	if skip != 0 then return end
 
-	SeamlessPortals.Rendering = true
-	local oldHalo = halo.Add	-- black clipping plane fix
-	halo.Add = nofunc
-	local maxAm = SeamlessPortals.ToggleMirror() and 1 or 0
+	-- The implementation of halos sucks. its worth completely disabling them for this operation to avoid corruption
+	--local halo_Add = halo.Add
+	--halo.Add = no_function
 
-	local render = render
-	for k, v in ipairs(portals) do
-		if timesRendered >= SeamlessPortals.MaxRTs - maxAm then break end
-		if !v:IsValid() or !v:GetExitPortal():IsValid() then continue end
-		
-		if timesRendered < SeamlessPortals.MaxRTs and SeamlessPortals.ShouldRender(v, eyePos, eyeAngles, SeamlessPortals.GetDrawDistance()) then
-			local exitPortal = v:GetExitPortal()
-			local editedPos, editedAng = SeamlessPortals.TransformPortal(v, exitPortal, eyePos, eyeAngles)
+	render.PushRenderTarget(SeamlessPortals.PortalRT)
+	render.Clear(0, 0, 0, 0, true, true)
+	cam.Start3D(eyePos, eyeAngles, fov)
+
+	local portal_render_max = maxRender:GetInt()
+	local portals_rendered = 0
+	for _, portal in ipairs(ents.FindByClass("seamless_portal")) do
+		if !IsValid(portal) or !IsValid(portal:GetExitPortal()) then continue end
+
+		if SeamlessPortals.ShouldRender(portal, eyePos, eyeAngles, SeamlessPortals.GetDrawDistance()) then
+			local exitPortal = portal:GetExitPortal()
+			local editedPos, editedAng = SeamlessPortals.TransformPortal(portal, exitPortal, eyePos, eyeAngles)
 
 			renderViewTable.origin = editedPos
 			renderViewTable.angles = editedAng
 			renderViewTable.fov = fov
 
-			//local pos1 = v:LocalToWorld(v:OBBMins()):ToScreen()
-			//local pos2 = v:LocalToWorld(v:OBBMaxs()):ToScreen()
-			//renderViewTable.x = v:LocalToWorld(Vector(-10, 0, 0)):ToScreen()
-
-			timesRendered = timesRendered + 1
-			v.PORTAL_RT_NUMBER = timesRendered	-- the number index of the rendertarget it will use in rendering
-
 			-- render the scene
+			-- TODO: ideally we could "clip" the edges that we know are going to be discarded
+			SeamlessPortals.Rendering = true
 			local up = exitPortal:GetUp()
+			render.PushRenderTarget(framebuffer)
 			local oldClip = render.EnableClipping(true)
-			render_PushRenderTarget(SeamlessPortals.PortalRTs[timesRendered])
-			render_PushCustomClipPlane(up, up:Dot(exitPortal:GetPos()))
-			render_RenderView(renderViewTable)
-			render_PopCustomClipPlane()
-			render_EnableClipping(oldClip)
-			render_PopRenderTarget()
+			render.PushCustomClipPlane(up, up:Dot(exitPortal:GetPos()))
+			render.RenderView(renderViewTable)
+			render.PopCustomClipPlane()
+			render.EnableClipping(oldClip)
+			render.PopRenderTarget()
+			SeamlessPortals.Rendering = false
+
+			-- Draw quad reversed if the portal is linked to itself
+			local flip = portal.GetExitPortal and portal:GetExitPortal() == self
+
+			-- if we're already mirrored and looking into a mirror portal, reverse
+			if SeamlessPortals.ToggleMirror() then
+				flip = !flip
+			end
+
+			portal:DrawStenciled(framebuffer, flip)
+
+			portals_rendered = portals_rendered + 1
+			if portals_rendered >= portal_render_max then
+				break
+			end
 		end
 	end
 
-	halo.Add = oldHalo
-	SeamlessPortals.Rendering = false
-	timesRendered = 0
-end)
+	cam.End3D()
+	render.PopRenderTarget()
 
--- draw the player in renderview
-hook.Add("ShouldDrawLocalPlayer", "seamless_portal_drawplayer", function()
-	if SeamlessPortals.Rendering and !SeamlessPortals.DrawPlayerInView then 
-		return true 
-	end
-end)
+	--cam.End3D()
+	--render.PopRenderTarget()
 
--- (REWRITE THIS!)
--- draw the 2d skybox in place of the black (Thanks to Fafy2801)
-local render_SetMaterial = render.SetMaterial
-local render_DrawQuadEasy = render.DrawQuadEasy
-local function drawsky(pos, ang, size, size_2, color, materials)
-	-- BACK
-	render_SetMaterial(materials[1])
-	render_DrawQuadEasy(pos + Vector(0, size, 0), Vector(0, -1, 0), size_2, size_2, color, 0)
-	-- DOWN
-	render_SetMaterial(materials[2])
-	render_DrawQuadEasy(pos - Vector(0, 0, size), Vector(0, 0, 1), size_2, size_2, color, 180)
-	-- FRONT
-	render_SetMaterial(materials[3])
-	render_DrawQuadEasy(pos - Vector(0, size, 0), Vector(0, 1, 0), size_2, size_2, color, 0)
-	-- LEFF
-	render_SetMaterial(materials[4])
-	render_DrawQuadEasy(pos - Vector(size, 0, 0), Vector(1, 0, 0), size_2, size_2, color, 0)
-	-- RIGHT
-	render_SetMaterial(materials[5])
-	render_DrawQuadEasy(pos + Vector(size, 0, 0), Vector(-1, 0, 0), size_2, size_2, color, 0)
-	-- UP
-	render_SetMaterial(materials[6])
-	render_DrawQuadEasy(pos + Vector(0, 0, size), Vector(0, 0, -1), size_2, size_2, color, 180)
-end
-
-hook.Add("PostDrawTranslucentRenderables", "seamless_portal_skybox", function()
-	//render.DrawWireframeBox(Vector(), Angle(), Vector(1, 1, 1) * -2^14, Vector(1, 1, 1) * 2^14, Color(0, 0, 255, 255))
-	if !SeamlessPortals.Rendering or util.IsSkyboxVisibleFromPoint(renderViewTable.origin) then return end
-	render.OverrideDepthEnable(true, false)
-	drawsky(renderViewTable.origin, angle_zero, skysize, -skysize * 2, color_white, sky_materials)
-	render.OverrideDepthEnable(false , false)
+	--halo.Add = halo_Add
 end)
