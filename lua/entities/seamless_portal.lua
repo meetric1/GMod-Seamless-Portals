@@ -193,12 +193,20 @@ if CLIENT then
 
 	local render_matrix = Matrix()
 	function ENT:GetRenderMesh()
-		local side = self:GetSidesInternal()
 		return {
-			Mesh     = SeamlessPortals.GetRenderMesh(side),
+			Mesh     = SeamlessPortals.GetRenderMesh(self:GetSidesInternal()),
 			Matrix   = render_matrix,
 			Material = drawMat
 		}
+	end
+
+	function ENT:DrawModelMesh(portalSize)
+		local draw_mesh = SeamlessPortals.GetRenderMesh(self:GetSidesInternal())
+		local render_matrix = self:GetWorldTransformMatrix()
+		render_matrix:SetScale(portalSize)
+		cam.PushModelMatrix(render_matrix)
+			draw_mesh:Draw()
+		cam.PopModelMatrix()
 	end
 
 	-- DrawModel inside of a non Draw hook will call Draw instead of DrawModel (thanks, gmod API)
@@ -207,8 +215,8 @@ if CLIENT then
 	function ENT:DrawStenciled(texture, flip)
 		draw_model = true
 
-		local size = self:GetSize()
-		local portalSize = size * size_mult
+		local portalSize = self:GetSize()
+		portalSize:Mul(size_mult)
 
 		local backface_disabled = self:GetDisableBackface()
 
@@ -226,9 +234,8 @@ if CLIENT then
 		if SeamlessPortals.Rendering or !IsValid(self:GetExitPortal()) then
 			if !backface_disabled then
 				portalSize[3] = 0
-				render_matrix:SetScale(portalSize)
 				render.CullMode(1)
-					self:DrawModel()
+					self:DrawModelMesh(portalSize)
 				render.CullMode(0)
 			end
 		else
@@ -245,7 +252,7 @@ if CLIENT then
 
 			-- Draw inside of portal
 			render.CullMode(1)
-				self:DrawModel()
+				self:DrawModelMesh(portalSize)
 			render.CullMode(0)
 
 			render.SetStencilCompareFunction(STENCIL_EQUAL)
@@ -264,7 +271,7 @@ if CLIENT then
 
 	function ENT:Draw(flags)
 		-- resetting the stencil buffer when drawing halos will cause horrible flashing
-		if draw_model or IsValid(halo.RenderedEntity()) then
+		if draw_model or halo.RenderedEntity() == self then
 			self:DrawModel(flags)
 		else
 			self:DrawStenciled(SeamlessPortals.PortalRT)
@@ -433,6 +440,8 @@ if CLIENT then
 		end
 
 		hook.Add("PreDrawViewModels", "FlippedWorld", function(_, sky, sky3d)
+			if SeamlessPortals.Rendering then return end
+
 			render.UpdateScreenEffectTexture()
 			render.DrawTextureToScreenRect(render.GetScreenEffectTexture(), ScrW(), 0, -ScrW(), ScrH())
 

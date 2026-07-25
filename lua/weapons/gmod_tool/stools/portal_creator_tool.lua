@@ -22,7 +22,7 @@ function TOOL:GetPlacementPosition(tr)
 	-- yoink! smiley :)
 	local rotAng = tr.HitNormal:Angle(); rotAng.p = rotAng.p + 90
 	local elevationangle = VectorAngle(vector_up, tr.HitNormal)
-	if elevationangle < 1 or (elevationangle > 179 and elevationangle < 181) then 
+	if elevationangle < 1 or (elevationangle > 179 and elevationangle < 181) then
 		rotAng.y = ply:EyeAngles().y + 180
 	end
 	--

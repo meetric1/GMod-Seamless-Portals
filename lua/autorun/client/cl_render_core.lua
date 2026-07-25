@@ -31,8 +31,6 @@ local function update_sky()
 	sky_materials[6] = Material(prefix .. "dn")
 end
 
-update_sky() -- TODO: should this be called more than once?
-
 -- draw the 2d skybox in place of the black (Thanks to Fafy2801 for the sky material reference)
 local function draw_sky(eye_pos)
 	for i, dir in ipairs(sky_directions) do
@@ -42,7 +40,7 @@ local function draw_sky(eye_pos)
 	end
 end
 
-hook.Add("PreDrawOpaqueRenderables", "seamless_portal_skybox", function(_, sky, sky3d)
+hook.Add("PreDrawOpaqueRenderables", "seamless_portal_skybox", function()
 	local eye_pos = EyePos()
 	if util.IsSkyboxVisibleFromPoint(eye_pos) or !SeamlessPortals.Rendering then return end
 
@@ -99,17 +97,25 @@ local renderViewTable = {
 	view = 2,
 }
 
+-- render portals closest to us
+local portals = {}
+timer.Create("seamless_portal_distance_fix", 0.5, 0, function()
+	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
+	portals = ents.FindByClass("seamless_portal")
+	table.sort(portals, function(a, b)
+		return a:GetPos():DistToSqr(EyePos()) < b:GetPos():DistToSqr(EyePos())
+	end)
+
+	update_sky()
+end)
+
 local framebuffer = GetRenderTarget("seamless_portals_framebuffer", ScrW(), ScrH())
 local no_function = function() end
 hook.Add("RenderScene", "seamless_portal_draw", function(eyePos, eyeAngles, fov)
-	--if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
+	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 
 	skip = (skip + 1) % skipConvar:GetInt()
 	if skip != 0 then return end
-
-	-- The implementation of halos sucks. its worth completely disabling them for this operation to avoid corruption
-	--local halo_Add = halo.Add
-	--halo.Add = no_function
 
 	render.PushRenderTarget(SeamlessPortals.PortalRT)
 	render.Clear(0, 0, 0, 0, true, true)
@@ -117,7 +123,7 @@ hook.Add("RenderScene", "seamless_portal_draw", function(eyePos, eyeAngles, fov)
 
 	local portal_render_max = maxRender:GetInt()
 	local portals_rendered = 0
-	for _, portal in ipairs(ents.FindByClass("seamless_portal")) do
+	for _, portal in ipairs(portals) do
 		if !IsValid(portal) or !IsValid(portal:GetExitPortal()) then continue end
 
 		if SeamlessPortals.ShouldRender(portal, eyePos, eyeAngles, SeamlessPortals.GetDrawDistance()) then
@@ -142,13 +148,7 @@ hook.Add("RenderScene", "seamless_portal_draw", function(eyePos, eyeAngles, fov)
 			SeamlessPortals.Rendering = false
 
 			-- Draw quad reversed if the portal is linked to itself
-			local flip = portal.GetExitPortal and portal:GetExitPortal() == self
-
-			-- if we're already mirrored and looking into a mirror portal, reverse
-			if SeamlessPortals.ToggleMirror() then
-				flip = !flip
-			end
-
+			local flip = portal.GetExitPortal and portal:GetExitPortal() == portal
 			portal:DrawStenciled(framebuffer, flip)
 
 			portals_rendered = portals_rendered + 1
