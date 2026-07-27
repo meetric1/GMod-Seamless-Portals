@@ -31,12 +31,14 @@ local function update_sky()
 	sky_materials[6] = Material(prefix .. "dn")
 end
 
+update_sky()
+
 -- draw the 2d skybox in place of the black (Thanks to Fafy2801 for the sky material reference)
 local function draw_sky(eye_pos)
 	for i, dir in ipairs(sky_directions) do
 		render.SetMaterial(sky_materials[i])
 		--render.SetMaterial(Material("models/props_combine/combine_interface_disp"))
-		render.DrawQuadEasy(eye_pos - dir * 9.96, dir, 20, 20, color_white, i >= 5 and 0 or 180)
+		render.DrawQuadEasy(eye_pos - dir * 996, dir, 2000, 2000, color_white, i >= 5 and 0 or 180)
 	end
 end
 
