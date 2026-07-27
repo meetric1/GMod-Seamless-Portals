@@ -121,6 +121,7 @@ hook.Add("RenderScene", "seamless_portal_draw", function(eyePos, eyeAngles, fov)
 	render.Clear(0, 0, 0, 0, true, true)
 	cam.Start3D(eyePos, eyeAngles, fov)
 
+	local eye_forward = eyeAngles:Forward()
 	local portal_render_max = maxRender:GetInt()
 	local portals_rendered = 0
 	for _, portal in ipairs(portals) do
@@ -133,6 +134,16 @@ hook.Add("RenderScene", "seamless_portal_draw", function(eyePos, eyeAngles, fov)
 			renderViewTable.origin = editedPos
 			renderViewTable.angles = editedAng
 			renderViewTable.fov = fov
+
+			-- znear
+			-- we need to figure out where to place the near clipping plane
+			-- ideally we need this as close as possible to the portal, for minimal artifacting
+			-- you could use a hull plane intersection, but a sphere is easier to calculate
+			local plane_pos = portal:GetPos()
+			plane_pos:Sub(eye_forward * portal:BoundingRadius())
+			plane_pos:Sub(eyePos)
+			local t = eye_forward:Dot(plane_pos)
+			renderViewTable.znear = math.max(t, 0.3) -- 0.3 = default znear (overridable w/ calcview)
 
 			-- render the scene
 			-- TODO: ideally we could "clip" the edges that we know are going to be discarded
@@ -148,8 +159,7 @@ hook.Add("RenderScene", "seamless_portal_draw", function(eyePos, eyeAngles, fov)
 			SeamlessPortals.Rendering = false
 
 			-- Draw quad reversed if the portal is linked to itself
-			local flip = portal.GetExitPortal and portal:GetExitPortal() == portal
-			portal:DrawStenciled(framebuffer, flip)
+			portal:DrawStenciled(framebuffer, exitPortal == portal)
 
 			portals_rendered = portals_rendered + 1
 			if portals_rendered >= portal_render_max then
@@ -160,9 +170,4 @@ hook.Add("RenderScene", "seamless_portal_draw", function(eyePos, eyeAngles, fov)
 
 	cam.End3D()
 	render.PopRenderTarget()
-
-	--cam.End3D()
-	--render.PopRenderTarget()
-
-	--halo.Add = halo_Add
 end)

@@ -346,8 +346,8 @@ SeamlessPortals.TransformPortal = function(a, b, pos, ang)
 	return editedPos, editedAng
 end
 
-util.TraceLine = SeamlessPortals.NewTraceLine -- Trace line that can go through portals
 SeamlessPortals.PortalIndex = 0
+SeamlessPortals.DrawPlayerInView = true
 
 -- Only render the portals that are in the frustum, or should be rendered
 SeamlessPortals.ShouldRender = function(portal, eyePos, eyeAngle, distance)

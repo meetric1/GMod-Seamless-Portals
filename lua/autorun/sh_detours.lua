@@ -26,8 +26,9 @@ end)
 -- super simple traceline detour
 SeamlessPortals = SeamlessPortals or {}
 SeamlessPortals.TraceLine = SeamlessPortals.TraceLine or util.TraceLine
-SeamlessPortals.NewTraceLine = function(data)
+util.TraceLine = function(data) -- Trace line that can go through portals
 	local tr = SeamlessPortals.TraceLine(data)
+
 	if IsValid(tr.Entity) then
 		if tr.Entity:GetClass() == "seamless_portal" and IsValid(tr.Entity:GetExitPortal()) then
 			local hitPortal = tr.Entity
@@ -37,7 +38,7 @@ SeamlessPortals.NewTraceLine = function(data)
 				editeddata.start = SeamlessPortals.TransformPortal(hitPortal, exitportal, tr.HitPos)
 				editeddata.endpos = SeamlessPortals.TransformPortal(hitPortal, exitportal, data.endpos)
 				-- filter the exit portal from being hit by the ray
-				if IsEntity(data.filter) and data.filter:GetClass() != "player" then
+				if IsEntity(data.filter) then
 					editeddata.filter = {data.filter, exitportal}
 				else
 					if istable(editeddata.filter) then
@@ -53,6 +54,26 @@ SeamlessPortals.NewTraceLine = function(data)
 	end
 	return tr
 end
+
+
+
+-- surf
+--[[
+if SERVER then
+	hook.Add("PlayerSpawn", "", function(ply)
+		timer.Simple(0, function()
+			ply:SetWalkSpeed(250)
+			ply:StripWeapons()
+			--util.SpriteTrail(ply, 0, Color(255, 100, 0, 255), false, 20, 0, 10, 1 / (20) * 0.5, "trails/lol")
+		end)
+	end)
+else
+	hook.Add("HUDPaint", "", function()
+		draw.SimpleText(math.floor(LocalPlayer():GetVelocity():Length()), "CloseCaption_Bold", ScrW() / 2, ScrH() / 2, nil, 1, nil)
+	end)
+end]]
+
+
 
 if SERVER then return end
 
