@@ -48,9 +48,11 @@ hook.Add("PreDrawOpaqueRenderables", "seamless_portal_skybox", function()
 
 	-- the "skybox" may get clipped
 	local clip = render.EnableClipping(false)
+	render.OverrideDepthEnable(true, false)
 	render.DepthRange(1, 2)
 		draw_sky(eye_pos)
 	render.DepthRange(0, 1)
+	render.OverrideDepthEnable(false, false)
 	render.EnableClipping(clip)
 end)
 
@@ -104,8 +106,9 @@ local portals = {}
 timer.Create("seamless_portal_distance_fix", 0.5, 0, function()
 	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
 	portals = ents.FindByClass("seamless_portal")
+	local eye_pos = EyePos()
 	table.sort(portals, function(a, b)
-		return a:GetPos():DistToSqr(EyePos()) < b:GetPos():DistToSqr(EyePos())
+		return a:GetPos():DistToSqr(eye_pos) < b:GetPos():DistToSqr(eye_pos)
 	end)
 
 	update_sky()
