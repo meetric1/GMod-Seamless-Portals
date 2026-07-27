@@ -10,11 +10,19 @@ TOOL.Information = {
 TOOL.LinkTarget = NULL
 
 function TOOL:EasyTrace(pos, dir)
-	return util.TraceLine({
-		start = pos,
-		endpos = pos + dir * 1000,
-		filter = self:GetOwner()
-	})
+    return util.TraceLine({
+        start = pos,
+        endpos = pos + dir * 1000,
+        filter = self:GetOwner()
+    })
+end
+
+function TOOL:GetLinkTarget()
+	if ( SERVER ) then
+		return self.LinkTarget
+	else
+		return self:GetOwner():GetNWEntity("pct_linkTarget")
+	end
 end
 
 function TOOL:GetPlacementPosition(tr)
@@ -23,6 +31,7 @@ function TOOL:GetPlacementPosition(tr)
     if not tr.Hit then return nil end
 
     local ang = ply:EyeAngles()
+    ang[1] = -ang[1]
     ang[2] = ang[2] + 180
     local snap_angle = ply:GetInfoNum("seamless_portal_snap_angle", 90)
     if snap_angle > 1 then
