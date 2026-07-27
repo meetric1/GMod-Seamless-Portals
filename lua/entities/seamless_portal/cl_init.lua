@@ -1,0 +1,218 @@
+include("sh_init.lua")
+
+local varDrawDistance = CreateClientConVar(
+	"seamless_portal_drawdistance",
+    "250",
+    true,
+    true,
+    "Sets the multiplier of how far a portal should render",
+    0
+)
+
+function ENT:Initialize()
+	table.insert(SeamlessPortals.Portals, self)
+end
+
+function ENT:OnRemove()
+	table.RemoveByValue(SeamlessPortals.Portals, self)
+end
+
+-- There's gonna be a bunch of magic numbers in this rendering code
+-- Garry decided a hunter plate should be 47.9 rendering units wide and 51 physical units
+local drawMat = Material("models/dav0r/hoverball")
+
+local render_matrix = Matrix()
+function ENT:GetRenderMesh()
+	return {
+		Mesh     = SeamlessPortals.GetRenderMesh(self:GetSidesInternal()),
+		Matrix   = render_matrix,
+		Material = drawMat
+	}
+end
+
+function ENT:DrawModelMesh(portalSize)
+	local draw_mesh = SeamlessPortals.GetRenderMesh(self:GetSidesInternal())
+	local render_matrix = self:GetWorldTransformMatrix()
+	render_matrix:SetScale(portalSize)
+	cam.PushModelMatrix(render_matrix)
+		draw_mesh:Draw()
+	cam.PopModelMatrix()
+end
+
+-- So the size is in source units (remember we are using sine/cosine)
+local size_mult = Vector(math.sqrt(2), math.sqrt(2), 1)
+
+-- DrawModel inside of a non Draw hook will call Draw instead of DrawModel (thanks, gmod API)
+-- this check is so we can call DrawModel inside of DrawStenciled
+local draw_model = false
+function ENT:DrawStenciled(texture, flip)
+	draw_model = true
+
+	local portalSize = self:GetSize()
+	portalSize:Mul(size_mult)
+
+	local backface_disabled = self:GetDisableBackface()
+
+	render_matrix:Identity()
+	render_matrix:SetScale(portalSize)
+
+	-- outside frame (backface)
+	if !backface_disabled then
+		self:DrawModel()
+	end
+
+	-- frame flat face
+	if SeamlessPortals.Rendering or !IsValid(self:GetExitPortal()) then
+		if !backface_disabled then
+			portalSize[3] = 0
+			render.CullMode(1)
+				self:DrawModelMesh(portalSize)
+			render.CullMode(0)
+		end
+	else
+		render.ClearStencil()
+		render.SetStencilWriteMask(255)
+		render.SetStencilTestMask(255)
+		render.SetStencilReferenceValue(1)
+		render.SetStencilFailOperation(STENCIL_KEEP)
+		render.SetStencilZFailOperation(STENCIL_KEEP)
+		render.SetStencilPassOperation(STENCIL_REPLACE)
+		render.SetStencilCompareFunction(STENCIL_ALWAYS)
+		render.SetStencilEnable(true)
+		render.SetMaterial(drawMat)
+
+		-- Draw inside of portal
+		render.CullMode(1)
+			self:DrawModelMesh(portalSize)
+		render.CullMode(0)
+
+		render.SetStencilCompareFunction(STENCIL_EQUAL)
+
+		if flip then
+			render.DrawTextureToScreenRect(texture, ScrW(), 0, -ScrW(), ScrH())
+		else
+			render.DrawTextureToScreenRect(texture, 0, 0, ScrW(), ScrH())
+		end
+
+		render.SetStencilEnable(false)
+	end
+
+	draw_model = false
+end
+
+function ENT:Draw(flags)
+	-- resetting the stencil buffer when drawing halos will cause horrible flashing
+	if draw_model or halo.RenderedEntity() == self then
+		self:DrawModel(flags)
+	else
+		self:DrawStenciled(SeamlessPortals.PortalRT)
+	end
+end
+
+function ENT:Think()
+	local phys = self:GetPhysicsObject()
+	if phys:IsValid() then
+		phys:EnableMotion(false)
+		phys:SetPos(self:GetPos())
+		phys:SetAngles(self:GetAngles())
+
+	-- if held with gravity gun it will rebuild the physmesh every frame (laggy). ensure to check velocity
+	elseif self:GetVelocity() == Vector() and !IsValid(self:GetPhysicsObject()) then
+		self:UpdatePhysmesh()
+	end
+end
+
+-- Hacky bullet fix
+if game.SinglePlayer() then
+	function ENT:TestCollision(startpos, delta, isbox, extents, mask)
+		if bit.band(mask, CONTENTS_GRATE) != 0 then return true end
+	end
+end
+
+SeamlessPortals.DrawPlayerInView = true
+SeamlessPortals.GetDrawDistance = function()
+	return varDrawDistance:GetFloat()
+end
+
+SeamlessPortals.PortalRT = GetRenderTarget("seamless_portal_rt", ScrW(), ScrH())
+
+-- Create meshes used for the portals
+-- They can have a dynamic amount of sides
+SeamlessPortals.PortalMeshes = {}
+SeamlessPortals.GetRenderMesh = function(sides)
+	if !SeamlessPortals.PortalMeshes[sides] then
+		SeamlessPortals.PortalMeshes[sides] = Mesh()
+
+		local meshTable = {}
+		local angleMul = 360 / sides
+		local degreeOffset = (sides * 90 + (sides % 4 != 0 and 0 or 45)) * (math.pi / 180)
+		for side = 1, sides do
+			local side1 = Vector(0, 0, -1)
+			local sidex = math.rad(side * angleMul) + degreeOffset
+			local sidey = math.rad((side + 1) * angleMul) + degreeOffset
+			local side2 = Vector(math.sin(sidex), math.cos(sidex), -1)
+			local side3 = Vector(math.sin(sidey), math.cos(sidey), -1)
+
+			local streach1 = (side / sides) * 4
+			local streach2 = ((side + 1) / sides) * 4
+
+			table.insert(meshTable, {pos = side2, u = 0, v = 0})
+			table.insert(meshTable, {pos = side1, u = 0, v = 1})
+			table.insert(meshTable, {pos = side3, u = 1, v = 0})
+
+			table.insert(meshTable, {pos = Vector(side2[1], side2[2], 0), u = streach1, v = 1})
+			table.insert(meshTable, {pos = side2, u = streach1, v = 0})
+			table.insert(meshTable, {pos = side3, u = streach2, v = 0})
+
+			table.insert(meshTable, {pos = side3, u = streach2, v = 0})
+			table.insert(meshTable, {pos = Vector(side3[1], side3[2], 0), u = streach2, v = 1})
+			table.insert(meshTable, {pos = Vector(side2[1], side2[2], 0), u = streach1, v = 1})
+		end
+		SeamlessPortals.PortalMeshes[sides]:BuildFromTriangles(meshTable)
+	end
+
+	return SeamlessPortals.PortalMeshes[sides]
+end
+
+--Funny flipped scene
+local mirrored = false
+function SeamlessPortals.ToggleMirror(enable)
+	if enable == nil then -- what the fuck is this
+		return mirrored
+	end
+
+	mirrored = enable
+
+	if (!enable) then
+		hook.Remove("PreDrawViewModels", "FlippedWorld")
+		hook.Remove("InputMouseApply", "FlippedWorld")
+		hook.Remove("CreateMove", "FlippedWorld")
+
+		return mirrored
+	end
+
+	hook.Add("PreDrawViewModels", "FlippedWorld", function(_, sky, sky3d)
+		if SeamlessPortals.Rendering then return end
+
+		render.UpdateScreenEffectTexture()
+		render.DrawTextureToScreenRect(render.GetScreenEffectTexture(), ScrW(), 0, -ScrW(), ScrH())
+
+		if LocalPlayer():Health() <= 0 then
+			SeamlessPortals.ToggleMirror(false)
+		end
+	end)
+
+	-- Invert mouse x
+	hook.Add("InputMouseApply", "FlippedWorld", function(cmd, x, y, ang)
+		cmd:SetViewAngles(ang + Angle(0, x / 22.5, 0))
+	end)
+
+	-- Invert movement x
+	hook.Add("CreateMove", "FlippedWorld", function(cmd)
+		cmd:SetSideMove(-cmd:GetSideMove())
+	end)
+
+	return mirrored
+end
+
+SeamlessPortals.ToggleMirror(false)

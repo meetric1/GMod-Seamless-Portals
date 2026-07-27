@@ -31,18 +31,14 @@ function TOOL:GetPlacementPosition(tr)
     if not tr.Hit then return nil end
 
     local ang = ply:EyeAngles()
-    ang[1] = -ang[1]
+
+    -- bias pitch a bit, because its more likely we are placing on a wall
+    ang[1] = math.Round(-ang[1] * (1 - 90 / 360) / 90) * 90
+
     ang[2] = ang[2] + 180
     local snap_angle = ply:GetInfoNum("seamless_portal_snap_angle", 90)
     if snap_angle > 1 then
-        -- bias pitch a bit, because its more likely we are placing on a wall
-        if snap_angle >= 45 then
-            ang[1] = ang[1] * (1 - snap_angle / 360)
-        end
-
-        for i = 1, 3 do
-            ang[i] = math.Round(ang[i] / snap_angle) * snap_angle
-        end
+        ang[2] = math.Round(ang[2] / snap_angle) * snap_angle
     end
 
     tr.HitNormal:Mul(ply:GetInfoNum("seamless_portal_size_z", 1) + 1)

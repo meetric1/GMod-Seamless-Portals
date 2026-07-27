@@ -74,7 +74,7 @@ end)
 -- We must disable clipping so that the framebuffer doesn't become corrupted
 -- we only do this during portal rendering, so it shouldnt affect other operations,
 -- since the clip state gets set back after rendering
-hook.Add("PreDrawEffects", "", function()
+hook.Add("PreDrawEffects", "seamless_portal_effects", function()
 	if !SeamlessPortals.Rendering then return end
 
 	render.EnableClipping(false)
@@ -98,42 +98,56 @@ local renderViewTable = {
 	origin = Vector(),
 	angles = Angle(),
 	drawviewmodel = false,
-	view = 2,
+	viewid = 2,
 }
 
--- render portals closest to us
-local portals = {}
 timer.Create("seamless_portal_distance_fix", 0.5, 0, function()
-	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
-	portals = ents.FindByClass("seamless_portal")
-	local eye_pos = EyePos()
-	table.sort(portals, function(a, b)
-		return a:GetPos():DistToSqr(eye_pos) < b:GetPos():DistToSqr(eye_pos)
+	local eye_pos = MainEyePos()
+	table.sort(SeamlessPortals.Portals, function(a, b)
+		local a_distance = a:GetPos():DistToSqr(eye_pos)
+		local a_exit = a:GetExitPortal()
+		if IsValid(a_exit) then
+			a_distance = math.min(a_distance, a_exit:GetPos():DistToSqr(eye_pos))
+		end
+
+		local b_distance = b:GetPos():DistToSqr(eye_pos)
+		local b_exit = b:GetExitPortal()
+		if IsValid(b_exit) then
+			b_distance = math.min(b_distance, b_exit:GetPos():DistToSqr(eye_pos))
+		end
+
+		return a_distance < b_distance
 	end)
 
 	update_sky()
 end)
 
-local framebuffer = GetRenderTarget("seamless_portals_framebuffer", ScrW(), ScrH())
+-- TODO: ideally use a pre-allocated framebuffer
+local framebuffer = GetRenderTarget("seamless_portal_framebuffer", ScrW(), ScrH())
 local no_function = function() end
 hook.Add("RenderScene", "seamless_portal_draw", function(eyePos, eyeAngles, fov)
-	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
+	if !SeamlessPortals or #SeamlessPortals.Portals < 1 then return end
 
 	skip = (skip + 1) % skipConvar:GetInt()
 	if skip != 0 then return end
 
-	render.PushRenderTarget(SeamlessPortals.PortalRT)
-	render.Clear(0, 0, 0, 0, true, true)
 	cam.Start3D(eyePos, eyeAngles, fov)
+	render.PushRenderTarget(SeamlessPortals.PortalRT)
+
+	-- clear framebuffer (PortalRT) with 2d sky
+	render.ClearDepth(true)
+	draw_sky(eyePos)
 
 	local eye_forward = eyeAngles:Forward()
 	local portal_render_max = maxRender:GetInt()
 	local portals_rendered = 0
-	for _, portal in ipairs(portals) do
-		if !IsValid(portal) or !IsValid(portal:GetExitPortal()) then continue end
+	for _, portal in ipairs(SeamlessPortals.Portals) do
+		if !IsValid(portal) then continue end
+
+		local exitPortal = portal:GetExitPortal()
+		if !IsValid(exitPortal) then continue end
 
 		if SeamlessPortals.ShouldRender(portal, eyePos, eyeAngles, SeamlessPortals.GetDrawDistance()) then
-			local exitPortal = portal:GetExitPortal()
 			local editedPos, editedAng = SeamlessPortals.TransformPortal(portal, exitPortal, eyePos, eyeAngles)
 
 			renderViewTable.origin = editedPos
@@ -173,6 +187,6 @@ hook.Add("RenderScene", "seamless_portal_draw", function(eyePos, eyeAngles, fov)
 		end
 	end
 
-	cam.End3D()
 	render.PopRenderTarget()
+	cam.End3D()
 end)

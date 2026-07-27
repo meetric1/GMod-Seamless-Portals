@@ -1,13 +1,12 @@
 -- this is the code that teleports entities like props
 -- it only works for things with physics since I dont want to add support to other wacked entities that dont have physics
 
-local allEnts
+local allEnts = {}
 timer.Create("portals_ent_update", 0.25, 0, function()
-    if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
-    local portals = ents.FindByClass("seamless_portal")
+    if !SeamlessPortals or #SeamlessPortals.Portals < 1 then return end
     allEnts = ents.GetAll()
 
-    for i = #allEnts, 1, -1 do 
+    for i = #allEnts, 1, -1 do
         local prop = allEnts[i]
         local removeEnt = false
         if !prop:IsValid() or !prop:GetPhysicsObject():IsValid() then table.remove(allEnts, i) continue end
@@ -17,7 +16,7 @@ timer.Create("portals_ent_update", 0.25, 0, function()
         local realPos = prop:LocalToWorld(prop:OBBCenter())
         local closestPortalDist = 0
         local closestPortal = nil
-        for k, portal in ipairs(portals) do
+        for k, portal in ipairs(SeamlessPortals.Portals) do
             if !portal:IsValid() then continue end
             local dist = realPos:DistToSqr(portal:GetPos())
             if (dist < closestPortalDist or k == 1) and portal:GetExitPortal() and portal:GetExitPortal():IsValid() then
@@ -57,7 +56,7 @@ end
 local seamless_table = {["seamless_portal"] = true}
 local seamless_check = function(e) return seamless_table[e:GetClass()] end    -- for traces
 hook.Add("Tick", "seamless_portal_teleport", function()
-    if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 or !allEnts then return end
+    if !SeamlessPortals or #SeamlessPortals.Portals < 1 or !allEnts then return end
     for _, prop in ipairs(allEnts) do
         if !prop or !prop:IsValid() then continue end
         if prop:IsPlayerHolding() then continue end

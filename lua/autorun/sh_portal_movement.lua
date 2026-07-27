@@ -153,7 +153,7 @@ end
 -- teleport players
 local seamless_check2 = function(e) return e:GetClass() == "seamless_portal" end
 hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
-	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then
+	if !SeamlessPortals or #SeamlessPortals.Portals < 1 then
 		if ply.PORTAL_STUCK_OFFSET then
 			ply:ResetHull()
 			ply.PORTAL_STUCK_OFFSET = nil

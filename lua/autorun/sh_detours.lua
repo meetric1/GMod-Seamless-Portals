@@ -3,7 +3,7 @@ AddCSLuaFile()
 
 -- bullet detour
 hook.Add("EntityFireBullets", "seamless_portal_detour_bullet", function(entity, data)
-	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
+	if !SeamlessPortals or #SeamlessPortals.Portals < 1 then return end
 	local tr = SeamlessPortals.TraceLine({start = data.Src, endpos = data.Src + data.Dir * data.Distance, filter = entity})
 	local hitPortal = tr.Entity
 	if !hitPortal:IsValid() then return end
@@ -59,9 +59,9 @@ if SERVER then return end
 
 -- sound detour
 hook.Add("EntityEmitSound", "seamless_portals_detour_sound", function(t)
-	if !SeamlessPortals or SeamlessPortals.PortalIndex < 1 then return end
+	if !SeamlessPortals or #SeamlessPortals.Portals < 1 then return end
 
-	for k, v in ipairs(ents.FindByClass("seamless_portal")) do
+	for k, v in ipairs(SeamlessPortals.Portals) do
 		local exitportal = v.GetExitPortal and v:GetExitPortal()
 		if !v.ExitPortal or !exitportal or !exitportal:IsValid() or !exitportal.GetExitSize then continue end
 		if !t.Pos or !IsValid(t.Entity) then continue end
