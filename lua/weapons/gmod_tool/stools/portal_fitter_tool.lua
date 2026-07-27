@@ -45,6 +45,8 @@ function TOOL:GetPlacementPosition(tr)
         end
     end
 
+    tr.HitNormal:Mul(ply:GetInfoNum("seamless_portal_size_z", 1) + 1)
+
     local left = self:EasyTrace(tr.HitPos + tr.HitNormal, -ang:Right())
     local right = self:EasyTrace(tr.HitPos + tr.HitNormal, ang:Right())
 
