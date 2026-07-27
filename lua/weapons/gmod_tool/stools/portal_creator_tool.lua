@@ -23,7 +23,7 @@ function TOOL:EasyExtrude(pos, dir, length)
 	})
 
 	if tr.Hit then
-		return pos - dir * length * (1 - tr.Fraction)
+		return pos - dir * (length * (1 - tr.Fraction) + 0.1)
 	else
 		return pos
 	end
