@@ -133,7 +133,10 @@ function ENT:Initialize()
 		self:SetSize(self:GetSize())
 	end
 
-	table.insert(SeamlessPortals.Portals, self)
+	-- slow, though our size is at max 8192 (edict).
+	if !table.HasValue(SeamlessPortals.Portals, self) then
+		table.insert(SeamlessPortals.Portals, self)
+	end
 end
 
 function ENT:OnRemove()

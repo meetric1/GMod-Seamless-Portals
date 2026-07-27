@@ -62,7 +62,7 @@ function ENT:UpdatePhysmesh()
 	end
 end
 
-SeamlessPortals.Portals = {}
+SeamlessPortals.Portals = ents.FindByClass("seamless_portal")
 SeamlessPortals.TransformPortal = function(a, b, pos, ang)
 	if !IsValid(a) or !IsValid(b) then return Vector(), Angle() end
 	local editedPos = Vector()
