@@ -55,26 +55,6 @@ util.TraceLine = function(data) -- Trace line that can go through portals
 	return tr
 end
 
-
-
--- surf
---[[
-if SERVER then
-	hook.Add("PlayerSpawn", "", function(ply)
-		timer.Simple(0, function()
-			ply:SetWalkSpeed(250)
-			ply:StripWeapons()
-			--util.SpriteTrail(ply, 0, Color(255, 100, 0, 255), false, 20, 0, 10, 1 / (20) * 0.5, "trails/lol")
-		end)
-	end)
-else
-	hook.Add("HUDPaint", "", function()
-		draw.SimpleText(math.floor(LocalPlayer():GetVelocity():Length()), "CloseCaption_Bold", ScrW() / 2, ScrH() / 2, nil, 1, nil)
-	end)
-end]]
-
-
-
 if SERVER then return end
 
 -- sound detour

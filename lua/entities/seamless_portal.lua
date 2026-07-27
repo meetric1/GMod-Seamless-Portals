@@ -220,8 +220,6 @@ if CLIENT then
 
 		local backface_disabled = self:GetDisableBackface()
 
-		self:SetRenderBounds(-portalSize, portalSize)
-
 		render_matrix:Identity()
 		render_matrix:SetScale(portalSize)
 
@@ -288,9 +286,9 @@ end
 
 -- Scale the phys mesh
 function ENT:UpdatePhysmesh()
+	local sizev = self:GetSize() * size_mult
 	if SERVER or !self:GetPhysicsObject():IsValid() then
 		local finalMesh = {}
-		local sizev = self:GetSize() * size_mult
 		local sides = self:GetSidesInternal()
 		local angleMul = 360 / sides
 		local degreeOffset = (sides * 90 + (sides % 4 != 0 and 0 or 45)) * (math.pi / 180)
@@ -308,6 +306,10 @@ function ENT:UpdatePhysmesh()
 		self:GetPhysicsObject():EnableMotion(false)
 		self:GetPhysicsObject():SetMaterial("glass")
 		self:GetPhysicsObject():SetMass(250)
+	end
+
+	if CLIENT then
+		self:SetRenderBounds(-sizev, sizev)
 	end
 end
 

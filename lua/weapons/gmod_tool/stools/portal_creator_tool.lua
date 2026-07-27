@@ -11,22 +11,50 @@ TOOL.LinkTarget = NULL
 
 -- yoink! smiley :)
 local function VectorAngle(vec1, vec2)
-	local cosTh = vec1:Dot(vec2) / (vec1:Length() * vec2:Length())
-	return math.deg(math.acos(cosTh))
+    local cosTh = vec1:Dot(vec2) / (vec1:Length() * vec2:Length())
+    return math.deg(math.acos(cosTh))
+end
+
+function TOOL:EasyExtrude(pos, dir, length)
+	local tr = util.TraceLine({
+		start = pos,
+		endpos = pos + dir * length,
+		filter = self:GetOwner()
+	})
+
+	if tr.Hit then
+		return pos - dir * length * (1 - tr.Fraction)
+	else
+		return pos
+	end
 end
 
 function TOOL:GetPlacementPosition(tr)
-	local ply = self:GetOwner()
-	if not tr then tr = ply:GetEyeTrace() end
-	if not tr.Hit then return false end
-	-- yoink! smiley :)
-	local rotAng = tr.HitNormal:Angle(); rotAng.p = rotAng.p + 90
-	local elevationangle = VectorAngle(vector_up, tr.HitNormal)
-	if elevationangle < 1 or (elevationangle > 179 and elevationangle < 181) then
-		rotAng.y = ply:EyeAngles().y + 180
-	end
-	--
-	return (tr.HitPos + tr.HitNormal * (ply:GetInfoNum("seamless_portal_size_z", 1) + 1)), rotAng
+    local ply = self:GetOwner()
+    if not tr then tr = ply:GetEyeTrace() end
+    if not tr.Hit then return nil end
+
+    local rotAng = tr.HitNormal:Angle()
+    rotAng[1] = rotAng[1] + 90
+
+    if ply:GetInfoNum("seamless_portal_align", 0) == 1 then
+    	local nudge_x = ply:GetInfoNum("seamless_portal_size_x", 1) / 2
+        local nudge_y = ply:GetInfoNum("seamless_portal_size_y", 1) / 2
+
+        tr.HitPos = self:EasyExtrude(tr.HitPos + tr.HitNormal, -rotAng:Right(), nudge_y)
+        tr.HitPos = self:EasyExtrude(tr.HitPos + tr.HitNormal, rotAng:Right(), nudge_y)
+        tr.HitPos = self:EasyExtrude(tr.HitPos + tr.HitNormal, -rotAng:Forward(), nudge_x)
+        tr.HitPos = self:EasyExtrude(tr.HitPos + tr.HitNormal, rotAng:Forward(), nudge_x)
+    end
+
+    -- yoink! smiley :)
+    local elevationangle = VectorAngle(vector_up, tr.HitNormal)
+    if elevationangle < 1 or (elevationangle > 179 and elevationangle < 181) then
+        rotAng.y = ply:EyeAngles().y + 180
+    end
+    --
+    return (tr.HitPos + tr.HitNormal * (ply:GetInfoNum("seamless_portal_size_z", 1) + 1)), rotAng
+
 end
 
 function TOOL:GetLinkTarget()
@@ -53,6 +81,7 @@ if ( CLIENT ) then
 	local zVar = CreateClientConVar("seamless_portal_size_z", "8", false, true, "Sets the size of the portal along the Z axis", 1, 100)
 	local sidesVar = CreateClientConVar("seamless_portal_sides", "4", false, true, "Sets the number of sides the portal has", 3, 100)
 	local backVar = CreateClientConVar("seamless_portal_backface", "1", false, true, "Sets whether to spawn with a backface or not", 0, 1)
+	local alignVar = CreateClientConVar("seamless_portal_align", "1", false, true, "Enable/Disable Portal creator alignment helper", 0, 1)
 
 	function TOOL.BuildCPanel(panel)
 		panel:AddControl("label", {text = "Creates and links portals"})
@@ -60,7 +89,8 @@ if ( CLIENT ) then
 		panel:NumSlider("Portal Size Y", "seamless_portal_size_y", 1, 1000, 1)
 		panel:NumSlider("Portal Size Z", "seamless_portal_size_z", 1, 100, 1)
 		panel:NumSlider("Portal Sides", "seamless_portal_sides", 3, 100, 0)
-		panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portal_backface")
+        panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portal_backface")
+        panel:CheckBox("Nudge Portals from walls", "seamless_portal_align")
 	end
 
 	local beamMat = Material("cable/blue_elec")
@@ -89,15 +119,14 @@ if ( CLIENT ) then
 					end
 					render.SetMaterial(beamMat)
 					render.DrawBeam(from, to, 3, 0, 1)
-					cam.End3D()
-					return
 				end
+			else
+				local xScale = xVar:GetFloat() * 0.5
+				local yScale = yVar:GetFloat() * 0.5
+				local zScale = zVar:GetFloat()
+				render.SetColorMaterial()
+				render.DrawBox(pos, ang, Vector(-xScale, -yScale, -zScale), Vector(xScale, yScale, 0), green)
 			end
-			local xScale = xVar:GetFloat() * 0.5
-			local yScale = yVar:GetFloat() * 0.5
-			local zScale = zVar:GetFloat()
-			render.SetColorMaterial()
-			render.DrawBox(pos, ang, Vector(-xScale, -yScale, -zScale), Vector(xScale, yScale, 0), green)
 		cam.End3D()
 	end
 
