@@ -148,7 +148,7 @@ hook.Add("RenderScene", "seamless_portal_draw", function(eyePos, eyeAngles, fov)
 			plane_pos:Sub(eye_forward * portal:BoundingRadius())
 			plane_pos:Sub(eyePos)
 			local t = eye_forward:Dot(plane_pos)
-			renderViewTable.znear = math.max(t, 0.3) -- 0.3 = default znear (overridable w/ calcview)
+			renderViewTable.znear = math.max(t, 3) -- 3 = default znear
 
 			-- render the scene
 			-- TODO: ideally we could "clip" the edges that we know are going to be discarded
