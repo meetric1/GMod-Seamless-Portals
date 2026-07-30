@@ -52,6 +52,8 @@ function ENT:UpdatePhysmesh()
 		table.insert(finalMesh, side2 * sizev)
 	end
 	self:PhysicsInitConvex(finalMesh)
+	self:SetMoveType(MOVETYPE_VPHYSICS)
+	self:SetSolid(SOLID_VPHYSICS)
 	self:EnableCustomCollisions(true)
 	self:GetPhysicsObject():EnableMotion(false)
 	self:GetPhysicsObject():SetMaterial("glass")
@@ -62,7 +64,7 @@ function ENT:UpdatePhysmesh()
 	end
 end
 
-SeamlessPortals.Portals = ents.FindByClass("seamless_portal")
+SeamlessPortals.Portals = {}
 SeamlessPortals.TransformPortal = function(a, b, pos, ang)
 	if !IsValid(a) or !IsValid(b) then return Vector(), Angle() end
 	local editedPos = Vector()

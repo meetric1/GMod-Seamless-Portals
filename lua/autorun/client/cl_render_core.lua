@@ -4,6 +4,20 @@ AddCSLuaFile()
 
 if SERVER then return end
 
+local max_render = CreateClientConVar("seamless_portals_maxrender", "6", true, false, "maximum number of portals to render per frame", 0)
+local skip_render = CreateClientConVar("seamless_portals_refreshrate", "1", false, false, "How many frames to skip when rendering portals", 1)
+local skip = 0
+local renderview_table = {
+	x = 0,
+	y = 0,
+	w = ScrW(),
+	h = ScrH(),
+	origin = Vector(),
+	angles = Angle(),
+	drawviewmodel = false,
+	viewid = 2
+}
+
 -- Skybox doesn't render when inside of the world, so we must manually draw it ourselves.
 local sky_convar = GetConVar("sv_skyname")
 local sky_name = nil
@@ -38,36 +52,48 @@ local function draw_sky(eye_pos)
 	for i, dir in ipairs(sky_directions) do
 		render.SetMaterial(sky_materials[i])
 		--render.SetMaterial(Material("models/props_combine/combine_interface_disp"))
-		render.DrawQuadEasy(eye_pos - dir * 996, dir, 2000, 2000, color_white, i >= 5 and 0 or 180)
+		render.DrawQuadEasy(eye_pos - dir * 9960, dir, 20000, 20000, color_white, i >= 5 and 0 or 180)
 	end
 end
 
+-- TODO: if we ever get the option to render the scene without clearing the framebuffer, we can avoid a lot of this logic
+local rendered_skybox = false
+local skybox_framebuffer = GetRenderTarget("seamless_portal_skybox_framebuffer", ScrW(), ScrH())
 hook.Add("PreDrawOpaqueRenderables", "seamless_portal_skybox", function()
-	local eye_pos = EyePos()
-	if util.IsSkyboxVisibleFromPoint(eye_pos) or !SeamlessPortals.Rendering then return end
+	if !SeamlessPortals.Rendering then return end
 
-	-- the "skybox" may get clipped
 	local clip = render.EnableClipping(false)
-	render.OverrideDepthEnable(true, false)
-	render.DepthRange(1, 2)
-		draw_sky(eye_pos)
-	render.DepthRange(0, 1)
-	render.OverrideDepthEnable(false, false)
+	if renderview_table.viewid == 1 then
+		render.OverrideDepthEnable(true, false)
+		render.DepthRange(1, 2)
+		draw_sky(EyePos())
+		render.DepthRange(0, 1)
+		render.OverrideDepthEnable(false, false)
+	elseif rendered_skybox then
+		-- TODO: wow, this sucks!
+		render.ClearStencil()
+		render.SetStencilWriteMask(255)
+		render.SetStencilTestMask(255)
+		render.SetStencilReferenceValue(1)
+		render.SetStencilFailOperation(STENCIL_KEEP)
+		render.SetStencilZFailOperation(STENCIL_KEEP)
+		render.SetStencilPassOperation(STENCIL_REPLACE)
+		render.SetStencilCompareFunction(STENCIL_ALWAYS)
+		render.SetStencilEnable(true)
+
+		render.OverrideDepthEnable(true, false)
+		render.DepthRange(1, 2)
+		draw_sky(EyePos())
+		render.DepthRange(0, 1)
+		render.OverrideDepthEnable(false, false)
+
+		render.SetStencilCompareFunction(STENCIL_EQUAL)
+
+		render.DrawTextureToScreen(skybox_framebuffer)
+
+		render.SetStencilEnable(false)
+	end
 	render.EnableClipping(clip)
-end)
-
--- prevent portals from "snipping" the sky in half
-local sky_clip = false
-hook.Add("PreDrawSkyBox", "seamless_portal_skybox", function()
-	if !SeamlessPortals.Rendering then return end
-
-	sky_clip = render.EnableClipping(false)
-end)
-
-hook.Add("PostDrawSkyBox", "seamless_portal_skybox", function()
-	if !SeamlessPortals.Rendering then return end
-
-	render.EnableClipping(sky_clip)
 end)
 
 -- The implementation of halos sucks.
@@ -86,20 +112,6 @@ hook.Add("ShouldDrawLocalPlayer", "seamless_portal_drawplayer", function()
 		return true
 	end
 end)
-
-local maxRender = CreateClientConVar("seamless_portal_maxrender", "6", true, false, "maximum number of portals to render per frame", 0)
-local skipConvar = CreateClientConVar("seamless_portal_refreshrate", "1", false, false, "How many frames to skip when rendering portals", 1)
-local skip = 0
-local renderViewTable = {
-	x = 0,
-	y = 0,
-	w = ScrW(),
-	h = ScrH(),
-	origin = Vector(),
-	angles = Angle(),
-	drawviewmodel = false,
-	viewid = 2,
-}
 
 timer.Create("seamless_portal_distance_fix", 0.5, 0, function()
 	local eye_pos = MainEyePos()
@@ -122,37 +134,77 @@ timer.Create("seamless_portal_distance_fix", 0.5, 0, function()
 	update_sky()
 end)
 
+-- TODO: ideally we could "clip" the edges that we know are going to be discarded
+local function render_scene(clip_pos, clip_up)
+	SeamlessPortals.Rendering = true
+	local clip = render.EnableClipping(true)
+	render.PushCustomClipPlane(clip_up, clip_up:Dot(clip_pos))
+	render.RenderView(renderview_table)
+	render.PopCustomClipPlane()
+	render.EnableClipping(clip)
+	SeamlessPortals.Rendering = false
+end
+
 -- TODO: ideally use a pre-allocated framebuffer
 local framebuffer = GetRenderTarget("seamless_portal_framebuffer", ScrW(), ScrH())
-local no_function = function() end
-hook.Add("RenderScene", "seamless_portal_draw", function(eyePos, eyeAngles, fov)
+hook.Add("RenderScene", "seamless_portal_draw", function(eye_pos, eye_ang, fov)
 	if !SeamlessPortals or #SeamlessPortals.Portals < 1 then return end
 
-	skip = (skip + 1) % skipConvar:GetInt()
+	skip = (skip + 1) % skip_render:GetInt()
 	if skip != 0 then return end
 
-	cam.Start3D(eyePos, eyeAngles, fov)
+	cam.Start3D(eye_pos, eye_ang, fov)
 	render.PushRenderTarget(SeamlessPortals.PortalRT)
 
 	-- clear framebuffer (PortalRT) with 2d sky
 	render.ClearDepth(true)
-	draw_sky(eyePos)
+	draw_sky(eye_pos)
 
-	local eye_forward = eyeAngles:Forward()
-	local portal_render_max = maxRender:GetInt()
+	local eye_forward = eye_ang:Forward()
+	local portal_render_max = max_render:GetInt()
 	local portals_rendered = 0
 	for _, portal in ipairs(SeamlessPortals.Portals) do
 		if !IsValid(portal) then continue end
 
-		local exitPortal = portal:GetExitPortal()
-		if !IsValid(exitPortal) then continue end
+		local exit_portal = portal:GetExitPortal()
+		if !IsValid(exit_portal) then continue end
 
-		if SeamlessPortals.ShouldRender(portal, eyePos, eyeAngles, SeamlessPortals.GetDrawDistance()) then
-			local editedPos, editedAng = SeamlessPortals.TransformPortal(portal, exitPortal, eyePos, eyeAngles)
+		if SeamlessPortals.ShouldRender(portal, eye_pos, eye_ang, SeamlessPortals.GetDrawDistance()) then
+			local new_pos, new_ang = SeamlessPortals.TransformPortal(portal, exit_portal, eye_pos, eye_ang)
+			local clip_pos = exit_portal:GetPos()
+			local clip_up = exit_portal:GetUp()
 
-			renderViewTable.origin = editedPos
-			renderViewTable.angles = editedAng
-			renderViewTable.fov = fov
+			renderview_table.angles:Set(new_ang)
+			renderview_table.fov = fov
+			renderview_table.znear = 3
+
+			-- TODO: this is a crude implementation
+			rendered_skybox = false
+			if !util.IsSkyboxVisibleFromPoint(new_pos) and util.IsSkyboxVisibleFromPoint(clip_pos) then
+				local skybox_info = game.Get3DSkyboxInfo()
+				render.PushRenderTarget(skybox_framebuffer)
+				render.Clear(0, 0, 0, 255, true, true)
+				if skybox_info then
+					renderview_table.origin:Set(new_pos)
+					renderview_table.origin:Div(skybox_info.scale)
+					renderview_table.origin:Add(skybox_info.origin)
+					renderview_table.viewid = 1
+
+					local clip_pos = Vector(clip_pos)
+					clip_pos:Div(skybox_info.scale)
+					clip_pos:Add(skybox_info.origin)
+
+					render_scene(clip_pos, clip_up)
+				else
+					draw_sky(eye_pos)
+				end
+				render.PopRenderTarget()
+
+				rendered_skybox = true
+			end
+
+			renderview_table.origin:Set(new_pos)
+			renderview_table.viewid = 2
 
 			-- znear
 			-- we need to figure out where to place the near clipping plane
@@ -160,25 +212,17 @@ hook.Add("RenderScene", "seamless_portal_draw", function(eyePos, eyeAngles, fov)
 			-- you could use a hull plane intersection, but a sphere is easier to calculate
 			local plane_pos = portal:GetPos()
 			plane_pos:Sub(eye_forward * portal:BoundingRadius())
-			plane_pos:Sub(eyePos)
+			plane_pos:Sub(eye_pos)
 			local t = eye_forward:Dot(plane_pos)
-			renderViewTable.znear = math.max(t, 3) -- 3 = default znear
+			t = t * (exit_portal:GetSize()[1] / portal:GetSize()[1])
+			renderview_table.znear = math.max(t, 3) -- 3 = default znear
 
-			-- render the scene
-			-- TODO: ideally we could "clip" the edges that we know are going to be discarded
-			SeamlessPortals.Rendering = true
-			local up = exitPortal:GetUp()
 			render.PushRenderTarget(framebuffer)
-			local oldClip = render.EnableClipping(true)
-			render.PushCustomClipPlane(up, up:Dot(exitPortal:GetPos()))
-			render.RenderView(renderViewTable)
-			render.PopCustomClipPlane()
-			render.EnableClipping(oldClip)
+			render_scene(clip_pos, clip_up)
 			render.PopRenderTarget()
-			SeamlessPortals.Rendering = false
 
 			-- Draw quad reversed if the portal is linked to itself
-			portal:DrawStenciled(framebuffer, exitPortal == portal)
+			portal:DrawStenciled(framebuffer, portal == exit_portal)
 
 			portals_rendered = portals_rendered + 1
 			if portals_rendered >= portal_render_max then

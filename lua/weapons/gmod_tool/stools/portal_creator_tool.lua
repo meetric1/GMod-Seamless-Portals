@@ -37,9 +37,9 @@ function TOOL:GetPlacementPosition(tr)
     local rotAng = tr.HitNormal:Angle()
     rotAng[1] = rotAng[1] + 90
 
-    if ply:GetInfoNum("seamless_portal_align", 0) == 1 then
-    	local nudge_x = ply:GetInfoNum("seamless_portal_size_x", 1) / 2
-        local nudge_y = ply:GetInfoNum("seamless_portal_size_y", 1) / 2
+    if ply:GetInfoNum("seamless_portals_align", 0) == 1 then
+    	local nudge_x = ply:GetInfoNum("seamless_portals_size_x", 1) / 2
+        local nudge_y = ply:GetInfoNum("seamless_portals_size_y", 1) / 2
 
         tr.HitPos = self:EasyExtrude(tr.HitPos + tr.HitNormal, -rotAng:Right(), nudge_y)
         tr.HitPos = self:EasyExtrude(tr.HitPos + tr.HitNormal, rotAng:Right(), nudge_y)
@@ -53,7 +53,7 @@ function TOOL:GetPlacementPosition(tr)
         rotAng.y = ply:EyeAngles().y + 180
     end
     --
-    return (tr.HitPos + tr.HitNormal * (ply:GetInfoNum("seamless_portal_size_z", 1) + 1)), rotAng
+    return (tr.HitPos + tr.HitNormal * (ply:GetInfoNum("seamless_portals_size_z", 1) / 2 + 1)), rotAng
 
 end
 
@@ -76,21 +76,21 @@ if ( CLIENT ) then
 	language.Add("Tool.portal_creator_tool.right2", "Right Click: Create link to another portal")
 
 	-- yoink! smiley :)
-	local xVar = CreateClientConVar("seamless_portal_size_x", "100", false, true, "Sets the size of the portal along the X axis", 1, 1000)
-	local yVar = CreateClientConVar("seamless_portal_size_y", "100", false, true, "Sets the size of the portal along the Y axis", 1, 1000)
-	local zVar = CreateClientConVar("seamless_portal_size_z", "8", false, true, "Sets the size of the portal along the Z axis", 1, 100)
-	local sidesVar = CreateClientConVar("seamless_portal_sides", "4", false, true, "Sets the number of sides the portal has", 3, 100)
-	local backVar = CreateClientConVar("seamless_portal_backface", "1", false, true, "Sets whether to spawn with a backface or not", 0, 1)
-	local alignVar = CreateClientConVar("seamless_portal_align", "1", false, true, "Enable/Disable Portal creator alignment helper", 0, 1)
+	local xVar = CreateClientConVar("seamless_portals_size_x", "100", false, true, "Sets the size of the portal along the X axis", 1, 1000)
+	local yVar = CreateClientConVar("seamless_portals_size_y", "100", false, true, "Sets the size of the portal along the Y axis", 1, 1000)
+	local zVar = CreateClientConVar("seamless_portals_size_z", "8", false, true, "Sets the size of the portal along the Z axis", 1, 100)
+	local sidesVar = CreateClientConVar("seamless_portals_sides", "4", false, true, "Sets the number of sides the portal has", 3, 100)
+	local backVar = CreateClientConVar("seamless_portals_backface", "1", false, true, "Sets whether to spawn with a backface or not", 0, 1)
+	local alignVar = CreateClientConVar("seamless_portals_align", "1", false, true, "Enable/Disable Portal creator alignment helper", 0, 1)
 
 	function TOOL.BuildCPanel(panel)
 		panel:AddControl("label", {text = "Creates and links portals"})
-		panel:NumSlider("Portal Size X", "seamless_portal_size_x", 1, 1000, 1)
-		panel:NumSlider("Portal Size Y", "seamless_portal_size_y", 1, 1000, 1)
-		panel:NumSlider("Portal Size Z", "seamless_portal_size_z", 1, 100, 1)
-		panel:NumSlider("Portal Sides", "seamless_portal_sides", 3, 100, 0)
-        panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portal_backface")
-        panel:CheckBox("Nudge Portals from walls", "seamless_portal_align")
+		panel:NumSlider("Portal Size X", "seamless_portals_size_x", 1, 1000, 1)
+		panel:NumSlider("Portal Size Y", "seamless_portals_size_y", 1, 1000, 1)
+		panel:NumSlider("Portal Size Z", "seamless_portals_size_z", 1, 100, 1)
+		panel:NumSlider("Portal Sides", "seamless_portals_sides", 3, 100, 0)
+        panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portals_backface")
+        panel:CheckBox("Nudge Portals from walls", "seamless_portals_align")
 	end
 
 	local beamMat = Material("cable/blue_elec")
@@ -157,12 +157,12 @@ elseif ( SERVER ) then
 		ent:Spawn()
 		if CPPI then ent:CPPISetOwner(ply) end
 		-- yoink! smiley, no fun allowed
-		local sizex = math.Clamp(ply:GetInfoNum("seamless_portal_size_x", 1) * 0.5, 1, 500)
-		local sizey = math.Clamp(ply:GetInfoNum("seamless_portal_size_y", 1) * 0.5, 1, 500)
-		local sizez = math.Clamp(ply:GetInfoNum("seamless_portal_size_z", 1), 1, 100)
+		local sizex = math.Clamp(ply:GetInfoNum("seamless_portals_size_x", 1) * 0.5, 1, 500)
+		local sizey = math.Clamp(ply:GetInfoNum("seamless_portals_size_y", 1) * 0.5, 1, 500)
+		local sizez = math.Clamp(ply:GetInfoNum("seamless_portals_size_z", 1), 1, 100)
 		ent:SetSize(Vector(sizex, sizey, sizez))
-		ent:SetDisableBackface(ply:GetInfoNum("seamless_portal_backface", 1) == 0)
-		ent:SetSides(ply:GetInfoNum("seamless_portal_sides", 4))
+		ent:SetDisableBackface(ply:GetInfoNum("seamless_portals_backface", 1) == 0)
+		ent:SetSides(ply:GetInfoNum("seamless_portals_sides", 4))
 		cleanup.Add(ply, "props", ent)
 		undo.Create("Seamless Portal")
 			undo.AddEntity(ent)

@@ -36,12 +36,12 @@ function TOOL:GetPlacementPosition(tr)
     ang[1] = math.Round(-ang[1] * (1 - 90 / 360) / 90) * 90
 
     ang[2] = ang[2] + 180
-    local snap_angle = ply:GetInfoNum("seamless_portal_snap_angle", 90)
+    local snap_angle = ply:GetInfoNum("seamless_portals_snap_angle", 90)
     if snap_angle > 1 then
         ang[2] = math.Round(ang[2] / snap_angle) * snap_angle
     end
 
-    tr.HitNormal:Mul(ply:GetInfoNum("seamless_portal_size_z", 1) + 1)
+    tr.HitNormal:Mul(ply:GetInfoNum("seamless_portals_size_z", 1) + 1)
 
     local left = self:EasyTrace(tr.HitPos + tr.HitNormal, -ang:Right())
     local right = self:EasyTrace(tr.HitPos + tr.HitNormal, ang:Right())
@@ -73,15 +73,15 @@ if ( CLIENT ) then
     language.Add("Tool.portal_fitter_tool.right1", "Right Click: Start linking a portal")
 	language.Add("Tool.portal_fitter_tool.right2", "Right Click: Create link to another portal")
 
-    local snap_angle = CreateClientConVar("seamless_portal_snap_angle", "90", false, true, "Portal Snap Angle, in Degrees", 0, 90)
-	local zVar = CreateClientConVar("seamless_portal_size_z", "8", false, true, "Sets the size of the portal along the Z axis", 1, 100)
-	local backVar = CreateClientConVar("seamless_portal_backface", "1", false, true, "Sets whether to spawn with a backface or not", 0, 1)
+    local snap_angle = CreateClientConVar("seamless_portals_snap_angle", "90", false, true, "Portal Snap Angle, in Degrees", 0, 90)
+	local zVar = CreateClientConVar("seamless_portals_size_z", "8", false, true, "Sets the size of the portal along the Z axis", 1, 100)
+	local backVar = CreateClientConVar("seamless_portals_backface", "1", false, true, "Sets whether to spawn with a backface or not", 0, 1)
 
 	function TOOL.BuildCPanel(panel)
 		panel:AddControl("label", {text = "Creates a fitted portal"})
-		panel:NumSlider("Portal Snap Angle", "seamless_portal_snap_angle", 0, 90, 0)
-		panel:NumSlider("Portal Size Z", "seamless_portal_size_z", 1, 100, 1)
-		panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portal_backface")
+		panel:NumSlider("Portal Snap Angle", "seamless_portals_snap_angle", 0, 90, 0)
+		panel:NumSlider("Portal Size Z", "seamless_portals_size_z", 1, 100, 1)
+		panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portals_backface")
 	end
 
 	local beamMat = Material("cable/blue_elec")
@@ -151,9 +151,9 @@ elseif ( SERVER ) then
         ent:Spawn()
         if CPPI then ent:CPPISetOwner(ply) end
 
-        local sizez = math.Clamp(ply:GetInfoNum("seamless_portal_size_z", 1), 1, 100)
+        local sizez = math.Clamp(ply:GetInfoNum("seamless_portals_size_z", 1), 1, 100)
         ent:SetSize(Vector(scl[1], scl[2], sizez))
-        ent:SetDisableBackface(ply:GetInfoNum("seamless_portal_backface", 1) == 0)
+        ent:SetDisableBackface(ply:GetInfoNum("seamless_portals_backface", 1) == 0)
         ent:SetSides(4)
 
         cleanup.Add(ply, "props", ent)

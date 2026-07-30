@@ -4,12 +4,12 @@ TOOL.Name = "#Tool.portal_resizer_tool.name"
 if CLIENT then
 	language.Add("Tool.portal_resizer_tool.name", "Portal Resizer")
 	language.Add("Tool.portal_resizer_tool.desc", "Sets the size of portals")
-	
-	TOOL.ConvarX = CreateClientConVar("seamless_portal_size_x", "100", false, true, "Sets the size of the portal along the X axis", 10, 1000)
-	TOOL.ConvarY = CreateClientConVar("seamless_portal_size_y", "100", false, true, "Sets the size of the portal along the Y axis", 10, 1000)
-	TOOL.ConvarZ = CreateClientConVar("seamless_portal_size_z", "8", false, true, "Sets the size of the portal along the Z axis", 1, 100)
-	TOOL.ConvarSides = CreateClientConVar("seamless_portal_sides", "1", false, true, "Sets the number of sides of the portal", 3, 100)
-	TOOL.ConvarB = CreateClientConVar("seamless_portal_backface", "1", false, true, "Sets whether to spawn with a backface or not", 0, 1)
+
+	TOOL.ConvarX = CreateClientConVar("seamless_portals_size_x", "100", false, true, "Sets the size of the portal along the X axis", 10, 1000)
+	TOOL.ConvarY = CreateClientConVar("seamless_portals_size_y", "100", false, true, "Sets the size of the portal along the Y axis", 10, 1000)
+	TOOL.ConvarZ = CreateClientConVar("seamless_portals_size_z", "8", false, true, "Sets the size of the portal along the Z axis", 1, 100)
+	TOOL.ConvarSides = CreateClientConVar("seamless_portals_sides", "1", false, true, "Sets the number of sides of the portal", 3, 100)
+	TOOL.ConvarB = CreateClientConVar("seamless_portals_backface", "1", false, true, "Sets whether to spawn with a backface or not", 0, 1)
 
 	TOOL.Information = {
 		{name = "left"},
@@ -21,18 +21,18 @@ if CLIENT then
 		panel:AddControl("label", {
 			text = "Sets the size of portals",
 		})
-		panel:NumSlider("Portal Size X", "seamless_portal_size_x", 10, 1000, 1)
-		panel:NumSlider("Portal Size Y", "seamless_portal_size_y", 10, 1000, 1)
-		panel:NumSlider("Portal Size Z", "seamless_portal_size_z", 1, 100, 1)
-		panel:NumSlider("Portal Sides", "seamless_portal_sides", 3, 100, 0)
-		panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portal_backface")
+		panel:NumSlider("Portal Size X", "seamless_portals_size_x", 10, 1000, 1)
+		panel:NumSlider("Portal Size Y", "seamless_portals_size_y", 10, 1000, 1)
+		panel:NumSlider("Portal Size Z", "seamless_portals_size_z", 1, 100, 1)
+		panel:NumSlider("Portal Sides", "seamless_portals_sides", 3, 100, 0)
+		panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portals_backface")
 	end
 
 	local COLOR_GREEN = Color(0, 255, 0, 50)
 	function TOOL:DrawHUD()
 		local traceTable = util.GetPlayerTrace(self:GetOwner())
 		local trace = SeamlessPortals.TraceLine(traceTable)
-		
+
 		if !trace.Entity or trace.Entity:GetClass() != "seamless_portal" then return end	-- dont draw the world or else u crash lol
 
 		local mins, maxs = trace.Entity:OBBMins(), trace.Entity:OBBMaxs()
@@ -70,4 +70,3 @@ function TOOL:RightClick(trace)
 	trace.Entity:SetSize(Vector(50, 50, 8))
 	return true
 end
-

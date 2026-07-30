@@ -110,21 +110,15 @@ local function setPortalPlacement(owner, portal)
 end
 
 function SWEP:ShootFX(sfx, rel)
-	if rel then
-		self:SendWeaponAnim(ACT_VM_RELOAD)
-		self:GetOwner():SetAnimation(PLAYER_RELOAD)
-	else
-		self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
-		self:GetOwner():SetAnimation(PLAYER_ATTACK1)
-	end
+	self:SendWeaponAnim(ACT_VM_PRIMARYATTACK)
+	self:GetOwner():SetAnimation(PLAYER_ATTACK1)
+
 	if IsFirstTimePredicted() then
 		local sfx = tostring(sfx or ""):Trim()
-		if game.SinglePlayer() then
-			self:EmitSound(sfx, 60, 100, 0.25, CHAN_AUTO)	-- quieter for client
-		else
-			if CLIENT then
-				self:EmitSound(sfx, 60, 100, 0.25, CHAN_AUTO)	-- quieter for client
-			end
+		if CLIENT or game.SinglePlayer() then
+			-- literally cannot change the volume. Wtf
+			EmitSound(sfx, Vector(), self:EntIndex(), 1, 1)
+			--self:EmitSound(sfx, 60, 100, 0.25, CHAN_AUTO)
 		end
 	end
 end
@@ -176,7 +170,9 @@ function SWEP:OnRemove()
 end
 
 function SWEP:Reload()
-	self:ShootFX("NPC_Vortigaunt.Swing", true)
+	self:SendWeaponAnim(ACT_VM_RELOAD)
+	self:GetOwner():SetAnimation(PLAYER_RELOAD)
+
 	if CLIENT then return end
 	self:ClearSpawn("Portal1", "Portal2")
 end

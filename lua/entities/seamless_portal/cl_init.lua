@@ -1,7 +1,7 @@
 include("sh_init.lua")
 
 local varDrawDistance = CreateClientConVar(
-	"seamless_portal_drawdistance",
+	"seamless_portals_drawdistance",
     "250",
     true,
     true,
@@ -10,14 +10,14 @@ local varDrawDistance = CreateClientConVar(
 )
 
 function ENT:Initialize()
-	-- slow, though our size is at max 8192 (edict).
-	if !table.HasValue(SeamlessPortals.Portals, self) then
-		table.insert(SeamlessPortals.Portals, self)
-	end
+	table.insert(SeamlessPortals.Portals, self)
 end
 
 function ENT:OnRemove()
-	table.RemoveByValue(SeamlessPortals.Portals, self)
+	timer.Simple(0, function()
+		if IsValid(self) then return end
+		table.RemoveByValue(SeamlessPortals.Portals, self)
+	end)
 end
 
 -- There's gonna be a bunch of magic numbers in this rendering code
@@ -105,7 +105,9 @@ end
 
 function ENT:Draw(flags)
 	-- resetting the stencil buffer when drawing halos will cause horrible flashing
-	if draw_model or halo.RenderedEntity() == self then
+	if halo.RenderedEntity() == self then return end
+
+	if draw_model then
 		self:DrawModel(flags)
 	else
 		self:DrawStenciled(SeamlessPortals.PortalRT)
@@ -115,12 +117,12 @@ end
 function ENT:Think()
 	local phys = self:GetPhysicsObject()
 	if phys:IsValid() then
-		phys:EnableMotion(false)
 		phys:SetPos(self:GetPos())
 		phys:SetAngles(self:GetAngles())
+		phys:EnableMotion(false)
 
 	-- if held with gravity gun it will rebuild the physmesh every frame (laggy). ensure to check velocity
-	elseif self:GetVelocity() == Vector() and !IsValid(self:GetPhysicsObject()) then
+	elseif self:GetVelocity() == Vector() then
 		self:UpdatePhysmesh()
 	end
 end

@@ -90,6 +90,34 @@ function ENT:AcceptInput(input, activator, caller, data)
 	end
 end
 
+function ENT:Initialize()
+	self:SetModel("models/hunter/plates/plate2x2.mdl")
+	self:SetAngles(self:GetAngles() + Angle(90, 0, 0))
+	self:PhysicsInit(SOLID_VPHYSICS)
+	self:SetMoveType(MOVETYPE_VPHYSICS)
+	self:SetSolid(SOLID_VPHYSICS)
+	self:PhysWake()
+	self:SetRenderMode(RENDERMODE_TRANSCOLOR)
+	self:SetCollisionGroup(COLLISION_GROUP_WORLD)
+	self:DrawShadow(false)
+
+	if self:GetSize() == Vector() then
+		self:SetSize(Vector(50, 50, 8))
+	else
+		self:SetSize(self:GetSize())
+	end
+
+	table.insert(SeamlessPortals.Portals, self)
+end
+
+function ENT:OnRemove()
+	if self.PORTAL_REMOVE_EXIT then
+		SafeRemoveEntity(self:GetExitPortal())
+	end
+
+	table.RemoveByValue(SeamlessPortals.Portals, self)
+end
+
 function ENT:SpawnFunction(ply, tr)
 	local portal1 = ents.Create("seamless_portal")
 	if not IsValid(portal1) then return end
@@ -114,37 +142,6 @@ function ENT:SpawnFunction(ply, tr)
 	portal2:SetRemoveExit(true)
 
 	return portal1
-end
-
-function ENT:Initialize()
-	self:SetModel("models/hunter/plates/plate2x2.mdl")
-	self:SetAngles(self:GetAngles() + Angle(90, 0, 0))
-	self:PhysicsInit(SOLID_VPHYSICS)
-	self:SetMoveType(MOVETYPE_VPHYSICS)
-	self:SetSolid(SOLID_VPHYSICS)
-	self:PhysWake()
-	self:SetRenderMode(RENDERMODE_TRANSCOLOR)
-	self:SetCollisionGroup(COLLISION_GROUP_WORLD)
-	self:DrawShadow(false)
-
-	if self:GetSize() == Vector() then
-		self:SetSize(Vector(50, 50, 8))
-	else
-		self:SetSize(self:GetSize())
-	end
-
-	-- slow, though our size is at max 8192 (edict).
-	if !table.HasValue(SeamlessPortals.Portals, self) then
-		table.insert(SeamlessPortals.Portals, self)
-	end
-end
-
-function ENT:OnRemove()
-	if self.PORTAL_REMOVE_EXIT then
-		SafeRemoveEntity(self:GetExitPortal())
-	end
-
-	table.RemoveByValue(SeamlessPortals.Portals, self)
 end
 
 function ENT:UpdateTransmitState()
