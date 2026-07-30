@@ -95,13 +95,13 @@ end
 local function validate_hull(ply)
 	if !ply.SEAMLESS_PORTALS_HULL_MINS then return end
 
+	-- TODO: does calling ResetHull every frame cause any problems?
+	ply:ResetHull()
+
 	ply.SEAMLESS_PORTALS_HULL_MINS = nil
 	ply.SEAMLESS_PORTALS_HULL_MAXS = nil
 	ply.SEAMLESS_PORTALS_HULL_DUCK_MINS = nil
 	ply.SEAMLESS_PORTALS_HULL_DUCK_MAXS = nil
-
-	-- TODO: does calling ResetHull every frame cause any problems?
-	ply:ResetHull()
 
 	return true
 end
@@ -143,8 +143,6 @@ local function update_hull(ply, ply_pos)
 	end
 
 	local hull_mins, hull_maxs = get_hull(ply)
-	local ply_view_offset = ply:GetCurrentViewOffset()
-	local ply_eyepos = ply_pos + ply_view_offset
 	portal_trace_data.start = ply_pos
 	portal_trace_data.endpos = ply_pos
 	portal_trace_data.mins = hull_mins
@@ -178,12 +176,14 @@ local function update_hull(ply, ply_pos)
 	invalidate_hull(ply)
 
 	-- floor portal mode. yikes.
-	portal_trace_data.start = ply_eyepos
-	portal_trace_data.endpos = ply_pos - Vector(0, 0, hull_maxs[3])
+	portal_trace_data.start = ply_pos + Vector(0, 0, hull_maxs[3])
+	portal_trace_data.endpos = ply_pos + Vector(0, 0, hull_mins[3])
 	local half = portal:GetUp():Dot(Vector(0, 0, 1)) > 0.5 and SeamlessPortals.TraceLine(portal_trace_data).Hit
 
 	clip_hull(ply, hull_mins, hull_maxs, half)
-
+	if half then
+		ply:SetGroundEntity(nil)
+	end
 	return true
 end
 
