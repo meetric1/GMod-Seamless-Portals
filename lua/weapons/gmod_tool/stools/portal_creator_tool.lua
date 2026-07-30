@@ -195,11 +195,30 @@ elseif ( SERVER ) then
 		end
 		local stage = self:GetStage()
 		if (stage <= 1) then
+			local side = -math.Sign( ent:GetUp():Dot( ent:GetPos() - self:GetOwner():GetShootPos() ) )
+
+			ent.linkSide = side
 			self:SetLinkTarget(ent)
 			self:SetStage(2)
 		else -- Linking a portal to itself for mirror dimension
 			local linkTarget = self:GetLinkTarget()
 			-- LinkPortal already contains an IsValid check
+			local side = -math.Sign( ent:GetUp():Dot( ent:GetPos() - self:GetOwner():GetShootPos() ) )
+
+			local entAng = Angle( ent:GetAngles() )
+
+			if side < 0 then
+				entAng:RotateAroundAxis( entAng:Forward(), 180 )
+			end
+
+			local linkTargetAng = Angle( linkTarget:GetAngles() )
+
+			if linkTarget.linkSide < 0 then
+				linkTargetAng:RotateAroundAxis( linkTargetAng:Forward(), 180 )
+			end
+			
+			ent:SetAngles( entAng )
+			linkTarget:SetAngles( linkTargetAng )
 			ent:LinkPortal(linkTarget)
 			self:SetStage(1)
 		end
