@@ -88,6 +88,10 @@ end
 local function invalidate_hull(ply)
 	if ply.SEAMLESS_PORTALS_HULL_MINS then return end
 
+	-- prevents client from seeing small jitter during teleport with portals on differing heights (hack.. I hate this)
+	ply.SEAMLESS_PORTALS_STEP_SIZE = ply:GetStepSize()
+	ply:SetStepSize(0)
+
 	ply.SEAMLESS_PORTALS_HULL_MINS, ply.SEAMLESS_PORTALS_HULL_MAXS = ply:GetHull()
 	ply.SEAMLESS_PORTALS_HULL_DUCK_MINS, ply.SEAMLESS_PORTALS_HULL_DUCK_MAXS = ply:GetHullDuck()
 end
@@ -97,7 +101,9 @@ local function validate_hull(ply)
 
 	-- TODO: does calling ResetHull every frame cause any problems?
 	ply:ResetHull()
+	ply:SetStepSize(ply.SEAMLESS_PORTALS_STEP_SIZE)
 
+	ply.SEAMLESS_PORTALS_STEP_SIZE = nil
 	ply.SEAMLESS_PORTALS_HULL_MINS = nil
 	ply.SEAMLESS_PORTALS_HULL_MAXS = nil
 	ply.SEAMLESS_PORTALS_HULL_DUCK_MINS = nil
