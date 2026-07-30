@@ -95,13 +95,13 @@ end
 local function validate_hull(ply)
 	if !ply.SEAMLESS_PORTALS_HULL_MINS then return end
 
+	-- TODO: does calling ResetHull every frame cause any problems?
+	ply:ResetHull()
+
 	ply.SEAMLESS_PORTALS_HULL_MINS = nil
 	ply.SEAMLESS_PORTALS_HULL_MAXS = nil
 	ply.SEAMLESS_PORTALS_HULL_DUCK_MINS = nil
 	ply.SEAMLESS_PORTALS_HULL_DUCK_MAXS = nil
-
-	-- TODO: does calling ResetHull every frame cause any problems?
-	ply:ResetHull()
 
 	return true
 end
@@ -110,41 +110,29 @@ local function is_hull_invalid(ply)
 	return ply.SEAMLESS_PORTALS_HULL_MINS and true or false
 end
 
-local function get_hull_clip(hull_mins, hull_maxs, half)--, plane_pos, plane_up, half)
+local function get_hull_clip(hull_mins, hull_maxs, half)
 	for i = 1, 2 do
 		hull_mins[i] = hull_mins[i] / 4
 		hull_maxs[i] = hull_maxs[i] / 4
 	end
-
-	--[[
-	local new_mins = Vector(hull_maxs)
-	local new_maxs = Vector(hull_mins)
-	local extrude = Vector()
-	for permutate = 0, 7 do
-		for i = 1, 3 do
-			extrude[i] = (bit.band(permutate, bit.lshift(1, i - 1)) == 0) and hull_mins[i] or hull_maxs[i]
-		end
-
-		local d = math.max(plane_up:Dot(plane_pos - extrude), 0) + 1
-		extrude:Add(plane_up * d)
-
-		for i = 1, 3 do
-			new_mins[i] = math.min(new_mins[i], extrude[i])
-			new_maxs[i] = math.max(new_maxs[i], extrude[i])
-		end
-	end
-
-	-- clamp
-	for i = 1, 3 do
-		hull_mins[i] = math.max(hull_mins[i], new_mins[i])
-		hull_maxs[i] = math.min(hull_maxs[i], new_maxs[i])
-	end]]
 
 	hull_maxs[3] = hull_maxs[3] * 0.9
 
 	if half then
 		hull_mins[3] = hull_maxs[3]
 	end
+end
+
+-- hull stand and hull duck must be calculated separately
+local function clip_hull(ply, hull_mins, hull_maxs, half)
+	--local hull_mins, hull_maxs = get_hull(ply) -- pass in to avoid gc spaz (+2 vectors)
+	get_hull_clip(hull_mins, hull_maxs, half)
+	ply:SetHull(hull_mins, hull_maxs)
+	--debugoverlay.Box(ply:GetPos(), hull_mins, hull_maxs, 0.05, Color(255, 255, 255, 0))
+
+	hull_mins, hull_maxs = get_hull_duck(ply)
+	get_hull_clip(hull_mins, hull_maxs, half)
+	ply:SetHullDuck(hull_mins, hull_maxs)
 end
 
 local function update_hull(ply, ply_pos)
@@ -155,17 +143,13 @@ local function update_hull(ply, ply_pos)
 	end
 
 	local hull_mins, hull_maxs = get_hull(ply)
-	local ply_view_offset = ply:GetCurrentViewOffset()
-	local ply_eyepos = ply_pos + ply_view_offset
 	portal_trace_data.start = ply_pos
 	portal_trace_data.endpos = ply_pos
 	portal_trace_data.mins = hull_mins
 	portal_trace_data.maxs = hull_maxs
 	local tr_hull = util.TraceHull(portal_trace_data)
 	if !tr_hull.Hit then
-		--[[
 		if is_hull_invalid(ply) then
-			validate_hull(ply)
 			if util.TraceHull({
 				start = ply_pos,
 				endpos = ply_pos,
@@ -176,11 +160,11 @@ local function update_hull(ply, ply_pos)
 				collisiongroup = COLLISION_GROUP_INTERACTIVE
 			}).Hit
 			then
-				return true -- shit. We're stuck
+				-- shit. We're stuck
+				clip_hull(ply, hull_mins, hull_maxs, false) -- back to standing
+				return true -- let movement code try to extrude player
 			end
-
-			validate_hull(ply)
-		end]]
+		end
 
 		return validate_hull(ply)
 	end
@@ -192,22 +176,18 @@ local function update_hull(ply, ply_pos)
 	invalidate_hull(ply)
 
 	-- floor portal mode. yikes.
-	portal_trace_data.start = ply_eyepos
-	portal_trace_data.endpos = ply_pos - Vector(0, 0, hull_maxs[3])
-	local mins_half = portal:GetUp():Dot(Vector(0, 0, 1)) > 0.5 and SeamlessPortals.TraceLine(portal_trace_data).Hit
+	portal_trace_data.start = ply_pos + Vector(0, 0, hull_maxs[3])
+	portal_trace_data.endpos = ply_pos + Vector(0, 0, hull_mins[3])
+	local half = portal:GetUp():Dot(Vector(0, 0, 1)) > 0.5 and SeamlessPortals.TraceLine(portal_trace_data).Hit
 
-	-- hull stand and hull duck must be calculated separately
-	get_hull_clip(hull_mins, hull_maxs, mins_half)
-	ply:SetHull(hull_mins, hull_maxs)
-	--debugoverlay.Box(ply:GetPos(), hull_mins, hull_maxs, 0.05, Color(255, 255, 255, 0))
-
-	hull_mins, hull_maxs = get_hull_duck(ply)
-	get_hull_clip(hull_mins, hull_maxs, mins_half)
-	ply:SetHullDuck(hull_mins, hull_maxs)
-
+	clip_hull(ply, hull_mins, hull_maxs, half)
+	if half then
+		ply:SetGroundEntity(nil)
+	end
 	return true
 end
 
+-- TODO: extrude on sides too so we dont get stuck in a wall
 local function extrude_player(ply, ply_pos)
 	local mins, maxs = (ply:Crouching() and ply.GetHullDuck or ply.GetHull)(ply)
 	local max_diff = maxs[3] - mins[3]
@@ -231,7 +211,10 @@ local function extrude_player(ply, ply_pos)
 end
 
 hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
-	if !SeamlessPortals or #SeamlessPortals.Portals < 1 then return end
+	if !SeamlessPortals or #SeamlessPortals.Portals < 1 then
+		validate_hull(ply)
+		return
+	end
 
 	local ply_eyepos = ply:EyePos() -- base off eyepos, feels more accurate
 	local ply_vel = mv:GetVelocity()
