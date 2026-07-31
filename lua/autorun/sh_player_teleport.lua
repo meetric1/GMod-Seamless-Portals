@@ -6,6 +6,9 @@ AddCSLuaFile()
 
 -- client lerp prevention
 local function lerp_teleport(start_pos, start_vel)
+	local ply = LocalPlayer()
+	if ply:GetViewEntity() != ply then return end -- viewing from a camera
+
 	SeamlessPortals.DrawPlayerInView = false
 	timer.Remove("seamless_portals_lerp_teleport")	--in case you enter the portal while the timer is running
 
@@ -20,7 +23,7 @@ local function lerp_teleport(start_pos, start_vel)
 		start_pos:Sub(start_vel * FrameTime())
 	end
 
-	hook.Add("CalcView", "seamless_portals_fix", function(ply, pos, ang, fov)
+	hook.Add("CalcView", "seamless_portals_fix", function(_, pos, ang)
 		local frame_time = FrameTime()
 		ang[3] = ang[3] * math.pow(math.max(0.3 - total_frame_time, 0) / 0.3, 3)
 
