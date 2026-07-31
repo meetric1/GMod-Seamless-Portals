@@ -4,9 +4,9 @@ AddCSLuaFile()
 -- bullet detour
 hook.Add("EntityFireBullets", "seamless_portal_detour_bullet", function(entity, data)
 	if !SeamlessPortals or #SeamlessPortals.Portals < 1 then return end
-	local tr = SeamlessPortals.TraceLine({start = data.Src, endpos = data.Src + data.Dir * data.Distance, filter = entity})
+	local tr = SeamlessPortals.TraceLine({start = data.Src, endpos = data.Src + data.Dir * (data.Distance or 56755), filter = entity})
 	local hitPortal = tr.Entity
-	if !hitPortal:IsValid() then return end
+	if !IsValid(hitPortal) then return end
 	if hitPortal:GetClass() != "seamless_portal" then return end
 	local exitportal = hitPortal:GetExitPortal()
 	if !IsValid(exitportal) then return end
