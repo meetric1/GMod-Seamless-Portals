@@ -56,55 +56,71 @@ local function draw_sky(eye_pos)
 	end
 end
 
--- TODO: if we ever get the option to render the scene without clearing the framebuffer, we can avoid a lot of this logic
-local rendered_skybox = false
-local skybox_framebuffer = GetRenderTarget("seamless_portal_skybox_framebuffer", ScrW(), ScrH())
-hook.Add("PreDrawOpaqueRenderables", "seamless_portal_skybox", function()
-	if !SeamlessPortals.Rendering then return end
-
-	local clip = render.EnableClipping(false)
-	if renderview_table.viewid == 1 then
-		render.OverrideDepthEnable(true, false)
-		render.DepthRange(1, 2)
-		draw_sky(EyePos())
-		render.DepthRange(0, 1)
-		render.OverrideDepthEnable(false, false)
-	elseif rendered_skybox then
-		-- TODO: wow, this sucks!
-		render.ClearStencil()
-		render.SetStencilWriteMask(255)
-		render.SetStencilTestMask(255)
-		render.SetStencilReferenceValue(1)
-		render.SetStencilFailOperation(STENCIL_KEEP)
-		render.SetStencilZFailOperation(STENCIL_KEEP)
-		render.SetStencilPassOperation(STENCIL_REPLACE)
-		render.SetStencilCompareFunction(STENCIL_ALWAYS)
-		render.SetStencilEnable(true)
-
-		render.OverrideDepthEnable(true, false)
-		render.DepthRange(1, 2)
-		draw_sky(EyePos())
-		render.DepthRange(0, 1)
-		render.OverrideDepthEnable(false, false)
-
-		render.SetStencilCompareFunction(STENCIL_EQUAL)
-
-		render.DrawTextureToScreen(skybox_framebuffer)
-
-		render.SetStencilEnable(false)
-	end
-	render.EnableClipping(clip)
-end)
-
 -- The implementation of halos sucks.
 -- We must disable clipping so that the framebuffer doesn't become corrupted
 -- we only do this during portal rendering, so it shouldnt affect other operations,
 -- since the clip state gets set back after rendering
-hook.Add("PreDrawEffects", "seamless_portal_effects", function()
+hook.Add("PreDrawEffects", "seamless_portals_effects", function()
 	if !SeamlessPortals.Rendering then return end
 
 	render.EnableClipping(false)
 end)
+
+-- same for skybox, ensure clipping is disabled
+local skybox_framebuffer = GetRenderTarget("seamless_portals_skybox_framebuffer", ScrW(), ScrH())
+local skybox_3dsky = GetConVar("r_3dsky")
+local skybox_clip = false
+local skybox_rendered = false
+hook.Add("PreDrawSkyBox", "seamless_portals_skybox", function()
+	if !SeamlessPortals.Rendering then return end
+	if renderview_table.viewid == 1 then return true end
+
+	skybox_clip = render.EnableClipping(false)
+end)
+
+hook.Add("PostDrawSkyBox", "seamless_portals_skybox", function()
+	if !SeamlessPortals.Rendering then return end
+
+	render.EnableClipping(skybox_clip)
+	skybox_rendered = true
+end)
+
+-- TODO: if we ever get the option to render the scene without clearing the framebuffer, we can avoid a lot of this logic
+-- this hook is for if the skybox camera manages to be inside the world
+-- setupworldfog is a nice hook to use, since its only called once right after the skybox is drawn
+hook.Add("PreDrawOpaqueRenderables", "seamless_portals_skybox", function()
+	if !SeamlessPortals.Rendering then return end
+	if renderview_table.viewid != 1 then return end
+
+	local clip = render.EnableClipping(false)
+	render.DepthRange(1, 1)
+	draw_sky(EyePos())
+	render.DepthRange(0, 1)
+	render.EnableClipping(clip)
+end)
+
+-- TODO: wow, this sucks!
+local function draw_texture_to_screen_unfucked(texture, eye_pos)
+	local clip = render.EnableClipping(false)
+	render.ClearStencil()
+	render.SetStencilWriteMask(255)
+	render.SetStencilTestMask(255)
+	render.SetStencilReferenceValue(1)
+	render.SetStencilFailOperation(STENCIL_KEEP)
+	render.SetStencilZFailOperation(STENCIL_KEEP)
+	render.SetStencilPassOperation(STENCIL_REPLACE)
+	render.SetStencilCompareFunction(STENCIL_ALWAYS)
+	render.SetStencilEnable(true)
+	render.OverrideDepthEnable(true, false)
+	render.DepthRange(1, 1)
+	draw_sky(eye_pos)
+	render.DepthRange(0, 1)
+	render.OverrideDepthEnable(false, false)
+	render.SetStencilCompareFunction(STENCIL_EQUAL)
+	render.DrawTextureToScreen(texture)
+	render.SetStencilEnable(false)
+	render.EnableClipping(clip)
+end
 
 -- draw the player in renderview
 hook.Add("ShouldDrawLocalPlayer", "seamless_portal_drawplayer", function()
@@ -146,8 +162,8 @@ local function render_scene(clip_pos, clip_up)
 end
 
 -- TODO: ideally use a pre-allocated framebuffer
-local framebuffer = GetRenderTarget("seamless_portal_framebuffer", ScrW(), ScrH())
-hook.Add("RenderScene", "seamless_portal_draw", function(eye_pos, eye_ang, fov)
+local framebuffer = GetRenderTarget("seamless_portals_framebuffer", ScrW(), ScrH())
+hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 	if !SeamlessPortals or #SeamlessPortals.Portals < 1 then return end
 
 	skip = (skip + 1) % skip_render:GetInt()
@@ -177,32 +193,6 @@ hook.Add("RenderScene", "seamless_portal_draw", function(eye_pos, eye_ang, fov)
 			renderview_table.angles:Set(new_ang)
 			renderview_table.fov = fov
 			renderview_table.znear = 3
-
-			-- TODO: this is a crude implementation
-			rendered_skybox = false
-			if !util.IsSkyboxVisibleFromPoint(new_pos) and util.IsSkyboxVisibleFromPoint(clip_pos) then
-				local skybox_info = game.Get3DSkyboxInfo()
-				render.PushRenderTarget(skybox_framebuffer)
-				render.Clear(0, 0, 0, 255, true, true)
-				if skybox_info then
-					renderview_table.origin:Set(new_pos)
-					renderview_table.origin:Div(skybox_info.scale)
-					renderview_table.origin:Add(skybox_info.origin)
-					renderview_table.viewid = 1
-
-					local clip_pos = Vector(clip_pos)
-					clip_pos:Div(skybox_info.scale)
-					clip_pos:Add(skybox_info.origin)
-
-					render_scene(clip_pos, clip_up)
-				else
-					draw_sky(eye_pos)
-				end
-				render.PopRenderTarget()
-
-				rendered_skybox = true
-			end
-
 			renderview_table.origin:Set(new_pos)
 			renderview_table.viewid = 2
 
@@ -218,8 +208,37 @@ hook.Add("RenderScene", "seamless_portal_draw", function(eye_pos, eye_ang, fov)
 			renderview_table.znear = math.max(t, 3) -- 3 = default znear
 
 			render.PushRenderTarget(framebuffer)
+			skybox_rendered = false
 			render_scene(clip_pos, clip_up)
 			render.PopRenderTarget()
+
+			if !skybox_rendered and util.IsSkyboxVisibleFromPoint(clip_pos) then
+				local skybox_info = game.Get3DSkyboxInfo()
+				render.PushRenderTarget(skybox_framebuffer)
+				render.Clear(0, 0, 0, 255, true, true)
+				if skybox_info and skybox_3dsky:GetBool() then
+					renderview_table.origin:Set(new_pos)
+					renderview_table.origin:Div(skybox_info.scale)
+					renderview_table.origin:Add(skybox_info.origin)
+					renderview_table.viewid = 1
+
+					local clip_pos = Vector(clip_pos)
+					clip_pos:Div(skybox_info.scale)
+					clip_pos:Add(skybox_info.origin)
+
+					--print("RENDERING SKYBOX", new_pos)
+					render_scene(clip_pos, clip_up)
+				else
+					cam.Start3D(new_pos, new_ang)
+					draw_sky(new_pos)
+					cam.End3D()
+				end
+				render.PopRenderTarget()
+
+				render.PushRenderTarget(framebuffer)
+				draw_texture_to_screen_unfucked(skybox_framebuffer, new_pos)
+				render.PopRenderTarget()
+			end
 
 			-- Draw quad reversed if the portal is linked to itself
 			portal:DrawStenciled(framebuffer, portal == exit_portal)
