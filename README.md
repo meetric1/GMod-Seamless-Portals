@@ -6,21 +6,17 @@ My seamless portals addon for Garry’s mod. This is a mod that adds an entity c
 You can spawn the Portals in the spawn menu, or by using the portal gun in the weapons tab.
 
 ### Installation
-To install this addon, download and unzip the contents and put it in your Garry’s mod addon folder
+To install this addon, clone this repo to your GarrysMod addon folder, or from the [Workshop][ref-ws]
 
 ### Features
- * More seamless
- * Working wall & floor portals
+ * Perfectly Seamless
+ * Enterable wall & floor portals
  * Prediction for multiplayer & players with high ping
  * Floor extrusion if your player gets stuck in the ground
- * Sounds travel through
- * Black skybox fix
- * Optimized [`util.TraceLine`][ref-trln] implementation
- * Includes non janky portal gun
+ * Skybox support
+ * Smooth, predictable experience
  * Includes some tools to play with
- * Option for scalable portals to resize the player (using my player resizer)
-
-**BEST RESULTS ARE IN A LOCAL SERVER BECAUSE I CANT DO PREDICTION IN SINGLEPLAYER!**
+ * Hammer editor support
 
 ### Useful links
  * [Workshop addon on the steam community.][ref-ws]
