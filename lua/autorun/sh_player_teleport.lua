@@ -88,29 +88,42 @@ local function get_hull_duck(ply)
 	end
 end
 
+-- prevents client from seeing small jitter during teleport with portals on differing heights (hack..)
+local function invalidate_steps(ply)
+	if ply.SEAMLESS_PORTALS_STEP_SIZE then return end
+
+	ply.SEAMLESS_PORTALS_STEP_SIZE = ply:GetStepSize()
+	ply:SetStepSize(0)
+end
+
+local function validate_steps(ply)
+	if !ply.SEAMLESS_PORTALS_STEP_SIZE then return end
+
+	ply:SetStepSize(ply.SEAMLESS_PORTALS_STEP_SIZE)
+	ply.SEAMLESS_PORTALS_STEP_SIZE = nil
+end
+
 local function invalidate_hull(ply)
 	if ply.SEAMLESS_PORTALS_HULL_MINS then return end
 
-	-- prevents client from seeing small jitter during teleport with portals on differing heights (hack.. I hate this)
-	ply.SEAMLESS_PORTALS_STEP_SIZE = ply:GetStepSize()
-	ply:SetStepSize(0)
-
 	ply.SEAMLESS_PORTALS_HULL_MINS, ply.SEAMLESS_PORTALS_HULL_MAXS = ply:GetHull()
 	ply.SEAMLESS_PORTALS_HULL_DUCK_MINS, ply.SEAMLESS_PORTALS_HULL_DUCK_MAXS = ply:GetHullDuck()
+
+	invalidate_steps(ply)
 end
 
 local function validate_hull(ply)
-	if !ply.SEAMLESS_PORTALS_HULL_MINS then return end
+	if !ply.SEAMLESS_PORTALS_HULL_MINS then return false end
 
 	-- TODO: does calling ResetHull every frame cause any problems?
 	ply:ResetHull()
-	ply:SetStepSize(ply.SEAMLESS_PORTALS_STEP_SIZE)
 
-	ply.SEAMLESS_PORTALS_STEP_SIZE = nil
 	ply.SEAMLESS_PORTALS_HULL_MINS = nil
 	ply.SEAMLESS_PORTALS_HULL_MAXS = nil
 	ply.SEAMLESS_PORTALS_HULL_DUCK_MINS = nil
 	ply.SEAMLESS_PORTALS_HULL_DUCK_MAXS = nil
+
+	validate_steps(ply)
 
 	return true
 end
@@ -171,6 +184,7 @@ local function update_hull(ply, ply_pos)
 			then
 				-- shit. We're stuck
 				clip_hull(ply, hull_mins, hull_maxs, false) -- back to standing
+				validate_steps(ply)
 				return true -- let movement code try to extrude player
 			end
 		end
