@@ -211,7 +211,7 @@ local function extrude_player(ply, ply_pos)
 		collisiongroup = COLLISION_GROUP_INTERACTIVE
 	})
 
-	if !tr_ground.StartSolid then
+	if !tr_ground.StartSolid and tr_ground.Hit then
 		ply_pos[3] = ply_pos[3] + math.min((1 - tr_ground.Fraction) * maxs[3], max_diff)
 		return true
 	end
@@ -224,6 +224,8 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 		validate_hull(ply)
 		return
 	end
+
+	--do return end
 
 	local ply_eyepos = ply:EyePos() -- base off eyepos, feels more accurate
 	local ply_vel = mv:GetVelocity()

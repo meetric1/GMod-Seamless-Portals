@@ -73,7 +73,7 @@ local skybox_clip = false
 local skybox_rendered = false
 hook.Add("PreDrawSkyBox", "seamless_portals_skybox", function()
 	if !SeamlessPortals.Rendering then return end
-	if renderview_table.viewid == 1 then return true end
+	if renderview_table.viewid == 1 then return true end -- https://github.com/Facepunch/garrysmod-issues/issues/6976
 
 	skybox_clip = render.EnableClipping(false)
 end)
@@ -93,9 +93,11 @@ hook.Add("PreDrawOpaqueRenderables", "seamless_portals_skybox", function()
 	if renderview_table.viewid != 1 then return end
 
 	local clip = render.EnableClipping(false)
+	render.OverrideDepthEnable(true, false)
 	render.DepthRange(1, 1)
 	draw_sky(EyePos())
 	render.DepthRange(0, 1)
+	render.OverrideDepthEnable(false)
 	render.EnableClipping(clip)
 end)
 
@@ -190,10 +192,9 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 			local clip_pos = exit_portal:GetPos()
 			local clip_up = exit_portal:GetUp()
 
+			renderview_table.origin:Set(new_pos)
 			renderview_table.angles:Set(new_ang)
 			renderview_table.fov = fov
-			renderview_table.znear = 3
-			renderview_table.origin:Set(new_pos)
 			renderview_table.viewid = 2
 
 			-- znear
@@ -221,6 +222,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 					renderview_table.origin:Div(skybox_info.scale)
 					renderview_table.origin:Add(skybox_info.origin)
 					renderview_table.viewid = 1
+					renderview_table.znear = 3
 
 					local clip_pos = Vector(clip_pos)
 					clip_pos:Div(skybox_info.scale)
@@ -236,7 +238,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 				render.PopRenderTarget()
 
 				render.PushRenderTarget(framebuffer)
-				draw_texture_to_screen_unfucked(skybox_framebuffer, new_pos)
+				draw_texture_to_screen_unfucked(skybox_framebuffer, eye_pos)
 				render.PopRenderTarget()
 			end
 

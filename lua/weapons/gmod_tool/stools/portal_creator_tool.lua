@@ -53,7 +53,7 @@ function TOOL:GetPlacementPosition(tr)
         rotAng.y = ply:EyeAngles().y + 180
     end
     --
-    return (tr.HitPos + tr.HitNormal * (ply:GetInfoNum("seamless_portals_size_z", 1) / 2 + 1)), rotAng
+    return (tr.HitPos + tr.HitNormal * (ply:GetInfoNum("seamless_portals_size_z", 1) + 1)), rotAng
 
 end
 
