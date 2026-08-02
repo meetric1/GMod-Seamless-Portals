@@ -172,6 +172,16 @@ local function update_hull(ply, ply_pos)
 	local tr_hull = util.TraceHull(portal_trace_data)
 	if !tr_hull.Hit then
 		if is_hull_invalid(ply) then
+			-- FIXME: during a teleport, this GetPos will check the ENTERED location, instead of the current
+			-- meaning, it will check the enter location, and possibly think your collision hull is good for validation.
+			-- (possibly sticking you into a wall)
+			-- however, the likelyhood of this is nearly impossible, since you:
+				-- 1. Need enough speed to not overlap the portal on exit
+				-- 2. But not enough speed, since the too_fast check will force this overlap check to reutrn true
+				-- 3. Enter a portal attached to nothing
+				-- 4. Exit into a location which gets the normal hull stuck and non extruded
+			-- I cant replicate this bug at all or find a situation where it happens, so I'm going to just leave this as-is for now
+			ply_pos = ply:GetPos()
 			if util.TraceHull({
 				start = ply_pos,
 				endpos = ply_pos,
@@ -272,10 +282,11 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 
 	local new_ply_eyepos, new_ply_ang = SeamlessPortals.TransformPortal(portal, exit_portal, hit_pos, ply:EyeAngles())
 	local _, new_ply_vel = SeamlessPortals.TransformPortal(portal, exit_portal, nil, ply_vel:Angle())
-	new_ply_vel = new_ply_vel:Forward() * math.max(
+	new_ply_vel = new_ply_vel:Forward()
+	new_ply_vel:Mul(math.max(
 		ply_vel:Length(),
 		exit_portal:GetUp():Dot(-physenv.GetGravity() / 2) -- minimum velocity (to prevent fast in/out movement)
-	)
+	))
 
 	local ratio = exit_portal:GetSize()[1] / portal:GetSize()[1]
 	new_ply_vel:Mul(ratio)
