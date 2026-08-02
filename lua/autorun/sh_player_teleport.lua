@@ -30,7 +30,7 @@ local function lerp_teleport(start_pos, start_vel)
 		-- in my testing, lerp from positions takes roughly 0.03 seconds
 		-- which means we need to fake our velocity for a tiny bit
 		if total_frame_time < 0.03 then
-			start_pos:Add(start_vel * frame_time)
+			start_pos:Add(ply:GetVelocity() * frame_time)
 			pos:Set(start_pos)
 		elseif !SeamlessPortals.DrawPlayerInView then
 			SeamlessPortals.DrawPlayerInView = true
