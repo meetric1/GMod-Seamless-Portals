@@ -1,8 +1,8 @@
 AddCSLuaFile()
 
--- TODO: infmap
--- shrink support
--- fix hull resizing after entering floor portal
+local function too_fast(vel)
+	return vel:LengthSqr() > 1000 * 1000
+end
 
 -- client lerp prevention
 local function lerp_teleport(start_pos, start_vel)
@@ -19,7 +19,7 @@ local function lerp_teleport(start_pos, start_vel)
 
 	-- need for frame interp. noticable flashing over this speed. Hacky
 	-- TODO: is this fixable?
-	if start_vel:LengthSqr() < 1000 * 1000 then
+	if !too_fast(start_vel) then
 		start_pos:Sub(start_vel * FrameTime())
 	end
 
@@ -265,7 +265,12 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	local exit_portal = portal:GetExitPortal()
 	if !IsValid(exit_portal) then return end
 
-	local new_ply_eyepos, new_ply_ang = SeamlessPortals.TransformPortal(portal, exit_portal, tr.HitPos, ply:EyeAngles())
+	local hit_pos = portal_trace_data.endpos
+	if too_fast(ply_vel) then
+		hit_pos = tr.HitPos
+	end
+
+	local new_ply_eyepos, new_ply_ang = SeamlessPortals.TransformPortal(portal, exit_portal, hit_pos, ply:EyeAngles())
 	local _, new_ply_vel = SeamlessPortals.TransformPortal(portal, exit_portal, nil, ply_vel:Angle())
 	new_ply_vel = new_ply_vel:Forward() * math.max(
 		ply_vel:Length(),

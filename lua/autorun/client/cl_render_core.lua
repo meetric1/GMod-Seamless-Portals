@@ -87,7 +87,6 @@ end)
 
 -- TODO: if we ever get the option to render the scene without clearing the framebuffer, we can avoid a lot of this logic
 -- this hook is for if the skybox camera manages to be inside the world
--- setupworldfog is a nice hook to use, since its only called once right after the skybox is drawn
 hook.Add("PreDrawOpaqueRenderables", "seamless_portals_skybox", function()
 	if !SeamlessPortals.Rendering then return end
 	if renderview_table.viewid != 1 then return end
