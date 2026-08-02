@@ -52,7 +52,7 @@ local function draw_sky(eye_pos)
 	for i, dir in ipairs(sky_directions) do
 		render.SetMaterial(sky_materials[i])
 		--render.SetMaterial(Material("models/props_combine/combine_interface_disp"))
-		render.DrawQuadEasy(eye_pos - dir * 9960, dir, 20000, 20000, color_white, i >= 5 and 0 or 180)
+		render.DrawQuadEasy(eye_pos - dir * 996, dir, 2000, 2000, color_white, i >= 5 and 0 or 180)
 	end
 end
 
@@ -198,14 +198,16 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 
 			-- znear
 			-- we need to figure out where to place the near clipping plane
-			-- ideally we need this as close as possible to the portal, for minimal artifacting
-			-- you could use a hull plane intersection, but a sphere is easier to calculate
+			-- ideally we need this as close as possible to the portal
+			-- turned off for now, since it was interfering with the skybox rendering
+			--[[
 			local plane_pos = portal:GetPos()
 			plane_pos:Sub(eye_forward * portal:BoundingRadius())
 			plane_pos:Sub(eye_pos)
 			local t = eye_forward:Dot(plane_pos)
 			t = t * (exit_portal:GetSize()[1] / portal:GetSize()[1])
 			renderview_table.znear = math.max(t, 3) -- 3 = default znear
+			]]
 
 			render.PushRenderTarget(framebuffer)
 			skybox_rendered = false

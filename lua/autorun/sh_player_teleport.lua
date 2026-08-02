@@ -266,10 +266,12 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	-- teleportation logic
 	portal_trace_data.start = ply_eyepos
 	portal_trace_data.endpos = ply_eyepos + ply_vel_offset
+	portal_trace_data.ignoreworld = false
 	local tr = SeamlessPortals.TraceLine(portal_trace_data)
+	portal_trace_data.ignoreworld = true
 	if !tr.Hit then return end
 
-	local portal = tr.Entity
+	local portal = tr.Entity -- might be world, but IsValid will catch it
 	if !IsValid(portal) or portal:GetUp():Dot(ply_vel) >= 0 then return end -- not going into portal
 
 	local exit_portal = portal:GetExitPortal()
