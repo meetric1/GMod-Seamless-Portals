@@ -68,6 +68,7 @@ function TOOL:RightClick(trace)
 
 	if !trace.Entity or trace.Entity:GetClass() != "seamless_portal" then return false end
 	if CPPI and SERVER then if !trace.Entity:CPPICanTool(self:GetOwner(), "remover") then return false end end
+		if CLIENT then return true end
 	trace.Entity:SetSize(Vector(50, 50, 8))
 	return true
 end
