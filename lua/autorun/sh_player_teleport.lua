@@ -10,21 +10,6 @@ local portal_trace_data = {
 	ignoreworld = true,
 }
 
--- prevents client from seeing small jitter during teleport with portals on differing heights (hack..)
-local function invalidate_steps(ply)
-	if ply.SEAMLESS_PORTALS_STEP_SIZE then return end
-
-	ply.SEAMLESS_PORTALS_STEP_SIZE = ply:GetStepSize()
-	ply:SetStepSize(0)
-end
-
-local function validate_steps(ply)
-	if !ply.SEAMLESS_PORTALS_STEP_SIZE then return end
-
-	ply:SetStepSize(ply.SEAMLESS_PORTALS_STEP_SIZE)
-	ply.SEAMLESS_PORTALS_STEP_SIZE = nil
-end
-
 -- hull modifier (so we can enter floor/ground)
 local function get_hull(ply)
 	if ply.SEAMLESS_PORTALS_HULL_MINS then
@@ -152,6 +137,10 @@ local function update_hull(ply, ply_pos)
 
 	clip_hull(ply, hull_mins, hull_maxs, half)
 
+	if half then
+		ply:SetGroundEntity(nil)
+	end
+
 	return true
 end
 
@@ -183,7 +172,6 @@ local function lerp_teleport(start_pos, start_vel)
 	local ply = LocalPlayer()
 	if ply:GetViewEntity() != ply then return end -- viewing from a camera
 
-	invalidate_steps(ply)
 	SeamlessPortals.DrawPlayerInView = false
 	timer.Remove("seamless_portals_lerp_teleport")	--in case you enter the portal while the timer is running
 
@@ -201,6 +189,9 @@ local function lerp_teleport(start_pos, start_vel)
 	hook.Add("CalcView", "seamless_portals_fix", function(_, pos, ang)
 		local frame_time = FrameTime()
 		ang[3] = ang[3] * math.pow(math.max(0.3 - total_frame_time, 0) / 0.3, 3)
+
+		-- prevents client from seeing small jitter during teleport with portals on differing heights (hack..)
+		pos:Set(ply:EyePos())
 
 		-- in my testing, lerp from positions takes roughly 0.03 seconds
 		-- which means we need to fake our velocity for a tiny bit
@@ -237,8 +228,6 @@ local function lerp_teleport(start_pos, start_vel)
 		local lp = LocalPlayer()
 		local ang = lp:EyeAngles() ang[3] = 0
 		lp:SetEyeAngles(ang)
-
-		validate_steps(ply)
 	end)
 end
 
@@ -314,7 +303,6 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			net.Send(ply)
 
 			ply:SetEyeAngles(new_ply_ang)
-			ply:SetPos(new_ply_pos)
 		end
 
 		portal:TriggerOutput("OnTeleportFrom", ply)
