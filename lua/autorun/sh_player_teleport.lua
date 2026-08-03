@@ -314,7 +314,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	extrude_player(ply, new_ply_pos)
 	mv:SetOrigin(new_ply_pos)
 	mv:SetVelocity(new_ply_vel)
-	ply:SetGroundEntity(nil) -- TODO: is this required?
+	ply:SetGroundEntity(nil)
 
 	return true
 end)

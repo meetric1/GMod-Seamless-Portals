@@ -70,7 +70,6 @@ end)
 local skybox_framebuffer = GetRenderTarget("seamless_portals_skybox_framebuffer", ScrW(), ScrH())
 local skybox_3dsky = GetConVar("r_3dsky")
 local skybox_clip = false
-local skybox_rendered = false
 hook.Add("PreDrawSkyBox", "seamless_portals_skybox", function()
 	if !SeamlessPortals.Rendering then return end
 	if renderview_table.viewid == 1 then return true end -- https://github.com/Facepunch/garrysmod-issues/issues/6976
@@ -82,12 +81,11 @@ hook.Add("PostDrawSkyBox", "seamless_portals_skybox", function()
 	if !SeamlessPortals.Rendering then return end
 
 	render.EnableClipping(skybox_clip)
-	skybox_rendered = true
 end)
 
 -- TODO: if we ever get the option to render the scene without clearing the framebuffer, we can avoid a lot of this logic
 -- this hook is for if the skybox camera manages to be inside the world
-hook.Add("PreDrawOpaqueRenderables", "seamless_portals_skybox", function()
+hook.Add("PostDrawOpaqueRenderables", "seamless_portals_skybox", function()
 	if !SeamlessPortals.Rendering then return end
 	if renderview_table.viewid != 1 then return end
 
@@ -177,7 +175,6 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 	render.ClearDepth(true)
 	draw_sky(eye_pos)
 
-	local eye_forward = eye_ang:Forward()
 	local portal_render_max = max_render:GetInt()
 	local portals_rendered = 0
 	for _, portal in ipairs(SeamlessPortals.Portals) do
@@ -196,25 +193,11 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 			renderview_table.fov = fov
 			renderview_table.viewid = 2
 
-			-- znear
-			-- we need to figure out where to place the near clipping plane
-			-- ideally we need this as close as possible to the portal
-			-- turned off for now, since it was interfering with the skybox rendering
-			--[[
-			local plane_pos = portal:GetPos()
-			plane_pos:Sub(eye_forward * portal:BoundingRadius())
-			plane_pos:Sub(eye_pos)
-			local t = eye_forward:Dot(plane_pos)
-			t = t * (exit_portal:GetSize()[1] / portal:GetSize()[1])
-			renderview_table.znear = math.max(t, 3) -- 3 = default znear
-			]]
-
 			render.PushRenderTarget(framebuffer)
-			skybox_rendered = false
 			render_scene(clip_pos, clip_up)
 			render.PopRenderTarget()
 
-			if !skybox_rendered and util.IsSkyboxVisibleFromPoint(clip_pos) then
+			if !util.IsSkyboxVisibleFromPoint(new_pos) and util.IsSkyboxVisibleFromPoint(clip_pos) then
 				local skybox_info = game.Get3DSkyboxInfo()
 				render.PushRenderTarget(skybox_framebuffer)
 				render.Clear(0, 0, 0, 255, true, true)
