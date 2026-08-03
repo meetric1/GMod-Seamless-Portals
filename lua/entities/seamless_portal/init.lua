@@ -79,6 +79,8 @@ function ENT:KeyValue(key, value)
 	elseif key == "size" then
 		local size = string.Split(value, " ")
 		self:SetSizeInternal(Vector(size[2] * 0.5, size[1] * 0.5, size[3]))
+	elseif key == "sides" then
+		self:SetSides(tonumber(value) or 4)
 	elseif outputs[key] then
 		self:StoreOutput(key, value)
 	end

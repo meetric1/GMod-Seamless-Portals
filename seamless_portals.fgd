@@ -1,6 +1,7 @@
 @PointClass base(Targetname, Parentname, Angles) studio("models/editor/cone_helper.mdl") line(100 100 255, targetname, link) = seamless_portal : "Create a seamless portal"
 [
 	size(vector)				: "Portal Size" : "100 100 8" : "Portal size in hammer units."
+	sides(integer)				: "Portal Sides" : 4 : "Portal number of sides."
 	link(target_destination)	: "Linked Portal" : "" : "Another seamless portal entity to link to."
 	backface(choices) 			: "Backface" : 0 : "Toggle the portal's backface." =
 	[

@@ -119,8 +119,8 @@ if ( CLIENT ) then
 	         end
         cam.End3D()
 
-        draw.DrawText(string.format("Size X: %.2f\n", scl[1]), "HudDefault", 50, 210, color_white)
-        draw.DrawText(string.format("Size Y: %.2f\n", scl[2]), "HudDefault", 50, 230, color_white)
+        draw.DrawText(string.format("Size X: %.2f\n", scl[1] * 2), "HudDefault", 50, 210, color_white)
+        draw.DrawText(string.format("Size Y: %.2f\n", scl[2] * 2), "HudDefault", 50, 230, color_white)
         draw.DrawText(string.format("Ratio: %.2f\n", scl[2] / scl[1]), "HudDefault", 50, 250, color_white)
 	end
 
