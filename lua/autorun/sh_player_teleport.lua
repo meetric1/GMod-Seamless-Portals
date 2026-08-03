@@ -4,11 +4,186 @@ local function too_fast(vel)
 	return vel:LengthSqr() > 1000 * 1000
 end
 
+-- TODO: figure out the correct mask for this..
+local portal_trace_data = {
+	filter = function(e) return e:GetClass() == "seamless_portal" end,
+	ignoreworld = true,
+}
+
+-- prevents client from seeing small jitter during teleport with portals on differing heights (hack..)
+local function invalidate_steps(ply)
+	if ply.SEAMLESS_PORTALS_STEP_SIZE then return end
+
+	ply.SEAMLESS_PORTALS_STEP_SIZE = ply:GetStepSize()
+	ply:SetStepSize(0)
+end
+
+local function validate_steps(ply)
+	if !ply.SEAMLESS_PORTALS_STEP_SIZE then return end
+
+	ply:SetStepSize(ply.SEAMLESS_PORTALS_STEP_SIZE)
+	ply.SEAMLESS_PORTALS_STEP_SIZE = nil
+end
+
+-- hull modifier (so we can enter floor/ground)
+local function get_hull(ply)
+	if ply.SEAMLESS_PORTALS_HULL_MINS then
+		return Vector(ply.SEAMLESS_PORTALS_HULL_MINS), Vector(ply.SEAMLESS_PORTALS_HULL_MAXS)
+	else
+		return ply:GetHull()
+	end
+end
+
+local function get_hull_duck(ply)
+	if ply.SEAMLESS_PORTALS_HULL_DUCK_MINS then
+		return Vector(ply.SEAMLESS_PORTALS_HULL_DUCK_MINS), Vector(ply.SEAMLESS_PORTALS_HULL_DUCK_MAXS)
+	else
+		return ply:GetHullDuck()
+	end
+end
+
+local function invalidate_hull(ply)
+	if ply.SEAMLESS_PORTALS_HULL_MINS then return end
+
+	ply.SEAMLESS_PORTALS_HULL_MINS, ply.SEAMLESS_PORTALS_HULL_MAXS = ply:GetHull()
+	ply.SEAMLESS_PORTALS_HULL_DUCK_MINS, ply.SEAMLESS_PORTALS_HULL_DUCK_MAXS = ply:GetHullDuck()
+end
+
+local function validate_hull(ply)
+	if !ply.SEAMLESS_PORTALS_HULL_MINS then return false end
+
+	-- TODO: does calling ResetHull every frame cause any problems?
+	ply:ResetHull()
+
+	ply.SEAMLESS_PORTALS_HULL_MINS = nil
+	ply.SEAMLESS_PORTALS_HULL_MAXS = nil
+	ply.SEAMLESS_PORTALS_HULL_DUCK_MINS = nil
+	ply.SEAMLESS_PORTALS_HULL_DUCK_MAXS = nil
+
+	return true
+end
+
+local function is_hull_invalid(ply)
+	return ply.SEAMLESS_PORTALS_HULL_MINS and true or false
+end
+
+local function get_hull_clip(hull_mins, hull_maxs)
+	for i = 1, 2 do
+		hull_mins[i] = hull_mins[i] / 4
+		hull_maxs[i] = hull_maxs[i] / 4
+	end
+
+	hull_maxs[3] = hull_maxs[3] * 0.9
+end
+
+-- hull stand and hull duck must be calculated separately
+local function clip_hull(ply, hull_mins, hull_maxs, half)
+	--local hull_mins, hull_maxs = get_hull(ply) -- pass in to avoid gc spaz (-2 vectors)
+	get_hull_clip(hull_mins, hull_maxs)
+
+	local hull_duck_mins, hull_duck_maxs = get_hull_duck(ply)
+	get_hull_clip(hull_duck_mins, hull_duck_maxs)
+
+	if half then
+		hull_mins[3] = hull_maxs[3]
+		hull_duck_mins[3] = hull_maxs[3] -- genuine fuckshit
+	end
+
+	ply:SetHull(hull_mins, hull_maxs)
+	ply:SetHullDuck(hull_duck_mins, hull_duck_maxs)
+
+	--debugoverlay.Box(ply:GetPos(), hull_mins, hull_maxs, 0.5, Color(255, 0, 0, 0))
+end
+
+local function update_hull(ply, ply_pos)
+	-- no need to modify hull if we're in noclip
+	if ply:GetMoveType() == MOVETYPE_NOCLIP then
+		validate_hull(ply)
+		return
+	end
+
+	local hull_mins, hull_maxs = get_hull(ply)
+	portal_trace_data.start = ply_pos
+	portal_trace_data.endpos = ply_pos
+	portal_trace_data.mins = hull_mins
+	portal_trace_data.maxs = hull_maxs
+	local tr_hull = util.TraceHull(portal_trace_data)
+	if !tr_hull.Hit then
+		if is_hull_invalid(ply) then
+			-- FIXME: during a teleport, this GetPos will check the ENTERED location, instead of the current
+			-- meaning, it will check the enter location, and possibly think your collision hull is good for validation.
+			-- (possibly sticking you into a wall)
+			-- however, the likelyhood of this is nearly impossible, since you:
+				-- 1. Need enough speed to not overlap the portal on exit
+				-- 2. But not enough speed, since the too_fast check will force this overlap check to reutrn true
+				-- 3. Enter a portal attached to nothing
+				-- 4. Exit into a location which gets the normal hull stuck and non extruded
+			-- I cant replicate this bug at all or find a situation where it happens, so I'm going to just leave this as-is for now
+			ply_pos = ply:GetPos()
+			if util.TraceHull({
+				start = ply_pos,
+				endpos = ply_pos,
+				mins = hull_mins,
+				maxs = hull_maxs,
+				filter = ply,
+				mask = MASK_PLAYERSOLID,
+				collisiongroup = COLLISION_GROUP_INTERACTIVE
+			}).Hit
+			then
+				-- shit. We're stuck
+				clip_hull(ply, hull_mins, hull_maxs, false) -- back to standing
+				return true -- let movement code try to extrude player
+			end
+		end
+
+		return validate_hull(ply)
+	end
+
+	local portal = tr_hull.Entity
+	if !IsValid(portal:GetExitPortal()) then return end
+
+	-- we're about to change hull
+	invalidate_hull(ply)
+
+	-- floor portal mode. yikes.
+	portal_trace_data.start = ply_pos + Vector(0, 0, hull_maxs[3])
+	portal_trace_data.endpos = ply_pos + Vector(0, 0, hull_mins[3])
+	local half = portal:GetUp():Dot(Vector(0, 0, 1)) > 0.5 and SeamlessPortals.TraceLine(portal_trace_data).Hit
+
+	clip_hull(ply, hull_mins, hull_maxs, half)
+
+	return true
+end
+
+-- TODO: extrude on sides too so we dont get stuck in a wall
+local function extrude_player(ply, ply_pos)
+	local mins, maxs = ply:GetHull()
+	local max_diff = maxs[3] - mins[3]
+	mins[3] = maxs[3]
+	local tr_ground = util.TraceHull({
+		start = ply_pos,
+		endpos = ply_pos - Vector(0, 0, maxs[3]),
+		mins = mins,
+		maxs = maxs,
+		filter = ply,
+		mask = MASK_PLAYERSOLID,
+		collisiongroup = COLLISION_GROUP_INTERACTIVE
+	})
+
+	if !tr_ground.StartSolid and tr_ground.Hit then
+		ply_pos[3] = ply_pos[3] + math.min((1 - tr_ground.Fraction) * maxs[3], max_diff)
+		return true
+	end
+
+	return false
+end
+
 -- client lerp prevention
 local function lerp_teleport(start_pos, start_vel)
 	local ply = LocalPlayer()
 	if ply:GetViewEntity() != ply then return end -- viewing from a camera
 
+	invalidate_steps(ply)
 	SeamlessPortals.DrawPlayerInView = false
 	timer.Remove("seamless_portals_lerp_teleport")	--in case you enter the portal while the timer is running
 
@@ -62,185 +237,9 @@ local function lerp_teleport(start_pos, start_vel)
 		local lp = LocalPlayer()
 		local ang = lp:EyeAngles() ang[3] = 0
 		lp:SetEyeAngles(ang)
+
+		validate_steps(ply)
 	end)
-end
-
--- TODO: figure out the correct mask for this..
-local portal_trace_data = {
-	filter = function(e) return e:GetClass() == "seamless_portal" end,
-	ignoreworld = true,
-}
-
--- hull modifier (so we can enter floor/ground)
-local function get_hull(ply)
-	if ply.SEAMLESS_PORTALS_HULL_MINS then
-		return Vector(ply.SEAMLESS_PORTALS_HULL_MINS), Vector(ply.SEAMLESS_PORTALS_HULL_MAXS)
-	else
-		return ply:GetHull()
-	end
-end
-
-local function get_hull_duck(ply)
-	if ply.SEAMLESS_PORTALS_HULL_DUCK_MINS then
-		return Vector(ply.SEAMLESS_PORTALS_HULL_DUCK_MINS), Vector(ply.SEAMLESS_PORTALS_HULL_DUCK_MAXS)
-	else
-		return ply:GetHullDuck()
-	end
-end
-
--- prevents client from seeing small jitter during teleport with portals on differing heights (hack..)
-local function invalidate_steps(ply)
-	if ply.SEAMLESS_PORTALS_STEP_SIZE then return end
-
-	ply.SEAMLESS_PORTALS_STEP_SIZE = ply:GetStepSize()
-	ply:SetStepSize(0)
-end
-
-local function validate_steps(ply)
-	if !ply.SEAMLESS_PORTALS_STEP_SIZE then return end
-
-	ply:SetStepSize(ply.SEAMLESS_PORTALS_STEP_SIZE)
-	ply.SEAMLESS_PORTALS_STEP_SIZE = nil
-end
-
-local function invalidate_hull(ply)
-	if ply.SEAMLESS_PORTALS_HULL_MINS then return end
-
-	ply.SEAMLESS_PORTALS_HULL_MINS, ply.SEAMLESS_PORTALS_HULL_MAXS = ply:GetHull()
-	ply.SEAMLESS_PORTALS_HULL_DUCK_MINS, ply.SEAMLESS_PORTALS_HULL_DUCK_MAXS = ply:GetHullDuck()
-
-	invalidate_steps(ply)
-end
-
-local function validate_hull(ply)
-	if !ply.SEAMLESS_PORTALS_HULL_MINS then return false end
-
-	-- TODO: does calling ResetHull every frame cause any problems?
-	ply:ResetHull()
-
-	ply.SEAMLESS_PORTALS_HULL_MINS = nil
-	ply.SEAMLESS_PORTALS_HULL_MAXS = nil
-	ply.SEAMLESS_PORTALS_HULL_DUCK_MINS = nil
-	ply.SEAMLESS_PORTALS_HULL_DUCK_MAXS = nil
-
-	validate_steps(ply)
-
-	return true
-end
-
-local function is_hull_invalid(ply)
-	return ply.SEAMLESS_PORTALS_HULL_MINS and true or false
-end
-
-local function get_hull_clip(hull_mins, hull_maxs, half)
-	for i = 1, 2 do
-		hull_mins[i] = hull_mins[i] / 4
-		hull_maxs[i] = hull_maxs[i] / 4
-	end
-
-	hull_maxs[3] = hull_maxs[3] * 0.9
-
-	if half then
-		hull_mins[3] = hull_maxs[3]
-	end
-end
-
--- hull stand and hull duck must be calculated separately
-local function clip_hull(ply, hull_mins, hull_maxs, half)
-	--local hull_mins, hull_maxs = get_hull(ply) -- pass in to avoid gc spaz (+2 vectors)
-	get_hull_clip(hull_mins, hull_maxs, half)
-	ply:SetHull(hull_mins, hull_maxs)
-	--debugoverlay.Box(ply:GetPos(), hull_mins, hull_maxs, 0.05, Color(255, 255, 255, 0))
-
-	hull_mins, hull_maxs = get_hull_duck(ply)
-	get_hull_clip(hull_mins, hull_maxs, half)
-	ply:SetHullDuck(hull_mins, hull_maxs)
-end
-
-local function update_hull(ply, ply_pos)
-	-- no need to modify hull if we're in noclip
-	if ply:GetMoveType() == MOVETYPE_NOCLIP then
-		validate_hull(ply)
-		return
-	end
-
-	local hull_mins, hull_maxs = get_hull(ply)
-	portal_trace_data.start = ply_pos
-	portal_trace_data.endpos = ply_pos
-	portal_trace_data.mins = hull_mins
-	portal_trace_data.maxs = hull_maxs
-	local tr_hull = util.TraceHull(portal_trace_data)
-	if !tr_hull.Hit then
-		if is_hull_invalid(ply) then
-			-- FIXME: during a teleport, this GetPos will check the ENTERED location, instead of the current
-			-- meaning, it will check the enter location, and possibly think your collision hull is good for validation.
-			-- (possibly sticking you into a wall)
-			-- however, the likelyhood of this is nearly impossible, since you:
-				-- 1. Need enough speed to not overlap the portal on exit
-				-- 2. But not enough speed, since the too_fast check will force this overlap check to reutrn true
-				-- 3. Enter a portal attached to nothing
-				-- 4. Exit into a location which gets the normal hull stuck and non extruded
-			-- I cant replicate this bug at all or find a situation where it happens, so I'm going to just leave this as-is for now
-			ply_pos = ply:GetPos()
-			if util.TraceHull({
-				start = ply_pos,
-				endpos = ply_pos,
-				mins = hull_mins,
-				maxs = hull_maxs,
-				filter = ply,
-				mask = MASK_PLAYERSOLID,
-				collisiongroup = COLLISION_GROUP_INTERACTIVE
-			}).Hit
-			then
-				-- shit. We're stuck
-				clip_hull(ply, hull_mins, hull_maxs, false) -- back to standing
-				validate_steps(ply)
-				return true -- let movement code try to extrude player
-			end
-		end
-
-		return validate_hull(ply)
-	end
-
-	local portal = tr_hull.Entity
-	if !IsValid(portal:GetExitPortal()) then return end
-
-	-- we're about to change hull
-	invalidate_hull(ply)
-
-	-- floor portal mode. yikes.
-	portal_trace_data.start = ply_pos + Vector(0, 0, hull_maxs[3])
-	portal_trace_data.endpos = ply_pos + Vector(0, 0, hull_mins[3])
-	local half = portal:GetUp():Dot(Vector(0, 0, 1)) > 0.5 and SeamlessPortals.TraceLine(portal_trace_data).Hit
-
-	clip_hull(ply, hull_mins, hull_maxs, half)
-	if half then
-		ply:SetGroundEntity(nil)
-	end
-	return true
-end
-
--- TODO: extrude on sides too so we dont get stuck in a wall
-local function extrude_player(ply, ply_pos)
-	local mins, maxs = (ply:Crouching() and ply.GetHullDuck or ply.GetHull)(ply)
-	local max_diff = maxs[3] - mins[3]
-	mins[3] = maxs[3]
-	local tr_ground = util.TraceHull({
-		start = ply_pos,
-		endpos = ply_pos - Vector(0, 0, maxs[3]),
-		mins = mins,
-		maxs = maxs,
-		filter = ply,
-		mask = MASK_PLAYERSOLID,
-		collisiongroup = COLLISION_GROUP_INTERACTIVE
-	})
-
-	if !tr_ground.StartSolid and tr_ground.Hit then
-		ply_pos[3] = ply_pos[3] + math.min((1 - tr_ground.Fraction) * maxs[3], max_diff)
-		return true
-	end
-
-	return false
 end
 
 hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
@@ -248,8 +247,6 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 		validate_hull(ply)
 		return
 	end
-
-	--do return end
 
 	local ply_eyepos = ply:EyePos() -- base off eyepos, feels more accurate
 	local ply_vel = mv:GetVelocity()
@@ -293,6 +290,10 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	local ratio = exit_portal:GetSize()[1] / portal:GetSize()[1]
 	new_ply_vel:Mul(ratio)
 
+	local new_ply_pos = ply:GetCurrentViewOffset()
+	new_ply_pos:Negate()
+	new_ply_pos:Add(new_ply_eyepos)
+
 	if CLIENT then
 		if IsFirstTimePredicted() then
 			ply:SetEyeAngles(new_ply_ang)
@@ -313,15 +314,12 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			net.Send(ply)
 
 			ply:SetEyeAngles(new_ply_ang)
+			ply:SetPos(new_ply_pos)
 		end
 
 		portal:TriggerOutput("OnTeleportFrom", ply)
 		exit_portal:TriggerOutput("OnTeleportTo", ply)
 	end
-
-	-- ply_eyepos is now invalid
-	local new_ply_pos = new_ply_eyepos
-	new_ply_pos:Sub(ply:GetCurrentViewOffset())
 
 	-- incase we get stuck
 	update_hull(ply, new_ply_pos)
