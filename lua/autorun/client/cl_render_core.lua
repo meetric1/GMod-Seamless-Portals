@@ -121,13 +121,6 @@ local function draw_texture_to_screen_unfucked(texture, eye_pos)
 	render.EnableClipping(clip)
 end
 
--- draw the player in renderview
-hook.Add("ShouldDrawLocalPlayer", "seamless_portal_drawplayer", function()
-	if SeamlessPortals.Rendering and SeamlessPortals.DrawPlayerInView then
-		return true
-	end
-end)
-
 timer.Create("seamless_portal_distance_fix", 0.5, 0, function()
 	local eye_pos = MainEyePos()
 	table.sort(SeamlessPortals.Portals, function(a, b)
@@ -192,6 +185,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 			renderview_table.angles:Set(new_ang)
 			renderview_table.fov = fov
 			renderview_table.viewid = 2
+			renderview_table.drawviewer = SeamlessPortals.DrawPlayerInView
 
 			render.PushRenderTarget(framebuffer)
 			render_scene(clip_pos, clip_up)
