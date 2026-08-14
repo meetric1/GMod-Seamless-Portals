@@ -165,8 +165,10 @@ end
 
 -- TODO: extrude on sides too so we dont get stuck in a wall
 local function extrude_player(ply, ply_pos)
-	local mins, maxs = ply:GetHull()
+	local mins, maxs = (ply:Crouching() and ply.GetHullDuck or ply.GetHull)(ply)
 	local max_diff = maxs[3] - mins[3]
+	if max_diff <= 0 then return false end
+
 	mins[3] = maxs[3]
 	local tr_ground = util.TraceHull({
 		start = ply_pos,
@@ -187,13 +189,9 @@ local function extrude_player(ply, ply_pos)
 end
 
 -- client lerp prevention
-local function lerp_teleport(start_pos, start_vel, scale_multiplier)
+local function lerp_teleport(start_pos, start_vel)
 	local ply = LocalPlayer()
 	if ply:GetViewEntity() != ply then return end -- viewing from a camera
-
-	--if ply.SCALE_MULTIPLIER then
-	--	RunConsoleCommand("scale_multiplier", ply.SCALE_MULTIPLIER * scale_multiplier)
-	--end
 
 	SeamlessPortals.DrawPlayerInView = false
 	timer.Remove("seamless_portals_lerp_teleport")	--in case you enter the portal while the timer is running
@@ -309,7 +307,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	if CLIENT then
 		if IsFirstTimePredicted() then
 			ply:SetEyeAngles(new_ply_ang)
-			lerp_teleport(new_ply_eyepos, new_ply_vel, ratio)
+			lerp_teleport(new_ply_eyepos, new_ply_vel)
 
 			-- mirror dimension
 			if portal == exit_portal then
@@ -322,7 +320,6 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			net.Start("SEAMLESS_PORTALS_FIX_SINGLEPLAYER")
 			net.WriteVector(new_ply_eyepos)
 			net.WriteVector(new_ply_vel)
-			net.WriteFloat(ratio)
 			net.WriteBool(portal == exit_portal)
 			net.Send(ply)
 
@@ -352,7 +349,7 @@ if game.SinglePlayer() then
 		util.AddNetworkString("SEAMLESS_PORTALS_FIX_SINGLEPLAYER")
 	else
 		net.Receive("SEAMLESS_PORTALS_FIX_SINGLEPLAYER", function()
-			lerp_teleport(net.ReadVector(), net.ReadVector(), net.ReadFloat())
+			lerp_teleport(net.ReadVector(), net.ReadVector())
 
 			if net.ReadBool() then
 				SeamlessPortals.ToggleMirror(!SeamlessPortals.ToggleMirror())
