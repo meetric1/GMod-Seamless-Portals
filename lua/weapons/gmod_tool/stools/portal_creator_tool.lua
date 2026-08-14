@@ -35,7 +35,7 @@ function TOOL:GetPlacementPosition(tr)
     if not tr.Hit then return nil end
 
     local rotAng = tr.HitNormal:Angle()
-    rotAng[1] = rotAng[1] + 90
+    --rotAng[1] = rotAng[1] - 90
 
     if ply:GetInfoNum("seamless_portals_align", 0) == 1 then
     	local nudge_x = ply:GetInfoNum("seamless_portals_size_x", 1) / 2
@@ -43,8 +43,8 @@ function TOOL:GetPlacementPosition(tr)
 
         tr.HitPos = self:EasyExtrude(tr.HitPos + tr.HitNormal, -rotAng:Right(), nudge_y)
         tr.HitPos = self:EasyExtrude(tr.HitPos + tr.HitNormal, rotAng:Right(), nudge_y)
-        tr.HitPos = self:EasyExtrude(tr.HitPos + tr.HitNormal, -rotAng:Forward(), nudge_x)
-        tr.HitPos = self:EasyExtrude(tr.HitPos + tr.HitNormal, rotAng:Forward(), nudge_x)
+        tr.HitPos = self:EasyExtrude(tr.HitPos + tr.HitNormal, -rotAng:Up(), nudge_x)
+        tr.HitPos = self:EasyExtrude(tr.HitPos + tr.HitNormal, rotAng:Up(), nudge_x)
     end
 
     -- yoink! smiley :)
@@ -95,7 +95,7 @@ if ( CLIENT ) then
 
 	local beamMat = Material("cable/blue_elec")
 	function TOOL:DrawHUD()
-		local pos, ang = self:GetPlacementPosition()
+        local pos, ang = self:GetPlacementPosition()
 		if not pos then return end
 		--
 		cam.Start3D()
@@ -125,7 +125,7 @@ if ( CLIENT ) then
 				local yScale = yVar:GetFloat() * 0.5
 				local zScale = zVar:GetFloat()
 				render.SetColorMaterial()
-				render.DrawBox(pos, ang, Vector(-xScale, -yScale, -zScale), Vector(xScale, yScale, 0), green)
+				render.DrawBox(pos, ang, Vector(-zScale, -yScale, -xScale), Vector(0, yScale, xScale), green)
 			end
 		cam.End3D()
 	end
@@ -149,16 +149,16 @@ elseif ( SERVER ) then
 		if not pos then return false end
 		local ent = ents.Create("seamless_portal")
 		if not IsValid(ent) then return false end
-		local ply = self:GetOwner()
-		ang.p = ang.p + 270
+        local ply = self:GetOwner()
+        ang:Add(Angle(90, 0, 0))
 		ent:SetPos(pos)
 		ent:SetAngles(ang)
 		ent:SetCreator(ply)
 		ent:Spawn()
 		if CPPI then ent:CPPISetOwner(ply) end
 		-- yoink! smiley, no fun allowed
-		local sizex = math.Clamp(ply:GetInfoNum("seamless_portals_size_x", 1) * 0.5, 1, 500)
-		local sizey = math.Clamp(ply:GetInfoNum("seamless_portals_size_y", 1) * 0.5, 1, 500)
+		local sizex = math.Clamp(ply:GetInfoNum("seamless_portals_size_x", 1), 1, 500)
+		local sizey = math.Clamp(ply:GetInfoNum("seamless_portals_size_y", 1), 1, 500)
 		local sizez = math.Clamp(ply:GetInfoNum("seamless_portals_size_z", 1), 1, 100)
 		ent:SetSize(Vector(sizex, sizey, sizez))
 		ent:SetDisableBackface(ply:GetInfoNum("seamless_portals_backface", 1) == 0)

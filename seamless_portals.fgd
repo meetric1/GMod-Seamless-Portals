@@ -14,6 +14,7 @@
 		1: "Yes"
 	]
 	gmod_allowtools(string)		: "Sandbox Tool Whitelist" : "" : "If set, only given tools can be used on this entity.\nYou need to supply the tool class names, the names of the .lua files of those tools.\nThis also includes the context menu properties!"
+	version(integer)			: "Version" : 1 : "For forwards compatability. Don't change this"
 
 	// Inputs
 	input Link(target_destination) : "Links a new portal. (Empty parameter will unlink the portal)"

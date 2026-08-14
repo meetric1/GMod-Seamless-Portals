@@ -51,13 +51,15 @@ function TOOL:GetPlacementPosition(tr)
     local up = self:EasyTrace(pos, ang:Up())
     pos = (down.HitPos + up.HitPos) / 2
 
-    local size_x = down.HitPos:Distance(up.HitPos) / 2
-    local size_y = left.HitPos:Distance(right.HitPos) / 2
+    local size_x = down.HitPos:Distance(up.HitPos)
+    local size_y = left.HitPos:Distance(right.HitPos)
 
     -- too small
     if size_x < 1 or size_y < 1 then
         return nil
     end
+
+    ang:Add(Angle(90, 0, 0))
 
     -- subtract 0.1 from size to prevent zfighting
 	return pos, ang, Vector(size_x - 0.1, size_y - 0.1)
@@ -89,7 +91,7 @@ if ( CLIENT ) then
 		local pos, ang, scl = self:GetPlacementPosition()
         if not pos then return end
 
-        ang:Add(Angle(90, 0, 0))
+        --ang:Add(Angle(90, 0, 0))
 
         cam.Start3D()
         	if self:GetStage() == 2 then
@@ -115,12 +117,12 @@ if ( CLIENT ) then
 				end
 			else
 				render.SetColorMaterial()
-				render.DrawBox(pos, ang, Vector(-scl[1], -scl[2], -zVar:GetFloat()), scl, green)
+				render.DrawBox(pos, ang, Vector(-scl[1] / 2, -scl[2] / 2, -zVar:GetFloat()), Vector(scl[1] / 2, scl[2] / 2, scl[3]), green)
 	         end
         cam.End3D()
 
-        draw.DrawText(string.format("Size X: %.2f\n", scl[1] * 2), "HudDefault", 50, 210, color_white)
-        draw.DrawText(string.format("Size Y: %.2f\n", scl[2] * 2), "HudDefault", 50, 230, color_white)
+        draw.DrawText(string.format("Size X: %.2f\n", scl[1]), "HudDefault", 50, 210, color_white)
+        draw.DrawText(string.format("Size Y: %.2f\n", scl[2]), "HudDefault", 50, 230, color_white)
         draw.DrawText(string.format("Ratio: %.2f\n", scl[2] / scl[1]), "HudDefault", 50, 250, color_white)
 	end
 

@@ -20,8 +20,6 @@ function ENT:OnRemove()
 	end)
 end
 
--- There's gonna be a bunch of magic numbers in this rendering code
--- Garry decided a hunter plate should be 47.9 rendering units wide and 51 physical units
 local drawMat = Material("models/dav0r/hoverball")
 
 local render_matrix = Matrix()
@@ -43,7 +41,7 @@ function ENT:DrawModelMesh(portalSize)
 end
 
 -- So the size is in source units (remember we are using sine/cosine)
-local size_mult = Vector(math.sqrt(2), math.sqrt(2), 1)
+local size_mult = Vector(math.sqrt(2) / 2, math.sqrt(2) / 2, 1)
 
 -- DrawModel inside of a non Draw hook will call Draw instead of DrawModel (thanks, gmod API)
 -- this check is so we can call DrawModel inside of DrawStenciled

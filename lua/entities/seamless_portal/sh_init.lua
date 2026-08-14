@@ -17,8 +17,15 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Bool", 0, "DisableBackface")
 	self:NetworkVar("Int", 0, "SidesInternal")
 
+	if CLIENT then return end
+
+	-- defaults, i guess?
 	if self:GetSidesInternal() < 1 then
 		self:SetSidesInternal(4)
+	end
+
+	if self:GetSizeInternal() != vector_origin then
+		self:SetSizeInternal(Vector(50, 50, 8))
 	end
 end
 
@@ -29,11 +36,14 @@ function ENT:SetSides(sides)
 end
 
 function ENT:GetSize()
-	return self:GetSizeInternal()
+	local size = self:GetSizeInternal()
+	size[1] = size[1] * 2
+	size[2] = size[2] * 2
+	return size
 end
 
 -- So the size is in source units (remember we are using sine/cosine)
-local size_mult = Vector(math.sqrt(2), math.sqrt(2), 1)
+local size_mult = Vector(math.sqrt(2) / 2, math.sqrt(2) / 2, 1)
 
 -- Scale the phys mesh
 function ENT:UpdatePhysmesh()

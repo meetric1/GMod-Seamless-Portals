@@ -57,7 +57,7 @@ local function seamlessCheck(e)
 end
 
 -- so the size is in source units (remember we are using sine/cosine)
-local size_mult = Vector(math.sqrt(2), math.sqrt(2), 1)
+local size_mult = Vector(math.sqrt(2) / 2, math.sqrt(2) / 2, 1)
 local function setPortalPlacement(owner, portal)
 	local ang = Angle() -- The portal angle
 	local siz = portal:GetSize()
@@ -131,7 +131,7 @@ function SWEP:DoSpawn(key)
 		if !ent or !ent:IsValid() then return NULL end
 		ent:SetCreator(self:GetOwner())
 		ent:Spawn()
-		ent:SetSize(Vector(33, 17, 8))
+		ent:SetSize(Vector(66, 34, 8))
 		ent:SetSides(50)
 		self[key] = ent
 	end
