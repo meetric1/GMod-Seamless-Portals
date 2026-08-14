@@ -47,7 +47,6 @@ function ENT:GetRemoveExit(bool)
 	return self.PORTAL_REMOVE_EXIT
 end
 
-
 local outputs = {
 	["OnTeleportFrom"] = true,
 	["OnTeleportTo"]   = true
@@ -113,8 +112,6 @@ function ENT:Initialize()
 		end
 	end
 
-	self:UpdatePhysmesh()
-
 	table.insert(SeamlessPortals.Portals, self)
 end
 
@@ -134,6 +131,7 @@ function ENT:SpawnFunction(ply, tr)
 	portal1:SetAngles(tr.HitNormal:AngleEx(Vector(0, 0, -1)))
 	portal1:SetCreator(ply)
 	portal1:Spawn()
+	portal1:SetSize(Vector(100, 100, 8))
 
 	local portal2 = ents.Create("seamless_portal")
 	if not IsValid(portal2) then return end
@@ -142,6 +140,7 @@ function ENT:SpawnFunction(ply, tr)
 	portal2:SetAngles(tr.HitNormal:AngleEx(Vector(0, 0, -1)))
 	portal2:SetCreator(ply)
 	portal2:Spawn()
+	portal2:SetSize(Vector(100, 100, 8))
 
 	if CPPI then portal2:CPPISetOwner(ply) end
 

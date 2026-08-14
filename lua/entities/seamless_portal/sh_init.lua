@@ -17,22 +17,25 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Bool", 0, "DisableBackface")
 	self:NetworkVar("Int", 0, "SidesInternal")
 
-	if CLIENT then return end
+	if CLIENT then
+		-- entity resize support
+		self:NetworkVarNotify("SizeInternal", function(self, name, _, new)
+			self:UpdatePhysmesh(new, nil)
+		end)
 
-	-- defaults, i guess?
-	if self:GetSidesInternal() < 1 then
-		self:SetSidesInternal(4)
+		self:NetworkVarNotify("SidesInternal", function(self, name, _, new)
+			self:UpdatePhysmesh(nil, new)
+		end)
+	else
+		-- defaults, i guess?
+		if self:GetSidesInternal() < 1 then
+			self:SetSidesInternal(4)
+		end
+
+		if self:GetSizeInternal() == vector_origin then
+			self:SetSizeInternal(Vector(50, 50, 8))
+		end
 	end
-
-	if self:GetSizeInternal() != vector_origin then
-		self:SetSizeInternal(Vector(50, 50, 8))
-	end
-end
-
-function ENT:SetSides(sides)
-	local shouldUpdatePhysmesh = self:GetSidesInternal() != sides
-	self:SetSidesInternal(math.Clamp(sides, 3, 100))
-	if shouldUpdatePhysmesh then self:UpdatePhysmesh() end
 end
 
 function ENT:GetSize()
@@ -42,24 +45,35 @@ function ENT:GetSize()
 	return size
 end
 
+function ENT:SetSides(sides)
+	local shouldUpdatePhysmesh = self:GetSidesInternal() != sides
+	self:SetSidesInternal(math.Clamp(sides, 3, 100))
+	if shouldUpdatePhysmesh then self:UpdatePhysmesh() end
+end
+
+function ENT:GetSides()
+	return self:GetSidesInternal()
+end
+
 -- So the size is in source units (remember we are using sine/cosine)
 local size_mult = Vector(math.sqrt(2) / 2, math.sqrt(2) / 2, 1)
 
 -- Scale the phys mesh
-function ENT:UpdatePhysmesh()
-	local sizev = self:GetSize() * size_mult
+function ENT:UpdatePhysmesh(size, sides)
+	size = (size or self:GetSize()) * size_mult
+	sides = sides or self:GetSides()
+
 	local finalMesh = {}
-	local sides = self:GetSidesInternal()
 	local angleMul = 360 / sides
 	local degreeOffset = (sides * 90 + (sides % 4 != 0 and 0 or 45)) * (math.pi / 180)
 	for side = 1, sides do
 		local sidea = math.rad(side * angleMul) + degreeOffset
 		local sidex = math.sin(sidea)
 		local sidey = math.cos(sidea)
-		local side1 = Vector(sidex, sidey, -1)
-		local side2 = Vector(sidex, sidey,  0)
-		table.insert(finalMesh, side1 * sizev)
-		table.insert(finalMesh, side2 * sizev)
+		local side1 = Vector(sidex, sidey, -1) side1:Mul(size)
+		local side2 = Vector(sidex, sidey,  0) side2:Mul(size)
+		table.insert(finalMesh, side1)
+		table.insert(finalMesh, side2)
 	end
 	self:PhysicsInitConvex(finalMesh)
 	self:SetMoveType(MOVETYPE_VPHYSICS)
@@ -70,7 +84,7 @@ function ENT:UpdatePhysmesh()
 	self:GetPhysicsObject():SetMass(250)
 
 	if CLIENT then
-		self:SetRenderBounds(-sizev, sizev)
+		self:SetRenderBounds(-size, size)
 	end
 end
 

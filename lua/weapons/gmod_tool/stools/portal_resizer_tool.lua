@@ -13,9 +13,11 @@ if CLIENT then
 
 	TOOL.Information = {
 		{name = "left"},
+		{name = "right"},
 	}
 
-	language.Add( "Tool.portal_resizer_tool.left", "Sets the size of portals" )
+	language.Add("Tool.portal_resizer_tool.left", "Left Click: Set the size of a portal" )
+	language.Add("Tool.portal_resizer_tool.right", "Right Click: Copy the size of a portal (doesn't work in singleplayer!)")
 
 	function TOOL.BuildCPanel(panel)
 		panel:AddControl("label", {
@@ -56,19 +58,26 @@ function TOOL:LeftClick(trace)
 	local sizex = self:GetOwner():GetInfoNum("seamless_portals_size_x", 1)
 	local sizey = self:GetOwner():GetInfoNum("seamless_portals_size_y", 1)
 	local sizez = self:GetOwner():GetInfoNum("seamless_portals_size_z", 1)
-	trace.Entity:SetSize(Vector(math.Clamp(sizex * 0.5, 1, 500), math.Clamp(sizey * 0.5, 1, 500), math.Clamp(sizez, 1, 100)))
+	trace.Entity:SetSize(Vector(math.Clamp(sizex, 10, 1000), math.Clamp(sizey, 10, 1000), math.Clamp(sizez, 1, 100)))
 	trace.Entity:SetDisableBackface(self:GetOwner():GetInfoNum("seamless_portals_backface", 1) == 0)
 	trace.Entity:SetSides(self:GetOwner():GetInfoNum("seamless_portals_sides", 1))
 	return true
 end
 
-function TOOL:RightClick(trace)
+function TOOL:RightClick()
 	local traceTable = util.GetPlayerTrace(self:GetOwner())
 	local trace = SeamlessPortals.TraceLine(traceTable)
 
-	if !trace.Entity or trace.Entity:GetClass() != "seamless_portal" then return false end
-	if CPPI and SERVER then if !trace.Entity:CPPICanTool(self:GetOwner(), "remover") then return false end end
-		if CLIENT then return true end
-	trace.Entity:SetSize(Vector(50, 50, 8))
+	if !IsValid(trace.Entity) or trace.Entity:GetClass() != "seamless_portal" then
+		return false
+	end
+
+	if CLIENT and IsFirstTimePredicted() then
+		local size = trace.Entity:GetSize()
+		self.ConvarX:SetInt(size[1])
+		self.ConvarY:SetInt(size[2])
+		self.ConvarZ:SetInt(size[3])
+	end
+
 	return true
 end

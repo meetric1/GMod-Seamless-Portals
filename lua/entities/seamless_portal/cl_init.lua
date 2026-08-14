@@ -113,15 +113,8 @@ function ENT:Draw(flags)
 end
 
 function ENT:Think()
-	-- kinda hacky but whatever
-	local size = self:GetSize()
-	local sides = self:GetSidesInternal()
-	local size_same = sides == self.SEAMLESS_PORTALS_PREV_SIDES and self.SEAMLESS_PORTALS_PREV_SIZE == size
-	self.SEAMLESS_PORTALS_PREV_SIZE = size
-	self.SEAMLESS_PORTALS_PREV_SIDES = sides
-
 	local phys = self:GetPhysicsObject()
-	if phys:IsValid() and size_same then
+	if phys:IsValid() then
 		phys:SetPos(self:GetPos())
 		phys:SetAngles(self:GetAngles())
 		phys:EnableMotion(false)

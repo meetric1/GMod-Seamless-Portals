@@ -157,8 +157,8 @@ elseif ( SERVER ) then
 		ent:Spawn()
 		if CPPI then ent:CPPISetOwner(ply) end
 		-- yoink! smiley, no fun allowed
-		local sizex = math.Clamp(ply:GetInfoNum("seamless_portals_size_x", 1), 1, 500)
-		local sizey = math.Clamp(ply:GetInfoNum("seamless_portals_size_y", 1), 1, 500)
+		local sizex = math.Clamp(ply:GetInfoNum("seamless_portals_size_x", 1), 1, 1000)
+		local sizey = math.Clamp(ply:GetInfoNum("seamless_portals_size_y", 1), 1, 1000)
 		local sizez = math.Clamp(ply:GetInfoNum("seamless_portals_size_z", 1), 1, 100)
 		ent:SetSize(Vector(sizex, sizey, sizez))
 		ent:SetDisableBackface(ply:GetInfoNum("seamless_portals_backface", 1) == 0)
