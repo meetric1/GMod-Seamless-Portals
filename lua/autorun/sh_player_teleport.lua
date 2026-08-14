@@ -12,19 +12,33 @@ local portal_trace_data = {
 
 -- hull modifier (so we can enter floor/ground)
 local function get_hull(ply)
+	local mins, maxs
 	if ply.SEAMLESS_PORTALS_HULL_MINS then
-		return Vector(ply.SEAMLESS_PORTALS_HULL_MINS), Vector(ply.SEAMLESS_PORTALS_HULL_MAXS)
+		mins, maxs = Vector(ply.SEAMLESS_PORTALS_HULL_MINS), Vector(ply.SEAMLESS_PORTALS_HULL_MAXS)
 	else
-		return ply:GetHull()
+		mins, maxs = ply:GetHull()
 	end
+
+	local scale = ply:GetModelScale()
+	mins:Mul(scale)
+	maxs:Mul(scale)
+
+	return mins, maxs
 end
 
 local function get_hull_duck(ply)
+	local mins, maxs
 	if ply.SEAMLESS_PORTALS_HULL_DUCK_MINS then
-		return Vector(ply.SEAMLESS_PORTALS_HULL_DUCK_MINS), Vector(ply.SEAMLESS_PORTALS_HULL_DUCK_MAXS)
+		mins, maxs = Vector(ply.SEAMLESS_PORTALS_HULL_DUCK_MINS), Vector(ply.SEAMLESS_PORTALS_HULL_DUCK_MAXS)
 	else
-		return ply:GetHullDuck()
+		mins, maxs = ply:GetHullDuck()
 	end
+
+	local scale = ply:GetModelScale()
+	mins:Mul(scale)
+	maxs:Mul(scale)
+
+	return mins, maxs
 end
 
 local function invalidate_hull(ply)
@@ -37,7 +51,7 @@ end
 local function validate_hull(ply)
 	if !ply.SEAMLESS_PORTALS_HULL_MINS then return false end
 
-	-- TODO: does calling ResetHull every frame cause any problems?
+	-- TODO: does calling ResetHull cause any problems with resizing mods?
 	ply:ResetHull()
 
 	ply.SEAMLESS_PORTALS_HULL_MINS = nil
@@ -54,8 +68,8 @@ end
 
 local function get_hull_clip(hull_mins, hull_maxs)
 	for i = 1, 2 do
-		hull_mins[i] = hull_mins[i] / 4
-		hull_maxs[i] = hull_maxs[i] / 4
+		hull_mins[i] = math.max(hull_mins[i] / 4, -4)
+		hull_maxs[i] = math.min(hull_maxs[i] / 4, 4)
 	end
 
 	hull_maxs[3] = hull_maxs[3] * 0.9
@@ -131,9 +145,14 @@ local function update_hull(ply, ply_pos)
 	invalidate_hull(ply)
 
 	-- floor portal mode. yikes.
-	portal_trace_data.start = ply_pos + Vector(0, 0, hull_maxs[3])
-	portal_trace_data.endpos = ply_pos + Vector(0, 0, hull_mins[3])
-	local half = portal:GetUp():Dot(Vector(0, 0, 1)) > 0.5 and SeamlessPortals.TraceLine(portal_trace_data).Hit
+	local half = portal:GetUp():Dot(Vector(0, 0, 1)) > 0.5
+	if half then
+		portal_trace_data.start = ply_pos + Vector(0, 0, hull_maxs[3])
+		portal_trace_data.endpos = ply_pos + Vector(0, 0, hull_mins[3])
+
+		local tr_ground = SeamlessPortals.TraceLine(portal_trace_data)
+		half = tr_ground.Hit and !tr_ground.StartSolid
+	end
 
 	clip_hull(ply, hull_mins, hull_maxs, half)
 
@@ -168,9 +187,13 @@ local function extrude_player(ply, ply_pos)
 end
 
 -- client lerp prevention
-local function lerp_teleport(start_pos, start_vel)
+local function lerp_teleport(start_pos, start_vel, scale_multiplier)
 	local ply = LocalPlayer()
 	if ply:GetViewEntity() != ply then return end -- viewing from a camera
+
+	--if ply.SCALE_MULTIPLIER then
+	--	RunConsoleCommand("scale_multiplier", ply.SCALE_MULTIPLIER * scale_multiplier)
+	--end
 
 	SeamlessPortals.DrawPlayerInView = false
 	timer.Remove("seamless_portals_lerp_teleport")	--in case you enter the portal while the timer is running
@@ -286,7 +309,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 	if CLIENT then
 		if IsFirstTimePredicted() then
 			ply:SetEyeAngles(new_ply_ang)
-			lerp_teleport(new_ply_eyepos, new_ply_vel)
+			lerp_teleport(new_ply_eyepos, new_ply_vel, ratio)
 
 			-- mirror dimension
 			if portal == exit_portal then
@@ -299,11 +322,15 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			net.Start("SEAMLESS_PORTALS_FIX_SINGLEPLAYER")
 			net.WriteVector(new_ply_eyepos)
 			net.WriteVector(new_ply_vel)
+			net.WriteFloat(ratio)
 			net.WriteBool(portal == exit_portal)
 			net.Send(ply)
 
 			ply:SetEyeAngles(new_ply_ang)
 		end
+
+		-- shrinkinator (most popular resizing mod- change if there is a better one)
+		ply:SetNWInt("desired_size", ply:GetNWInt("desired_size", 100) * ratio)
 
 		portal:TriggerOutput("OnTeleportFrom", ply)
 		exit_portal:TriggerOutput("OnTeleportTo", ply)
@@ -325,7 +352,7 @@ if game.SinglePlayer() then
 		util.AddNetworkString("SEAMLESS_PORTALS_FIX_SINGLEPLAYER")
 	else
 		net.Receive("SEAMLESS_PORTALS_FIX_SINGLEPLAYER", function()
-			lerp_teleport(net.ReadVector(), net.ReadVector())
+			lerp_teleport(net.ReadVector(), net.ReadVector(), net.ReadFloat())
 
 			if net.ReadBool() then
 				SeamlessPortals.ToggleMirror(!SeamlessPortals.ToggleMirror())
