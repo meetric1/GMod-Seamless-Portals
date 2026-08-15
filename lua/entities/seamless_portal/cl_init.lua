@@ -119,12 +119,12 @@ function ENT:Think()
 		phys:SetAngles(self:GetAngles())
 		phys:EnableMotion(false)
 		self:SetNextClientThink(CurTime())
-		return true
 	else
 		self:UpdatePhysmesh()
 		self:SetNextClientThink(CurTime() + 1)
-		return true
 	end
+
+	return true
 end
 
 -- Hacky bullet fix

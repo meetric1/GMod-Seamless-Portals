@@ -23,6 +23,7 @@ hook.Add("PreRegisterTOOL", "seamless_portals_tool", function(tool, class)
 end)
 
 if CLIENT then
+	language.Add("Tool.portal_creator_tool.name", "Portal Creator")
     language.Add("Tool.portal_creator_tool.desc", "Creates and links portals")
     language.Add("Tool.portal_creator_tool.left", "Left Click: Create portal")
     language.Add("Tool.portal_creator_tool.right1", "Right Click: Start linking a portal")

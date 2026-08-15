@@ -9,6 +9,7 @@ TOOL.Information = {
 }
 
 if CLIENT then
+	language.Add("Tool.portal_fitter_tool.name", "Portal Fitter")
 	language.Add("Tool.portal_fitter_tool.desc", "Creates a portal, fitted to each wall")
     language.Add("Tool.portal_fitter_tool.left", "Left Click: Create portal")
     language.Add("Tool.portal_fitter_tool.right1", "Right Click: Start linking a portal")
