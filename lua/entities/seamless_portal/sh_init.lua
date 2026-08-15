@@ -14,45 +14,20 @@ SeamlessPortals  = SeamlessPortals or {}
 function ENT:SetupDataTables()
 	self:NetworkVar("Entity", 0, "ExitPortal")
 	self:NetworkVar("Vector", 0, "SizeInternal")
+	self:NetworkVar("Vector", 1, "Size")
 	self:NetworkVar("Bool", 0, "DisableBackface")
-	self:NetworkVar("Int", 0, "SidesInternal")
+	self:NetworkVar("Int", 0, "Sides")
 
-	if CLIENT then
-		-- entity resize support
-		self:NetworkVarNotify("SizeInternal", function(self, name, _, new)
-			self:UpdatePhysmesh(new, nil)
-		end)
+	-- rebuild collision mesh if resized
+	self:NetworkVarNotify("Size", function(self, _, old, new)
+		if !self.SEAMLESS_PORTALS_INITIALIZED or old == new then return end
+		self:UpdatePhysmesh(new, nil)
+	end)
 
-		self:NetworkVarNotify("SidesInternal", function(self, name, _, new)
-			self:UpdatePhysmesh(nil, new)
-		end)
-	else
-		-- defaults, i guess?
-		if self:GetSidesInternal() < 1 then
-			self:SetSidesInternal(4)
-		end
-
-		if self:GetSizeInternal() == vector_origin then
-			self:SetSizeInternal(Vector(50, 50, 8))
-		end
-	end
-end
-
-function ENT:GetSize()
-	local size = self:GetSizeInternal()
-	size[1] = size[1] * 2
-	size[2] = size[2] * 2
-	return size
-end
-
-function ENT:SetSides(sides)
-	local shouldUpdatePhysmesh = self:GetSidesInternal() != sides
-	self:SetSidesInternal(math.Clamp(sides, 3, 100))
-	if shouldUpdatePhysmesh then self:UpdatePhysmesh() end
-end
-
-function ENT:GetSides()
-	return self:GetSidesInternal()
+	self:NetworkVarNotify("Sides", function(self, _, old, new)
+		if !self.SEAMLESS_PORTALS_INITIALIZED or old == new then return end
+		self:UpdatePhysmesh(nil, new)
+	end)
 end
 
 -- So the size is in source units (remember we are using sine/cosine)
@@ -75,9 +50,12 @@ function ENT:UpdatePhysmesh(size, sides)
 		table.insert(finalMesh, side1)
 		table.insert(finalMesh, side2)
 	end
-	self:PhysicsInitConvex(finalMesh)
-	self:SetMoveType(MOVETYPE_VPHYSICS)
 	self:SetSolid(SOLID_VPHYSICS)
+	self:SetMoveType(MOVETYPE_VPHYSICS)
+	if !self:PhysicsInitConvex(finalMesh) then
+		print("[Seamless Portals]: WARNING! TRIED TO CREATE PORTAL WITH INVALID SIZE")
+		return
+	end
 	self:EnableCustomCollisions(true)
 	self:GetPhysicsObject():EnableMotion(false)
 	self:GetPhysicsObject():SetMaterial("glass")
@@ -88,7 +66,7 @@ function ENT:UpdatePhysmesh(size, sides)
 	end
 end
 
-SeamlessPortals.Portals = {}
+SeamlessPortals.Portals = SeamlessPortals.Portals or {}
 SeamlessPortals.TransformPortal = function(a, b, pos, ang)
 	if !IsValid(a) or !IsValid(b) then return Vector(), Angle() end
 	local editedPos = Vector()

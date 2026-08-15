@@ -52,7 +52,7 @@ function TOOL:LeftClick(trace)
 	local traceTable = util.GetPlayerTrace(self:GetOwner())
 	local trace = SeamlessPortals.TraceLine(traceTable)
 
-	if !trace.Entity or trace.Entity:GetClass() != "seamless_portal" then return false end
+	if !IsValid(trace.Entity) or trace.Entity:GetClass() != "seamless_portal" then return false end
 	if CPPI and SERVER then if !trace.Entity:CPPICanTool(self:GetOwner(), "remover") then return false end end
 		if CLIENT then return true end
 	local sizex = self:GetOwner():GetInfoNum("seamless_portals_size_x", 1)

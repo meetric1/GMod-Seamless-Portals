@@ -25,14 +25,14 @@ local drawMat = Material("models/dav0r/hoverball")
 local render_matrix = Matrix()
 function ENT:GetRenderMesh()
 	return {
-		Mesh     = SeamlessPortals.GetRenderMesh(self:GetSidesInternal()),
+		Mesh     = SeamlessPortals.GetRenderMesh(self:GetSides()),
 		Matrix   = render_matrix,
 		Material = drawMat
 	}
 end
 
 function ENT:DrawModelMesh(portalSize)
-	local draw_mesh = SeamlessPortals.GetRenderMesh(self:GetSidesInternal())
+	local draw_mesh = SeamlessPortals.GetRenderMesh(self:GetSides())
 	local render_matrix = self:GetWorldTransformMatrix()
 	render_matrix:SetScale(portalSize)
 	cam.PushModelMatrix(render_matrix)
@@ -118,10 +118,10 @@ function ENT:Think()
 		phys:SetPos(self:GetPos())
 		phys:SetAngles(self:GetAngles())
 		phys:EnableMotion(false)
-
-	-- if held with gravity gun it will rebuild the physmesh every frame (laggy). ensure to check velocity
-	elseif self:GetVelocity() == Vector() then
+	else
 		self:UpdatePhysmesh()
+		self:SetNextClientThink(CurTime() + 1)
+		return true
 	end
 end
 

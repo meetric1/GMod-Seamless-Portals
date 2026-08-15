@@ -30,14 +30,6 @@ function ENT:UnlinkPortal()
 	setDupeLink(self:GetCreator(), self, {Sors = false, Dest = false})
 end
 
--- custom size for portal
-local size_mult = Vector(0.5, 0.5, 1)
-function ENT:SetSize(n)
-	n = n * size_mult
-	self:SetSizeInternal(n)
-	self:UpdatePhysmesh()
-end
-
 function ENT:SetRemoveExit(bool)
 	self.PORTAL_REMOVE_EXIT = bool
 	setDupeLink(self:GetCreator(), self, {Reme = true})
@@ -99,18 +91,46 @@ end
 
 function ENT:Initialize()
 	self:SetModel("models/hunter/plates/plate2x2.mdl")
-	self:PhysicsInit(SOLID_VPHYSICS)
-	self:SetMoveType(MOVETYPE_VPHYSICS)
-	self:SetSolid(SOLID_VPHYSICS)
 	self:SetCollisionGroup(COLLISION_GROUP_WORLD) -- no collide
 	self:DrawShadow(false)
 
+	-- defaults and portal format conversion. welcome to tech debt hell
 	local map_format = self.SEAMLESS_PORTALS_MAP_FORMAT
 	if map_format then
 		if map_format == 0 then
 			self:SetAngles(self:GetAngles() + Angle(90, 0, 0))
 		end
 	end
+
+	local sides = self:GetSides()
+	if sides <= 0 then
+		self:SetSides(4)
+	end
+
+	local size_internal = self:GetSizeInternal()
+	if !size_internal:IsZero() then
+		size_internal:Mul(Vector(2, 2, 1))
+		self:SetSize(size_internal)
+	end
+
+	local size = self:GetSize()
+	if size:IsZero() then
+		self:SetSize(Vector(100, 100, 8))
+	end
+
+	-- clamp to prevent exploiting, no fun allowed :)
+	size = self:GetSize()
+	for i = 1, 3 do
+		size[i] = math.Clamp(size[i], 1, 1000)
+	end
+	self:SetSize(size)
+
+	sides = self:GetSides()
+	sides = math.Clamp(sides, 1, 100)
+	self:SetSides(sides)
+
+	self.SEAMLESS_PORTALS_INITIALIZED = true
+	self:UpdatePhysmesh()
 
 	table.insert(SeamlessPortals.Portals, self)
 end
@@ -131,7 +151,6 @@ function ENT:SpawnFunction(ply, tr)
 	portal1:SetAngles(tr.HitNormal:AngleEx(Vector(0, 0, -1)))
 	portal1:SetCreator(ply)
 	portal1:Spawn()
-	portal1:SetSize(Vector(100, 100, 8))
 
 	local portal2 = ents.Create("seamless_portal")
 	if not IsValid(portal2) then return end
@@ -140,7 +159,6 @@ function ENT:SpawnFunction(ply, tr)
 	portal2:SetAngles(tr.HitNormal:AngleEx(Vector(0, 0, -1)))
 	portal2:SetCreator(ply)
 	portal2:Spawn()
-	portal2:SetSize(Vector(100, 100, 8))
 
 	if CPPI then portal2:CPPISetOwner(ply) end
 
