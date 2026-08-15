@@ -31,10 +31,11 @@ function ENT:GetRenderMesh()
 	}
 end
 
-function ENT:DrawModelMesh(portalSize)
+function ENT:DrawModelMesh(portal_size, nudge_z)
 	local draw_mesh = SeamlessPortals.GetRenderMesh(self:GetSides())
 	local render_matrix = self:GetWorldTransformMatrix()
-	render_matrix:SetScale(portalSize)
+	render_matrix:SetScale(portal_size)
+	if nudge_z then render_matrix:Translate(Vector(0, 0, (nudge_z - 1))) end
 	cam.PushModelMatrix(render_matrix)
 		draw_mesh:Draw()
 	cam.PopModelMatrix()
@@ -46,16 +47,20 @@ local size_mult = Vector(math.sqrt(2) / 2, math.sqrt(2) / 2, 1)
 -- DrawModel inside of a non Draw hook will call Draw instead of DrawModel (thanks, gmod API)
 -- this check is so we can call DrawModel inside of DrawStenciled
 local draw_model = false
-function ENT:DrawStenciled(texture, flip)
+function ENT:DrawStenciled(texture, flip, nudge_z)
 	draw_model = true
 
-	local portalSize = self:GetSize()
-	portalSize:Mul(size_mult)
+	local portal_size = self:GetSize()
+	portal_size:Mul(size_mult)
+
+	-- little nudge for MSAA, otherwise it will sample the edges outside the portal
+	-- and lead to some pretty nasty artifacting
+	portal_size:Mul(nudge_z or 1)
 
 	local backface_disabled = self:GetDisableBackface()
 
 	render_matrix:Identity()
-	render_matrix:SetScale(portalSize)
+	render_matrix:SetScale(portal_size)
 
 	-- outside frame (backface)
 	if !backface_disabled then
@@ -65,9 +70,9 @@ function ENT:DrawStenciled(texture, flip)
 	-- frame flat face
 	if SeamlessPortals.Rendering or !IsValid(self:GetExitPortal()) then
 		if !backface_disabled then
-			portalSize[3] = 0
+			portal_size[3] = 0
 			render.CullMode(1)
-				self:DrawModelMesh(portalSize)
+				self:DrawModelMesh(portal_size)
 			render.CullMode(0)
 		end
 	else
@@ -84,7 +89,7 @@ function ENT:DrawStenciled(texture, flip)
 
 		-- Draw inside of portal
 		render.CullMode(1)
-			self:DrawModelMesh(portalSize)
+			self:DrawModelMesh(portal_size, nudge_z)
 		render.CullMode(0)
 
 		render.SetStencilCompareFunction(STENCIL_EQUAL)

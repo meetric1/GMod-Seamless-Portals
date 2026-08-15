@@ -56,6 +56,16 @@ local function draw_sky(eye_pos)
 	end
 end
 
+local function get_framebuffer(name)
+	return GetRenderTargetEx(name, 1, 1,
+	    RT_SIZE_FULL_FRAME_BUFFER,
+	    MATERIAL_RT_DEPTH_SEPARATE,
+	    4 + 8 + 256 + 512,
+	    0,
+	    IMAGE_FORMAT_RGBA8888
+	)
+end
+
 -- The implementation of halos sucks.
 -- We must disable clipping so that the framebuffer doesn't become corrupted
 -- we only do this during portal rendering, so it shouldnt affect other operations,
@@ -67,7 +77,7 @@ hook.Add("PreDrawEffects", "seamless_portals_effects", function()
 end)
 
 -- same for skybox, ensure clipping is disabled
-local skybox_framebuffer = GetRenderTarget("seamless_portals_skybox_framebuffer", ScrW(), ScrH())
+local skybox_framebuffer = get_framebuffer("seamless_portals_skybox_framebuffer")
 local skybox_3dsky = GetConVar("r_3dsky")
 local skybox_clip = false
 hook.Add("PreDrawSkyBox", "seamless_portals_skybox", function()
@@ -154,7 +164,7 @@ local function render_scene(clip_pos, clip_up)
 end
 
 -- TODO: ideally use a pre-allocated framebuffer
-local framebuffer = GetRenderTarget("seamless_portals_framebuffer", ScrW(), ScrH())
+local framebuffer = get_framebuffer("seamless_portals_framebuffer")
 hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 	if !SeamlessPortals or #SeamlessPortals.Portals < 1 then return end
 
@@ -178,8 +188,8 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 
 		if SeamlessPortals.ShouldRender(portal, eye_pos, eye_ang, SeamlessPortals.GetDrawDistance()) then
 			local new_pos, new_ang = SeamlessPortals.TransformPortal(portal, exit_portal, eye_pos, eye_ang)
-			local clip_pos = exit_portal:GetPos()
 			local clip_up = exit_portal:GetUp()
+			local clip_pos = exit_portal:GetPos() clip_pos:Sub(clip_up)
 
 			renderview_table.origin:Set(new_pos)
 			renderview_table.angles:Set(new_ang)
@@ -201,6 +211,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 					renderview_table.origin:Add(skybox_info.origin)
 					renderview_table.viewid = 1
 					renderview_table.znear = 3
+					renderview_table.drawviewer = false
 
 					local clip_pos = Vector(clip_pos)
 					clip_pos:Div(skybox_info.scale)
@@ -221,7 +232,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 			end
 
 			-- Draw quad reversed if the portal is linked to itself
-			portal:DrawStenciled(framebuffer, portal == exit_portal)
+			portal:DrawStenciled(framebuffer, portal == exit_portal, 1.01)
 
 			portals_rendered = portals_rendered + 1
 			if portals_rendered >= portal_render_max then
