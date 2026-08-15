@@ -205,5 +205,11 @@ if CLIENT then
 				render.DrawBox(pos, ang, -size, Vector(size[1], size[2], 0), green)
 			end
 		cam.End3D()
+
+		if self.Name == "Portal Fitter" then
+			draw.DrawText(string.format("Size X: %.2f\n", size[1]), "HudDefault", 50, 230, color_white)
+	        draw.DrawText(string.format("Size Y: %.2f\n", size[2]), "HudDefault", 50, 250, color_white)
+	        draw.DrawText(string.format("Ratio: %.2f\n", size[2] / size[1]), "HudDefault", 50, 270, color_white)
+        end
 	end
 end
