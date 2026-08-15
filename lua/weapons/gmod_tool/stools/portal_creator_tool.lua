@@ -199,10 +199,8 @@ if CLIENT then
 				end
 			else
 				-- regular mode
-				size[1] = size[1] * 0.5
-				size[2] = size[2] * 0.5
 				render.SetColorMaterial()
-				render.DrawBox(pos, ang, -size, Vector(size[1], size[2], 0), green)
+				render.DrawBox(pos, ang, Vector(size[1] * -0.5, size[2] * -0.5, -size[3]), Vector(size[1] * 0.5, size[2] * 0.5, 0), green)
 			end
 		cam.End3D()
 
