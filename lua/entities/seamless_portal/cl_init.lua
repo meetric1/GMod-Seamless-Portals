@@ -118,6 +118,8 @@ function ENT:Think()
 		phys:SetPos(self:GetPos())
 		phys:SetAngles(self:GetAngles())
 		phys:EnableMotion(false)
+		self:SetNextClientThink(CurTime())
+		return true
 	else
 		self:UpdatePhysmesh()
 		self:SetNextClientThink(CurTime() + 1)
