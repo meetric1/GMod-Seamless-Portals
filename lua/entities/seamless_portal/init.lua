@@ -4,65 +4,68 @@ AddCSLuaFile("sh_init.lua")
 
 include("sh_init.lua")
 
-local function setDupeLink(ply, ent, dat)
-	if CLIENT then return true end
-	if not IsValid(ply) then return end
-	ent.PORTAL_DUPE_LINK = ent.PORTAL_DUPE_LINK or {}
-	ent.PORTAL_DUPE_LINK = table.Merge(ent.PORTAL_DUPE_LINK, dat, true)
-	duplicator.StoreEntityModifier(ent, "seamless_portal_dupelink", ent.PORTAL_DUPE_LINK)
+-- dupe/save support
+local function set_dupe_link(_, ent, data)
+	if CLIENT then return end
+
+	ent.SEAMLESS_PORTALS_DUPE_LINK = table.Merge(ent.SEAMLESS_PORTALS_DUPE_LINK or {}, data, true)
+	duplicator.StoreEntityModifier(ent, "seamless_portals_dupe_link", ent.SEAMLESS_PORTALS_DUPE_LINK)
 end
 
-duplicator.RegisterEntityModifier("seamless_portal_dupelink", setDupeLink)
+duplicator.RegisterEntityModifier("seamless_portals_dupe_link", set_dupe_link)
 
-function ENT:LinkPortal(ent)
-	if !IsValid(ent) then return end
-	self:SetExitPortal(ent)
-	ent:SetExitPortal(self)
-	setDupeLink(self:GetCreator(), self, {Sors = self:EntIndex(), Dest = ent:EntIndex()})
+function ENT:PostEntityPaste(_, _, created_entites)
+	for _, portal in pairs(created_entites) do
+		local dupelink = portal.SEAMLESS_PORTALS_DUPE_LINK
+		if !dupelink then continue end
+
+		local portal_exit = created_entites[dupelink.exit_id]
+		if IsValid(portal_exit) then
+			self:LinkPortal(portal_exit)
+		end
+
+		if dupelink.exit_remove then
+			self:SetRemoveExit(true)
+		end
+	end
+end
+
+function ENT:LinkPortal(exit_portal)
+	if !IsValid(exit_portal) then return end -- not sure I like this, ideally should throw an error
+
+	self:SetExitPortal(exit_portal)
+	set_dupe_link(self:GetCreator(), self, {exit_id = exit_portal:EntIndex()})
+
+	exit_portal:SetExitPortal(self)
+	set_dupe_link(exit_portal:GetCreator(), exit_portal, {exit_id = self:EntIndex()})
 end
 
 function ENT:UnlinkPortal()
-	local exitPortal = self:GetExitPortal()
-	if IsValid(exitPortal) then
-		exitPortal:SetExitPortal(nil)
-	end
 	self:SetExitPortal(nil)
-	setDupeLink(self:GetCreator(), self, {Sors = false, Dest = false})
+	set_dupe_link(self:GetCreator(), self, {exit_id = -1})
+
+	local exit_portal = self:GetExitPortal()
+	if !IsValid(exit_portal) then return end
+
+	exit_portal:SetExitPortal(nil)
+	set_dupe_link(exit_portal:GetCreator(), exit_portal, {exit_id = -1})
 end
 
 function ENT:SetRemoveExit(bool)
-	self.PORTAL_REMOVE_EXIT = bool
-	setDupeLink(self:GetCreator(), self, {Reme = true})
+	bool = bool and true or false
+
+	self.SEAMLESS_PORTALS_REMOVE_EXIT = bool
+	set_dupe_link(self:GetCreator(), self, {exit_remove = bool})
 end
 
 function ENT:GetRemoveExit(bool)
-	return self.PORTAL_REMOVE_EXIT
+	return self.SEAMLESS_PORTALS_REMOVE_EXIT
 end
 
 local outputs = {
 	["OnTeleportFrom"] = true,
 	["OnTeleportTo"]   = true
 }
-
-function ENT:PostEntityPaste(ply, ent, cre)
-	if not IsValid(ply) then return end
-	for key, ent in pairs(cre) do
-		-- Validate dupe data table
-		local link = ent.PORTAL_DUPE_LINK
-		if not link then break end
-		-- Check source portal
-		if not link.Sors then break end
-		local sors = cre[link.Sors]
-		if not IsValid(sors) then break end
-		-- Check destination portal
-		if not link.Dest then break end
-		local dest = cre[link.Dest]
-		if not IsValid(dest) then break end
-		-- Create link and load remove exit
-		sors:LinkPortal(dest)
-		sors:SetRemoveExit(tobool(link.Reme))
-	end
-end
 
 function ENT:KeyValue(key, value)
 	self.SEAMLESS_PORTALS_MAP_FORMAT = self.SEAMLESS_PORTALS_MAP_FORMAT or 0
@@ -136,7 +139,7 @@ function ENT:Initialize()
 end
 
 function ENT:OnRemove()
-	if self.PORTAL_REMOVE_EXIT then
+	if self:GetRemoveExit() then
 		SafeRemoveEntity(self:GetExitPortal())
 	end
 
