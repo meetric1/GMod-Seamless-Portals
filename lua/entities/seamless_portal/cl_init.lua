@@ -108,7 +108,8 @@ end
 
 function ENT:Draw(flags)
 	-- resetting the stencil buffer when drawing halos will cause horrible flashing
-	if halo.RenderedEntity() == self then return end
+	-- also, don't render the portal we're rendering out of
+	if halo.RenderedEntity() == self or SeamlessPortals.Rendering == self then return end
 
 	if draw_model then
 		self:DrawModel(flags)

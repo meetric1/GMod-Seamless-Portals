@@ -154,7 +154,7 @@ end)
 
 -- TODO: ideally we could "clip" the edges that we know are going to be discarded
 local function render_scene(clip_pos, clip_up)
-	SeamlessPortals.Rendering = true
+	SeamlessPortals.Rendering = SeamlessPortals.Rendering or true
 	local clip = render.EnableClipping(true)
 	render.PushCustomClipPlane(clip_up, clip_up:Dot(clip_pos))
 	render.RenderView(renderview_table)
@@ -198,6 +198,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 			renderview_table.drawviewer = SeamlessPortals.DrawPlayerInView
 
 			render.PushRenderTarget(framebuffer)
+			SeamlessPortals.Rendering = exit_portal
 			render_scene(clip_pos, clip_up)
 			render.PopRenderTarget()
 
