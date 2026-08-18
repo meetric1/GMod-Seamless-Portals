@@ -58,19 +58,30 @@ end
 if SERVER then return end
 
 -- sound detour
+local recursive = false -- EmitSound SHOULDNT trigger this hook, but lets be safe in case something detours it
 hook.Add("EntityEmitSound", "seamless_portals_detour_sound", function(t)
 	if !SeamlessPortals or #SeamlessPortals.Portals < 1 then return end
+	if recursive then return end
 
-	for k, v in ipairs(SeamlessPortals.Portals) do
-		local exitportal = v.GetExitPortal and v:GetExitPortal()
-		if !v.ExitPortal or !exitportal or !exitportal:IsValid() or !exitportal.GetExitSize then continue end
-		if !t.Pos or !IsValid(t.Entity) then continue end
-		if t.Pos:DistToSqr(v:GetPos()) < 50000 * exitportal:GetExitSize()[1] and (t.Pos - v:GetPos()):Dot(v:GetUp()) > 0 then
-			local newPos = SeamlessPortals.TransformPortal(v, exitportal, t.Pos, Angle())
-			local oldPos = t.Entity:GetPos() or Vector()
-			t.Entity:SetPos(newPos)
-			EmitSound(t.SoundName, newPos, t.Entity:EntIndex(), t.Channel, t.Volume, t.SoundLevel, t.Flags, t.Pitch, t.DSP)
-			t.Entity:SetPos(oldPos)
-		end
+	if !t.Pos then return end
+
+	local eye_pos = MainEyePos()
+	for _, portal in ipairs(SeamlessPortals.Portals) do
+		local exit_portal = portal.GetExitPortal and portal:GetExitPortal()
+		if !IsValid(exit_portal) then continue end
+
+		-- are we in range?
+		local portal_pos = portal:GetPos()
+		local portal_size = portal:GetSize()[1]
+		if t.Pos:DistToSqr(portal_pos) > 2*2 * portal_size * portal_size then continue end
+
+		-- is sound infront of portals?
+		if (eye_pos - exit_portal:GetPos()):Dot(exit_portal:GetUp()) < 0 or (t.Pos - portal_pos):Dot(portal:GetUp()) < 0 then continue end
+
+		local translated_pos = SeamlessPortals.TransformPortal(portal, exit_portal, t.Pos)
+
+		recursive = true
+		EmitSound(t.SoundName, translated_pos, 0, t.Channel, t.Volume, t.SoundLevel, t.Flags, t.Pitch, t.DSP)
+		recursive = false
 	end
 end)
