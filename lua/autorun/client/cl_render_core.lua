@@ -76,13 +76,19 @@ hook.Add("PreDrawEffects", "seamless_portals_effects", function()
 	render.EnableClipping(false)
 end)
 
--- same for skybox, ensure clipping is disabled
+------------
+-- SKYBOX --
+------------
+
+local skybox_info = nil
+
+-- ensure clipping is disabled in skybox
 local skybox_framebuffer = get_framebuffer("seamless_portals_skybox_framebuffer")
 local skybox_3dsky = GetConVar("r_3dsky")
 local skybox_clip = false
 hook.Add("PreDrawSkyBox", "seamless_portals_skybox", function()
 	if !SeamlessPortals.Rendering then return end
-	if renderview_table.viewid == 1 then return true end -- https://github.com/Facepunch/garrysmod-issues/issues/6976
+	if renderview_table.viewid == 1 then return true end
 
 	skybox_clip = render.EnableClipping(false)
 end)
@@ -91,6 +97,42 @@ hook.Add("PostDrawSkyBox", "seamless_portals_skybox", function()
 	if !SeamlessPortals.Rendering then return end
 
 	render.EnableClipping(skybox_clip)
+end)
+
+-- skybox fog (since we're rendering skybox with a virtual camera, fog is setup improperly)
+local fog_color_r, fog_color_g, fog_color_b = 0, 0, 0
+local fog_start, fog_end, fog_z = 0, 0, 0
+local fog_max_density = 0
+local fog_mode = 0
+
+-- get fog skybox values (they're unreliable anywhere else)
+hook.Add("PostDraw2DSkyBox", "seamless_portals_skybox", function()
+	if SeamlessPortals.Rendering then return end
+
+	fog_color_r, fog_color_g, fog_color_b = render.GetFogColor()
+	fog_start, fog_end, fog_z = render.GetFogDistances()
+	fog_max_density = render.GetFogMaxDensity()
+	fog_mode = render.GetFogMode()
+
+	skybox_info = game.Get3DSkyboxInfo()
+
+	-- TODO: can skybox fog change?
+	hook.Remove("PostDraw2DSkyBox", "seamless_portals_skybox")
+end)
+
+hook.Add("SetupWorldFog", "seamless_portals_skybox", function()
+	if !SeamlessPortals.Rendering or renderview_table.viewid != 1 then return end
+
+	if !hook.Run("SetupSkyboxFog", skybox_info.scale) then
+		render.FogColor(fog_color_r, fog_color_g, fog_color_b)
+		render.FogStart(fog_start)
+		render.FogEnd(fog_end)
+		render.SetFogZ(fog_z)
+		render.FogMaxDensity(fog_max_density)
+		render.FogMode(fog_mode)
+	end
+
+	return true
 end)
 
 -- TODO: if we ever get the option to render the scene without clearing the framebuffer, we can avoid a lot of this logic
@@ -108,7 +150,7 @@ hook.Add("PostDrawOpaqueRenderables", "seamless_portals_skybox", function()
 	render.EnableClipping(clip)
 end)
 
--- TODO: wow, this sucks!
+-- wow, this sucks!
 local function draw_texture_to_screen_unfucked(texture, eye_pos)
 	local clip = render.EnableClipping(false)
 	render.ClearStencil()
@@ -203,7 +245,6 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 			render.PopRenderTarget()
 
 			if !util.IsSkyboxVisibleFromPoint(new_pos) and util.IsSkyboxVisibleFromPoint(clip_pos) then
-				local skybox_info = game.Get3DSkyboxInfo()
 				render.PushRenderTarget(skybox_framebuffer)
 				render.Clear(0, 0, 0, 255, true, true)
 				if skybox_info and skybox_3dsky:GetBool() then

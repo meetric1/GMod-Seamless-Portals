@@ -195,14 +195,14 @@ function SeamlessPortals.ToggleMirror(enable)
 	mirrored = enable
 
 	if (!enable) then
-		hook.Remove("PreDrawViewModels", "FlippedWorld")
-		hook.Remove("InputMouseApply", "FlippedWorld")
-		hook.Remove("CreateMove", "FlippedWorld")
+		hook.Remove("PreDrawViewModels", "seamless_portals_flip")
+		hook.Remove("InputMouseApply", "seamless_portals_flip")
+		hook.Remove("CreateMove", "seamless_portals_flip")
 
 		return mirrored
 	end
 
-	hook.Add("PreDrawViewModels", "FlippedWorld", function(_, sky, sky3d)
+	hook.Add("PreDrawViewModels", "seamless_portals_flip", function()
 		if SeamlessPortals.Rendering then return end
 
 		render.UpdateScreenEffectTexture()
@@ -214,12 +214,12 @@ function SeamlessPortals.ToggleMirror(enable)
 	end)
 
 	-- Invert mouse x
-	hook.Add("InputMouseApply", "FlippedWorld", function(cmd, x, y, ang)
+	hook.Add("InputMouseApply", "seamless_portals_flip", function(cmd, x, y, ang)
 		cmd:SetViewAngles(ang + Angle(0, x / 22.5, 0))
 	end)
 
 	-- Invert movement x
-	hook.Add("CreateMove", "FlippedWorld", function(cmd)
+	hook.Add("CreateMove", "seamless_portals_flip", function(cmd)
 		cmd:SetSideMove(-cmd:GetSideMove())
 	end)
 
