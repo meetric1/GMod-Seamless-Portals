@@ -16,7 +16,6 @@ function ENT:SetupDataTables()
 	self:NetworkVar("Vector", 0, "SizeInternal")
 	self:NetworkVar("Vector", 1, "Size")
 	self:NetworkVar("Bool", 0, "DisableBackface")
-	self:NetworkVar("Bool", 1, "DrawLocalPlayer")
 	self:NetworkVar("Int", 0, "Sides")
 
 	-- rebuild collision mesh if resized
