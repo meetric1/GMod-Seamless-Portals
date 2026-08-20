@@ -144,7 +144,7 @@ function TOOL:GetLinkTarget()
 	return self:GetOwner():GetNWEntity("SEAMLESS_PORTALS_LINK_TARGET")
 end
 
-local side_1 = 0
+
 function TOOL:RightClick(trace)
 	if !trace.Hit then return false end
 	local owner = self:GetOwner()
@@ -157,7 +157,7 @@ function TOOL:RightClick(trace)
 
 	local stage = self:GetStage()
 	if stage <= 1 then
-		side_1 = side
+		self.side_1 = side
 		self:SetLinkTarget(portal)
 		self:SetStage(2)
 	else
@@ -176,7 +176,7 @@ function TOOL:RightClick(trace)
 
 			local link_target_ang = Angle(portal_1:GetAngles())
 
-			if side_1 < 0 then
+			if self.side_1 < 0 then
 				link_target_ang:RotateAroundAxis(link_target_ang:Forward(), 180)
 			end
 			
