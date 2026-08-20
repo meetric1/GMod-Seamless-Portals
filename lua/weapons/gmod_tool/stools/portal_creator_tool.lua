@@ -226,6 +226,7 @@ if CLIENT then
 			-- regular mode
 			render.SetColorMaterial()
 			render.DrawBox(pos, ang, Vector(size[1] * -0.5, size[2] * -0.5, -size[3]), Vector(size[1] * 0.5, size[2] * 0.5, 0), green)
+			render.DrawWireframeBox(pos, ang, Vector(size[1] * -0.5, size[2] * -0.5, -size[3]), Vector(size[1] * 0.5, size[2] * 0.5, 0), green, true)
 		cam.End3D()
 
 		if self.Name == "Portal Fitter" then
