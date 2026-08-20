@@ -34,6 +34,7 @@ if CLIENT then
 	function TOOL:DrawHUD()
 		local traceTable = util.GetPlayerTrace(self:GetOwner())
 		local trace = SeamlessPortals.TraceLine(traceTable)
+		if not IsValid(trace.Entity) then return end
 
 		if !trace.Entity or trace.Entity:GetClass() != "seamless_portal" then return end	-- dont draw the world or else u crash lol
 

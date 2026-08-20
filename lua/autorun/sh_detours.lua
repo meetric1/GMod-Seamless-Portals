@@ -2,24 +2,65 @@
 AddCSLuaFile()
 
 -- bullet detour
-hook.Add("EntityFireBullets", "seamless_portal_detour_bullet", function(entity, data)
+hook.Add("PostEntityFireBullets", "seamless_portal_detour_bullet", function(entity, data)
 	if !SeamlessPortals or #SeamlessPortals.Portals < 1 then return end
-	local tr = SeamlessPortals.TraceLine({start = data.Src, endpos = data.Src + data.Dir * (data.Distance or 56755), filter = entity})
-	local hitPortal = tr.Entity
-	if !IsValid(hitPortal) then return end
-	if hitPortal:GetClass() != "seamless_portal" then return end
-	local exitportal = hitPortal:GetExitPortal()
-	if !IsValid(exitportal) then return end
-	if (tr.HitPos - hitPortal:GetPos()):Dot(hitPortal:GetUp()) > 0 then
-		local newPos, newAng = SeamlessPortals.TransformPortal(hitPortal, exitportal, tr.HitPos, data.Dir:Angle())
+	local tr = SeamlessPortals.TraceLine({start = data.Trace.StartPos, endpos = data.Trace.StartPos + data.Trace.Normal * (data.Distance or 56755), filter = entity})
+	local hit_portal = tr.Entity
+	if !IsValid(hit_portal) then return end
+	if hit_portal:GetClass() != "seamless_portal" then return end
+	local exit_portal = hit_portal:GetExitPortal()
+	if !IsValid(exit_portal) then return end
+	if (tr.HitPos - hit_portal:GetPos()):Dot(hit_portal:GetUp()) > 0 and not entity.FiredBullet then
+		local new_pos, new_ang = SeamlessPortals.TransformPortal(hit_portal, exit_portal, tr.HitPos, data.Trace.Normal:Angle())
+		local newTr = SeamlessPortals.TraceLine({
+			start = new_pos,
+			endpos = new_pos + new_ang:Forward() * (data.Distance or 56755),
+			filter = exit_portal
+		})
+		local new_data = table.Copy(data)
 
 		--ignoreentity doesnt seem to work for some reason
-		data.IgnoreEntity = exitportal
-		data.Src = newPos
-		data.Dir = newAng:Forward()
-		data.Tracer = 0
+		new_data.IgnoreEntity = exit_portal
+		new_data.Src = new_pos
+		new_data.Dir = new_ang:Forward()
+		new_data.Attacker = entity
+		new_data.Inflictor = entity
+		new_data.Tracer = 0
 
-		return true
+		exit_portal.FiredBullet = true
+		exit_portal:FireBullets(new_data)
+		exit_portal.FiredBullet = false
+
+		-- portal bullet
+		local eff = EffectData()
+		eff:SetStart(new_data.Src)
+		eff:SetOrigin(newTr.HitPos)
+		eff:SetNormal(new_ang:Forward())
+		eff:SetScale(2500)
+
+		local tracer_name = data.TracerName
+
+		if not tracer_name then
+			if data.AmmoType == "AR2" then
+				tracer_name = "AR2Tracer"
+			end
+		end
+
+		tracer_name = tracer_name or "Tracer"
+
+		util.Effect(tracer_name, eff)
+
+		-- entity bullet
+		local eff = EffectData()
+		eff:SetStart(data.Trace.StartPos)
+		eff:SetOrigin(tr.HitPos)
+		eff:SetNormal(data.Trace.Normal)
+		eff:SetScale(2500)
+
+		util.Effect(tracer_name, eff)
+
+
+		return false
 	end
 end)
 

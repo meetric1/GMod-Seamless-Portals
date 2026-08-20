@@ -24,6 +24,7 @@ if CLIENT then
 		panel:NumSlider("Portal Size Z", "seamless_portals_size_z", 1, 100, 1)
 		panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portals_backface")
         panel:CheckBox("Tooled Side is Front?", "seamless_portals_toolsided")
+        panel:CheckBox("Draw Local Player in Portal?", "seamless_portals_drawlocalplayer")
 	end
 end
 
