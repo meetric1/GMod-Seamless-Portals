@@ -172,12 +172,14 @@ function TOOL:RightClick(trace)
 
 			if side < 0 then
 				ent_ang:RotateAroundAxis(ent_ang:Forward(), 180)
+				portal:SetPos( portal:GetPos() - portal:GetUp() * portal:GetSize()[3] * 0.5 )
 			end
 
 			local link_target_ang = Angle(portal_1:GetAngles())
 
 			if self.side_1 < 0 then
 				link_target_ang:RotateAroundAxis(link_target_ang:Forward(), 180)
+				portal_1:SetPos( portal_1:GetPos() - portal_1:GetUp() * portal_1:GetSize()[3] * 0.5 )
 			end
 			
 			portal:SetAngles(ent_ang)
