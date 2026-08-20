@@ -137,7 +137,7 @@ end)
 
 -- TODO: if we ever get the option to render the scene without clearing the framebuffer, we can avoid a lot of this logic
 -- this hook is for if the skybox camera manages to be inside the world
-hook.Add("PostDrawOpaqueRenderables", "seamless_portals_skybox", function()
+hook.Add("PreDrawOpaqueRenderables", "seamless_portals_skybox", function()
 	if !SeamlessPortals.Rendering then return end
 	if renderview_table.viewid != 1 then return end
 
@@ -231,7 +231,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 		if SeamlessPortals.ShouldRender(portal, eye_pos, eye_ang, SeamlessPortals.GetDrawDistance()) then
 			local new_pos, new_ang = SeamlessPortals.TransformPortal(portal, exit_portal, eye_pos, eye_ang)
 			local clip_up = exit_portal:GetUp()
-			local clip_pos = exit_portal:GetPos() clip_pos:Sub(clip_up)
+			local clip_pos = exit_portal:GetPos() clip_pos:Sub(clip_up * 0.1)
 
 			renderview_table.origin:Set(new_pos)
 			renderview_table.angles:Set(new_ang)

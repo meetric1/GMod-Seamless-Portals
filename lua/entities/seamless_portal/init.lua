@@ -149,7 +149,7 @@ function ENT:SpawnFunction(ply, tr)
 	local portal1 = ents.Create("seamless_portal")
 	if not IsValid(portal1) then return end
 
-	portal1:SetPos(tr.HitPos + tr.HitNormal * 160)
+	portal1:SetPos(tr.HitPos + tr.HitNormal * 160.1)
 	portal1:SetAngles(tr.HitNormal:AngleEx(Vector(0, 0, -1)))
 	portal1:SetCreator(ply)
 	portal1:Spawn()
@@ -157,7 +157,7 @@ function ENT:SpawnFunction(ply, tr)
 	local portal2 = ents.Create("seamless_portal")
 	if not IsValid(portal2) then return end
 
-	portal2:SetPos(tr.HitPos + tr.HitNormal * 50)
+	portal2:SetPos(tr.HitPos + tr.HitNormal * 50.1)
 	portal2:SetAngles(tr.HitNormal:AngleEx(Vector(0, 0, -1)))
 	portal2:SetCreator(ply)
 	portal2:Spawn()
