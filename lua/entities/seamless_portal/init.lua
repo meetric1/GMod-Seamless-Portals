@@ -40,10 +40,11 @@ function ENT:LinkPortal(exit_portal)
 end
 
 function ENT:UnlinkPortal()
+	local exit_portal = self:GetExitPortal()
 	self:SetExitPortal(nil)
 	set_dupe_link(self:GetCreator(), self, {exit_id = -1})
 
-	local exit_portal = self:GetExitPortal()
+	
 	if !IsValid(exit_portal) then return end
 
 	exit_portal:SetExitPortal(nil)

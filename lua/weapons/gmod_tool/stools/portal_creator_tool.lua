@@ -155,8 +155,18 @@ function TOOL:RightClick(trace)
 
 	local side = -math.Sign(portal:GetUp():Dot(portal:GetPos() - self:GetOwner():GetShootPos()))
 
+	local ent_ang = Angle(portal:GetAngles())
+
+	if side < 0 then
+		ent_ang:RotateAroundAxis(ent_ang:Forward(), 180)
+		portal:SetPos( portal:GetPos() - portal:GetUp() * portal:GetSize()[3] )
+	end
+
+	portal:SetAngles(ent_ang)
+
 	local stage = self:GetStage()
 	if stage <= 1 then
+		portal:UnlinkPortal()
 		self.side_1 = side
 		self:SetLinkTarget(portal)
 		self:SetStage(2)
@@ -167,23 +177,6 @@ function TOOL:RightClick(trace)
 				self:SetStage(1)
 				return
 			end
-
-			local ent_ang = Angle(portal:GetAngles())
-
-			if side < 0 then
-				ent_ang:RotateAroundAxis(ent_ang:Forward(), 180)
-				portal:SetPos( portal:GetPos() - portal:GetUp() * portal:GetSize()[3] * 0.5 )
-			end
-
-			local link_target_ang = Angle(portal_1:GetAngles())
-
-			if self.side_1 < 0 then
-				link_target_ang:RotateAroundAxis(link_target_ang:Forward(), 180)
-				portal_1:SetPos( portal_1:GetPos() - portal_1:GetUp() * portal_1:GetSize()[3] * 0.5 )
-			end
-			
-			portal:SetAngles(ent_ang)
-			portal_1:SetAngles(link_target_ang)
 		end
 
 		portal:LinkPortal(portal_1)
@@ -200,7 +193,7 @@ function TOOL:Reload(trace)
 
 	if CLIENT then return true end
 
-	portal:UnlinkPortal()
+	portal:SetExitPortal( nil )
 	return true
 end
 
