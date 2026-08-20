@@ -153,32 +153,26 @@ function TOOL:RightClick(trace)
 
 	if CLIENT then return true end
 
-	local side = -math.Sign(portal:GetUp():Dot(portal:GetPos() - self:GetOwner():GetShootPos()))
+	if owner:GetInfoNum( "seamless_portals_toolsided", 0 ) == 1 then
+		local side = -math.Sign(portal:GetUp():Dot(portal:GetPos() - self:GetOwner():GetShootPos()))
 
-	local ent_ang = Angle(portal:GetAngles())
+		local ent_ang = Angle(portal:GetAngles())
 
-	if side < 0 then
-		ent_ang:RotateAroundAxis(ent_ang:Forward(), 180)
-		portal:SetPos( portal:GetPos() - portal:GetUp() * portal:GetSize()[3] )
+		if side < 0 then
+			ent_ang:RotateAroundAxis(ent_ang:Forward(), 180)
+			portal:SetPos( portal:GetPos() - portal:GetUp() * portal:GetSize()[3] )
+		end
+
+		portal:SetAngles(ent_ang)
 	end
-
-	portal:SetAngles(ent_ang)
 
 	local stage = self:GetStage()
 	if stage <= 1 then
 		portal:UnlinkPortal()
-		self.side_1 = side
 		self:SetLinkTarget(portal)
 		self:SetStage(2)
 	else
 		local portal_1 = self:GetLinkTarget()
-		if owner:GetInfoNum("seamless_portals_toolsided", 1) == 1 then
-			if not IsValid(portal_1) then
-				self:SetStage(1)
-				return
-			end
-		end
-
 		portal:LinkPortal(portal_1)
 		self:SetStage(1)
 	end

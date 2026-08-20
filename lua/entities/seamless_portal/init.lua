@@ -44,7 +44,6 @@ function ENT:UnlinkPortal()
 	self:SetExitPortal(nil)
 	set_dupe_link(self:GetCreator(), self, {exit_id = -1})
 
-	
 	if !IsValid(exit_portal) then return end
 
 	exit_portal:SetExitPortal(nil)
