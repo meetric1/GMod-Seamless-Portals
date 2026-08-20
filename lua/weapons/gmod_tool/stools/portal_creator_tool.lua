@@ -187,7 +187,7 @@ function TOOL:Reload(trace)
 
 	if CLIENT then return true end
 
-	portal:SetExitPortal( nil )
+	portal:SetExitPortal(nil)
 	return true
 end
 
@@ -219,8 +219,9 @@ if CLIENT then
 			end
 			-- regular mode
 			render.SetColorMaterial()
-			render.DrawBox(pos, ang, Vector(size[1] * -0.5, size[2] * -0.5, -size[3]), Vector(size[1] * 0.5, size[2] * 0.5, 0), green)
-			render.DrawWireframeBox(pos, ang, Vector(size[1] * -0.5, size[2] * -0.5, -size[3]), Vector(size[1] * 0.5, size[2] * 0.5, 0), green, true)
+			local mins, maxs = Vector(size[1] * -0.5, size[2] * -0.5, -size[3]), Vector(size[1] * 0.5, size[2] * 0.5, 0)
+			render.DrawBox(pos, ang, mins, maxs, green)
+			render.DrawWireframeBox(pos, ang, mins, maxs, green, true)
 		cam.End3D()
 
 		if self.Name == "Portal Fitter" then
