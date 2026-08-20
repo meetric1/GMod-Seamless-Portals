@@ -13,8 +13,7 @@ hook.Add("SetupPlayerVisibility", "seamless_portals", function(ply, viewEntity)
             local exitPortal = portal:GetExitPortal()
 
             -- check the visibility of the portal and the existence of its exit portal before adding to the PVS
-            if IsValid(exitPortal) and ply:TestPVS(portal)
-                    and SeamlessPortals.ShouldRender(portal, eyePos, eyeAngle, distance) then
+            if IsValid(exitPortal) and ply:TestPVS(portal) and SeamlessPortals.ShouldRender(portal, eyePos, eyeAngle, distance) then
                 AddOriginToPVS(exitPortal:GetPos())
             end
         end
