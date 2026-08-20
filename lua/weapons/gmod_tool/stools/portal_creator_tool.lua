@@ -36,6 +36,7 @@ if CLIENT then
 	CreateClientConVar("seamless_portals_sides", "4", false, true, "Sets the number of sides the portal has", 3, 100)
 	CreateClientConVar("seamless_portals_backface", "1", false, true, "Sets whether to spawn with a backface or not", 0, 1)
 	CreateClientConVar("seamless_portals_align", "1", false, true, "Enable/Disable Portal creator alignment helper", 0, 1)
+	CreateClientConVar("seamless_portals_toolsided", "1", false, true, "Enable/Disable whether the tooled side is the front.", 0, 1)
 
 	function TOOL.BuildCPanel(panel)
 		panel:AddControl("label", {text = "Creates and links portals"})
@@ -45,6 +46,7 @@ if CLIENT then
 		panel:NumSlider("Portal Sides", "seamless_portals_sides", 3, 100, 0)
         panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portals_backface")
         panel:CheckBox("Nudge Portals from walls", "seamless_portals_align")
+        panel:CheckBox("Tooled Side is Front?", "seamless_portals_toolsided")
 	end
 end
 
@@ -145,7 +147,7 @@ end
 local side1 = 0
 function TOOL:RightClick(trace)
 	if !trace.Hit then return false end
-
+	local owner = self:GetOwner()
 	local portal = trace.Entity
 	if !IsValid(portal) or portal:GetClass() ~= "seamless_portal" then return false end
 
@@ -160,26 +162,27 @@ function TOOL:RightClick(trace)
 		self:SetStage(2)
 	else
 		local portal1 = self:GetLinkTarget()
+		if owner:GetInfoNum("seamless_portals_toolsided", 1) == 1 then
+			if not IsValid( portal1 ) then
+				self:SetStage(1)
+				return
+			end
 
-		if not IsValid( portal1 ) then
-			self:SetStage(1)
-			return
+			local entAng = Angle( portal:GetAngles() )
+
+			if side < 0 then
+				entAng:RotateAroundAxis( entAng:Forward(), 180 )
+			end
+
+			local linkTargetAng = Angle( portal1:GetAngles() )
+
+			if side1 < 0 then
+				linkTargetAng:RotateAroundAxis( linkTargetAng:Forward(), 180 )
+			end
+			
+			portal:SetAngles( entAng )
+			portal1:SetAngles( linkTargetAng )
 		end
-
-		local entAng = Angle( portal:GetAngles() )
-
-		if side < 0 then
-			entAng:RotateAroundAxis( entAng:Forward(), 180 )
-		end
-
-		local linkTargetAng = Angle( portal1:GetAngles() )
-
-		if side1 < 0 then
-			linkTargetAng:RotateAroundAxis( linkTargetAng:Forward(), 180 )
-		end
-		
-		portal:SetAngles( entAng )
-		portal1:SetAngles( linkTargetAng )
 
 		portal:LinkPortal( portal1 )
 		self:SetStage(1)
