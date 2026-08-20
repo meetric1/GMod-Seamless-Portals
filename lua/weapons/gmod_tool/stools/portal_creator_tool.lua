@@ -46,7 +46,7 @@ if CLIENT then
 		panel:NumSlider("Portal Sides", "seamless_portals_sides", 3, 100, 0)
         panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portals_backface")
         panel:CheckBox("Nudge Portals from walls", "seamless_portals_align")
-        panel:CheckBox("Tooled Side is Front?", "seamless_portals_toolsided")
+        panel:CheckBox("Make Tooled Side the Front", "seamless_portals_toolsided")
 	end
 end
 
@@ -153,14 +153,13 @@ function TOOL:RightClick(trace)
 
 	if CLIENT then return true end
 
-	if owner:GetInfoNum( "seamless_portals_toolsided", 0 ) == 1 then
+	if owner:GetInfoNum("seamless_portals_toolsided", 0) == 1 then
 		local side = -math.Sign(portal:GetUp():Dot(portal:GetPos() - self:GetOwner():GetShootPos()))
-
 		local ent_ang = Angle(portal:GetAngles())
 
 		if side < 0 then
 			ent_ang:RotateAroundAxis(ent_ang:Forward(), 180)
-			portal:SetPos( portal:GetPos() - portal:GetUp() * portal:GetSize()[3] )
+			portal:SetPos(portal:GetPos() - portal:GetUp() * portal:GetSize()[3])
 		end
 
 		portal:SetAngles(ent_ang)
@@ -218,8 +217,8 @@ if CLIENT then
 				end
 			end
 			-- regular mode
-			render.SetColorMaterial()
 			local mins, maxs = Vector(size[1] * -0.5, size[2] * -0.5, -size[3]), Vector(size[1] * 0.5, size[2] * 0.5, 0)
+			render.SetColorMaterial()
 			render.DrawBox(pos, ang, mins, maxs, green)
 			render.DrawWireframeBox(pos, ang, mins, maxs, green, true)
 		cam.End3D()
