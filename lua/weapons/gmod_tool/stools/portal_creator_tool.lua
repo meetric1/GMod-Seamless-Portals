@@ -142,6 +142,7 @@ function TOOL:GetLinkTarget()
 	return self:GetOwner():GetNWEntity("SEAMLESS_PORTALS_LINK_TARGET")
 end
 
+local side1 = 0
 function TOOL:RightClick(trace)
 	if !trace.Hit then return false end
 
@@ -150,12 +151,37 @@ function TOOL:RightClick(trace)
 
 	if CLIENT then return true end
 
+	local side = -math.Sign( portal:GetUp():Dot( portal:GetPos() - self:GetOwner():GetShootPos() ) )
+
 	local stage = self:GetStage()
 	if stage <= 1 then
+		side1 = side
 		self:SetLinkTarget(portal)
 		self:SetStage(2)
 	else
-		portal:LinkPortal(self:GetLinkTarget())
+		local portal1 = self:GetLinkTarget()
+
+		if not IsValid( portal1 ) then
+			self:SetStage(1)
+			return
+		end
+
+		local entAng = Angle( portal:GetAngles() )
+
+		if side < 0 then
+			entAng:RotateAroundAxis( entAng:Forward(), 180 )
+		end
+
+		local linkTargetAng = Angle( portal1:GetAngles() )
+
+		if side1 < 0 then
+			linkTargetAng:RotateAroundAxis( linkTargetAng:Forward(), 180 )
+		end
+		
+		portal:SetAngles( entAng )
+		portal1:SetAngles( linkTargetAng )
+
+		portal:LinkPortal( portal1 )
 		self:SetStage(1)
 	end
 
@@ -198,11 +224,10 @@ if CLIENT then
 					render.SetMaterial(beam_material)
 					render.DrawBeam(from, to, 3, 0, 1)
 				end
-			else
-				-- regular mode
-				render.SetColorMaterial()
-				render.DrawBox(pos, ang, Vector(size[1] * -0.5, size[2] * -0.5, -size[3]), Vector(size[1] * 0.5, size[2] * 0.5, 0), green)
 			end
+			-- regular mode
+			render.SetColorMaterial()
+			render.DrawBox(pos, ang, Vector(size[1] * -0.5, size[2] * -0.5, -size[3]), Vector(size[1] * 0.5, size[2] * 0.5, 0), green)
 		cam.End3D()
 
 		if self.Name == "Portal Fitter" then
