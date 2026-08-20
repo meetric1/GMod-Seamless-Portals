@@ -36,6 +36,7 @@ if CLIENT then
 	CreateClientConVar("seamless_portals_sides", "4", false, true, "Sets the number of sides the portal has", 3, 100)
 	CreateClientConVar("seamless_portals_backface", "1", false, true, "Sets whether to spawn with a backface or not", 0, 1)
 	CreateClientConVar("seamless_portals_align", "1", false, true, "Enable/Disable Portal creator alignment helper", 0, 1)
+	CreateClientConVar("seamless_portals_toolsided", "1", false, true, "Enable/Disable whether the tooled side is the front.", 0, 1)
 
 	function TOOL.BuildCPanel(panel)
 		panel:AddControl("label", {text = "Creates and links portals"})
@@ -45,6 +46,7 @@ if CLIENT then
 		panel:NumSlider("Portal Sides", "seamless_portals_sides", 3, 100, 0)
         panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portals_backface")
         panel:CheckBox("Nudge Portals from walls", "seamless_portals_align")
+        panel:CheckBox("Make Tooled Side the Front", "seamless_portals_toolsided")
 	end
 end
 
@@ -142,20 +144,35 @@ function TOOL:GetLinkTarget()
 	return self:GetOwner():GetNWEntity("SEAMLESS_PORTALS_LINK_TARGET")
 end
 
+
 function TOOL:RightClick(trace)
 	if !trace.Hit then return false end
-
+	local owner = self:GetOwner()
 	local portal = trace.Entity
 	if !IsValid(portal) or portal:GetClass() ~= "seamless_portal" then return false end
 
 	if CLIENT then return true end
 
+	if owner:GetInfoNum("seamless_portals_toolsided", 0) == 1 then
+		local side = -math.Sign(portal:GetUp():Dot(portal:GetPos() - self:GetOwner():GetShootPos()))
+		local ent_ang = Angle(portal:GetAngles())
+
+		if side < 0 then
+			ent_ang:RotateAroundAxis(ent_ang:Forward(), 180)
+			portal:SetPos(portal:GetPos() - portal:GetUp() * portal:GetSize()[3])
+		end
+
+		portal:SetAngles(ent_ang)
+	end
+
 	local stage = self:GetStage()
 	if stage <= 1 then
+		portal:UnlinkPortal()
 		self:SetLinkTarget(portal)
 		self:SetStage(2)
 	else
-		portal:LinkPortal(self:GetLinkTarget())
+		local portal_1 = self:GetLinkTarget()
+		portal:LinkPortal(portal_1)
 		self:SetStage(1)
 	end
 
@@ -169,7 +186,7 @@ function TOOL:Reload(trace)
 
 	if CLIENT then return true end
 
-	portal:UnlinkPortal()
+	portal:SetExitPortal(nil)
 	return true
 end
 
@@ -198,11 +215,12 @@ if CLIENT then
 					render.SetMaterial(beam_material)
 					render.DrawBeam(from, to, 3, 0, 1)
 				end
-			else
-				-- regular mode
-				render.SetColorMaterial()
-				render.DrawBox(pos, ang, Vector(size[1] * -0.5, size[2] * -0.5, -size[3]), Vector(size[1] * 0.5, size[2] * 0.5, 0), green)
 			end
+			-- regular mode
+			local mins, maxs = Vector(size[1] * -0.5, size[2] * -0.5, -size[3]), Vector(size[1] * 0.5, size[2] * 0.5, 0)
+			render.SetColorMaterial()
+			render.DrawBox(pos, ang, mins, maxs, green)
+			render.DrawWireframeBox(pos, ang, mins, maxs, green, true)
 		cam.End3D()
 
 		if self.Name == "Portal Fitter" then
