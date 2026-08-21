@@ -169,9 +169,9 @@ elseif ( SERVER ) then
 			self:SetLinkTarget(ent)
 			self:SetStage(2)
 		else -- Linking a portal to itself for mirror dimension
-			local linkTarget = self:GetLinkTarget()
+			local link = self:GetLinkTarget()
 			-- LinkPortal already contains an IsValid check
-			ent:LinkPortal(linkTarget)
+			ent:LinkPortal(link)
 			self:SetStage(1)
 		end
 		return true
