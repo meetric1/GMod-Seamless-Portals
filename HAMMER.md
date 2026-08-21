@@ -28,12 +28,6 @@ Now the portals are set up. If you compile the map and run it with the addon tur
 ![](https://i.imgur.com/pGVx7lb.png)
 
 # Mapping Tips
-Before jumping in, please watch this small section "Figuring out the cameras" of Coding Adventure to learn in a basic sense how the portal rendering works:
-https://youtu.be/cWpFZbjtSQg?t=26
-1. Ensure there is space behind the portal, so the virtual camera is setup properly
-2. Do not make your portals super thin, they should be at least 8 units thick (z axis) to avoid flashing, thicker if possible
-3. Portals effectively rerender the entire scene, so try and keep whatever world geometry is visible from a portal semi optimized.
-4. Ensure the wall geometry around each portal seam is basically perfect, so you don't get stuck mid-teleport. Ground too, though the portals will attempt to extrude you upward as best they can.
-5. Keep into consideration that if there is a wall behind your portal, it is possible that there will be some PVS problems, where the virtual camera cannot see information in front of the wall (I cannot fix this, unfortunately). Try and make sure there are no areaportals behind the seamless portals
-
-<img width="277" height="104" alt="image" src="https://github.com/user-attachments/assets/efbdd48c-32e1-4b4a-93cf-338152b54bc5" />
+1. Do not make your portals super thin, they should be at least 8 units thick (z axis) to avoid flashing, thicker if possible
+2. Portals effectively rerender the entire scene, so try and keep whatever world geometry is visible from a portal semi optimized.
+3. Ensure the wall geometry around each portal seam is basically perfect, so you don't get stuck mid-teleport. Ground too, though the portals will attempt to extrude you upward as best they can.

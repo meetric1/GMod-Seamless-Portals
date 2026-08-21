@@ -120,7 +120,7 @@ end
 -- When the virtual camera is inside of a wall, it will cause problems with PVS
 	-- unrendering the map... turning off the skybox... etc.
 -- this sucks! it ruins immersion and causes horrendous flashing
--- what we can do is set the actual RenderView origin outside the map, so PVS gets set up correctly
+-- what we can do is set the actual RenderView origin inside the map, so PVS gets set up correctly
 	-- and then modify the camera location afterwords with a 3d cam. context
 -- Unfortunately, source doesn't make this process easy and camera contexts can ONLY be set up at specific times in the renderer
 -- But.. it is doable
@@ -128,7 +128,7 @@ end
 local skybox_info = nil
 local skybox_clipped = false
 local skybox_rendered = false
-hook.Add("PreDrawSkyBox", "", function()
+hook.Add("PreDrawSkyBox", "seamless_portals_renderview", function()
 	if !SeamlessPortals.Rendering then return end
 
 	skybox_info = skybox_info or game.Get3DSkyboxInfo()
@@ -136,7 +136,7 @@ hook.Add("PreDrawSkyBox", "", function()
 	skybox_rendered = true
 end)
 
-hook.Add("PostDraw2DSkyBox", "", function()
+hook.Add("PostDraw2DSkyBox", "seamless_portals_renderview", function()
 	if !SeamlessPortals.Rendering or !skybox_info then return end
 
 	if skybox_rendered then
@@ -144,7 +144,7 @@ hook.Add("PostDraw2DSkyBox", "", function()
 	end
 end)
 
-hook.Add("PostDrawSkyBox", "", function()
+hook.Add("PostDrawSkyBox", "seamless_portals_renderview", function()
 	if !SeamlessPortals.Rendering then return end
 
 	pop_cams()
@@ -152,7 +152,7 @@ hook.Add("PostDrawSkyBox", "", function()
 	skybox_rendered = false
 end)
 
-hook.Add("SetupWorldFog", "", function()
+hook.Add("SetupWorldFog", "seamless_portals_renderview", function()
 	if !SeamlessPortals.Rendering then return end
 
 	pop_cams()
@@ -201,8 +201,22 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 		if SeamlessPortals.ShouldRender(portal, eye_pos, eye_ang, SeamlessPortals.GetDrawDistance()) then
 			local new_pos, new_ang = SeamlessPortals.TransformPortal(portal, exit_portal, eye_pos, eye_ang)
 			local clip_up = exit_portal:GetUp()
-			local clip_pos = exit_portal:GetPos()
+
+			-- figure out where virtual camera VVIS should be set up. This is clamped within portal bounds
+			local exit_portal_size = exit_portal:GetSize() exit_portal_size:Mul(1 / 2)
+			local exit_portal_pos = exit_portal:GetPos()
+			local exit_portal_forward = exit_portal:GetForward()
+			local exit_portal_right = exit_portal:GetRight()
+			local new_pos_delta = new_pos - exit_portal_pos
+			local exit_portal_forward_length = math.Clamp(new_pos_delta:Dot(exit_portal_forward), -(exit_portal_size[1]), exit_portal_size[1])
+			local exit_portal_right_length = math.Clamp(new_pos_delta:Dot(exit_portal_right), -(exit_portal_size[2]), exit_portal_size[2])
+			local clip_pos = exit_portal_pos
+			exit_portal_forward:Mul(exit_portal_forward_length)
+			exit_portal_right:Mul(exit_portal_right_length)
+			clip_pos:Add(exit_portal_forward)
+			clip_pos:Add(exit_portal_right)
 			clip_pos:Sub(clip_up * 0.1)
+			--debugoverlay.Sphere(clip_pos, 10, 0.05)
 
 			renderview_table.origin:Set(clip_pos)
 			renderview_table.angles:Set(new_ang)

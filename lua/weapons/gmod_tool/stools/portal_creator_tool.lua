@@ -46,7 +46,7 @@ if CLIENT then
 		panel:NumSlider("Portal Sides", "seamless_portals_sides", 3, 100, 0)
         panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portals_backface")
         panel:CheckBox("Nudge Portals from walls", "seamless_portals_align")
-        panel:CheckBox("Make Tooled Side the Front", "seamless_portals_toolsided")
+        panel:CheckBox("Make Tooled side the front", "seamless_portals_toolsided")
 	end
 end
 
@@ -100,8 +100,6 @@ end
 -- portal creation
 function TOOL:LeftClick(trace)
 	if !trace.Hit then return false end
-
-	self:SetStage(1)
 
 	local pos, ang, size = self:GetPlacementPosition(trace)
 	if !pos then return false end
