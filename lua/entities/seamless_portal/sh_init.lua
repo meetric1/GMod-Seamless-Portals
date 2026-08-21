@@ -39,8 +39,8 @@ function ENT:UpdatePhysmesh(size, sides)
 	sides = sides or self:GetSides()
 
 	local finalMesh = {}
-	local angMul = (360 / sides)
-	local angPick = (sides % 4 != 0 and 0 or 45)
+	local angMul = 360 / sides
+	local angPick = sides % 4 != 0 and 0 or 45
 	local degOffset = math.rad(sides * 90 + angPick)
 	for side = 1, sides do
 		local sidea = math.rad(side * angMul) + degOffset
@@ -59,7 +59,7 @@ function ENT:UpdatePhysmesh(size, sides)
 	self:EnableCustomCollisions(true)
 
 	local phys = self:GetPhysicsObject()
-	if(phys and phys:IsValid()) then
+	if phys and phys:IsValid() then
 		phys:EnableMotion(false)
 		phys:SetMaterial("glass")
 		phys:SetMass(250)
