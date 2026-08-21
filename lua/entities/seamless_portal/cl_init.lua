@@ -145,8 +145,6 @@ SeamlessPortals.GetDrawDistance = function()
 	return varDrawDistance:GetFloat()
 end
 
-SeamlessPortals.PortalRT = GetRenderTarget("seamless_portal_rt", ScrW(), ScrH())
-
 -- Create meshes used for the portals
 -- They can have a dynamic amount of sides
 SeamlessPortals.PortalMeshes = {}

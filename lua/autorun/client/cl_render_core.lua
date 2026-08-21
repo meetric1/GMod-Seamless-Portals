@@ -47,7 +47,7 @@ end
 
 update_sky()
 
--- draw the 2d skybox in place of the black (Thanks to Fafy2801 for the sky material reference)
+-- clear the framebuffer with the 2d skybox (Thanks to Fafy2801 for the sky material reference)
 local function draw_sky(eye_pos)
 	for i, dir in ipairs(sky_directions) do
 		render.SetMaterial(sky_materials[i])
@@ -65,20 +65,6 @@ local function get_framebuffer(name)
 	    IMAGE_FORMAT_RGBA8888
 	)
 end
-
--- The implementation of halos sucks.
--- We must disable clipping so that the framebuffer doesn't become corrupted
--- we only do this during portal rendering, so it shouldnt affect other operations,
--- since the clip state gets set back after rendering
-hook.Add("PreDrawEffects", "seamless_portals_effects", function()
-	if !SeamlessPortals.Rendering then return end
-
-	render.EnableClipping(false)
-end)
-
-------------
--- SKYBOX --
-------------
 
 timer.Create("seamless_portal_distance_fix", 0.5, 0, function()
 	local eye_pos = MainEyePos()
@@ -101,6 +87,15 @@ timer.Create("seamless_portal_distance_fix", 0.5, 0, function()
 	update_sky()
 end)
 
+-- Oh boy... VVIS with renderview.. my favorite problem
+-- When the virtual camera is inside of a wall, it will cause problems with PVS
+	-- unrendering the map... turning off the skybox... etc.
+-- this sucks! it ruins immersion and causes horrendous flashing
+-- what we can do is set the actual RenderView origin inside the map, so PVS gets set up correctly
+	-- and then modify the camera location afterwords with a 3d cam. context
+-- Unfortunately, source doesn't make this process easy and camera contexts can ONLY be set up at specific times in the renderer
+-- But.. it is doable
+
 local cams = 0
 local offset = Vector()
 local function push_cam(scale)
@@ -115,15 +110,6 @@ local function pop_cams()
 
 	cams = 0
 end
-
--- Oh boy... VVIS with renderview.. my favorite problem
--- When the virtual camera is inside of a wall, it will cause problems with PVS
-	-- unrendering the map... turning off the skybox... etc.
--- this sucks! it ruins immersion and causes horrendous flashing
--- what we can do is set the actual RenderView origin inside the map, so PVS gets set up correctly
-	-- and then modify the camera location afterwords with a 3d cam. context
--- Unfortunately, source doesn't make this process easy and camera contexts can ONLY be set up at specific times in the renderer
--- But.. it is doable
 
 local skybox_info = nil
 local skybox_clipped = false
@@ -159,6 +145,16 @@ hook.Add("SetupWorldFog", "seamless_portals_renderview", function()
 	push_cam(1)
 end)
 
+-- The implementation of halos sucks.
+-- We must disable clipping so that the framebuffer doesn't become corrupted
+-- we only do this during portal rendering, so it shouldnt affect other operations,
+-- since the clip state gets set back after rendering
+hook.Add("PreDrawEffects", "seamless_portals_effects", function()
+	if !SeamlessPortals.Rendering then return end
+
+	render.EnableClipping(false)
+end)
+
 -- TODO: ideally we could "clip" the edges that we know are going to be discarded
 local function render_scene(cam_pos, clip_pos, clip_up)
 	SeamlessPortals.Rendering = SeamlessPortals.Rendering or true
@@ -175,7 +171,8 @@ local function render_scene(cam_pos, clip_pos, clip_up)
 	SeamlessPortals.Rendering = false
 end
 
--- TODO: ideally use a pre-allocated framebuffer
+-- TODO: ideally use pre-allocated framebuffers
+SeamlessPortals.PortalRT = get_framebuffer("seamless_portals_backbuffer")
 local framebuffer = get_framebuffer("seamless_portals_framebuffer")
 hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 	if !SeamlessPortals or #SeamlessPortals.Portals < 1 then return end
