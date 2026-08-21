@@ -153,14 +153,14 @@ SeamlessPortals.PortalMeshes = {}
 SeamlessPortals.GetRenderMesh = function(sides)
 	if !SeamlessPortals.PortalMeshes[sides] then
 		SeamlessPortals.PortalMeshes[sides] = Mesh()
-
 		local meshTable = {}
-		local angleMul = 360 / sides
-		local degreeOffset = (sides * 90 + (sides % 4 != 0 and 0 or 45)) * (math.pi / 180)
+		local angMul = (360 / sides)
+		local angPick = (sides % 4 != 0 and 0 or 45)
+		local degOffset = math.rad(sides * 90 + angPick)
 		for side = 1, sides do
 			local side1 = Vector(0, 0, -1)
-			local sidex = math.rad(side * angleMul) + degreeOffset
-			local sidey = math.rad((side + 1) * angleMul) + degreeOffset
+			local sidex = math.rad(side * angMul) + degOffset
+			local sidey = math.rad((side + 1) * angMul) + degOffset
 			local side2 = Vector(math.sin(sidex), math.cos(sidex), -1)
 			local side3 = Vector(math.sin(sidey), math.cos(sidey), -1)
 

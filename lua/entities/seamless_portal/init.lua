@@ -14,11 +14,11 @@ end
 
 duplicator.RegisterEntityModifier("seamless_portals_dupe_link", set_dupe_link)
 
-function ENT:PostEntityPaste(_, _, created_entites)
+function ENT:PostEntityPaste(_, _, created)
 	local dupelink = self.SEAMLESS_PORTALS_DUPE_LINK
 	if !dupelink then return end
 
-	local portal_exit = created_entites[dupelink.exit_id]
+	local portal_exit = created[dupelink.exit_id]
 
 	if IsValid(portal_exit) then
 		self:LinkPortal(portal_exit)
