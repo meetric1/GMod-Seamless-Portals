@@ -23,7 +23,7 @@ if CLIENT then
 		panel:NumSlider("Portal Snap Angle", "seamless_portals_snap_angle", 0, 90, 0)
 		panel:NumSlider("Portal Size Z", "seamless_portals_size_z", 1, 100, 1)
 		panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portals_backface")
-        panel:CheckBox("Tooled Side is Front?", "seamless_portals_toolsided")
+        panel:CheckBox("Make Tooled side the front", "seamless_portals_toolsided")
 	end
 end
 
