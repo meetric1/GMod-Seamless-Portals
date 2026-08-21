@@ -189,16 +189,27 @@ local function extrude_player(ply, ply_pos)
 end
 
 -- client lerp prevention
+-- TODO: though it doesnt really matter, might be good practice to cache these functions
 local function lerp_teleport(start_pos, start_vel)
+	-- reset values after teleport
+	timer.Create("seamless_portals_lerp_teleport", 0.3, 1, function()
+		SeamlessPortals.DrawPlayerInView = true
+		hook.Remove("CalcView", "seamless_portals_lerp_teleport")
+		hook.Remove("CalcViewModelView", "seamless_portals_lerp_teleport")
+		hook.Remove("GetMotionBlurValues", "seamless_portals_lerp_teleport")
+
+		-- reset roll
+		local lp = LocalPlayer()
+		local ang = lp:EyeAngles() ang[3] = 0
+		lp:SetEyeAngles(ang)
+	end)
+
 	local ply = LocalPlayer()
-	if ply:GetViewEntity() != ply then return end -- viewing from a camera
+	if ply:GetViewEntity() != ply then -- viewing from a camera, no need to lerp
+		return
+	end
 
 	SeamlessPortals.DrawPlayerInView = false
-	timer.Remove("seamless_portals_lerp_teleport")	--in case you enter the portal while the timer is running
-
-	local weapon_pos = Vector()
-	local total_frame_time = 0
-
 	start_pos = Vector(start_pos) -- this will be self-modified
 
 	-- need for frame interp. noticable flashing over this speed. Hacky
@@ -207,7 +218,10 @@ local function lerp_teleport(start_pos, start_vel)
 		start_pos:Sub(start_vel * FrameTime())
 	end
 
-	hook.Add("CalcView", "seamless_portals_fix", function(_, pos, ang)
+	local weapon_pos = Vector(start_pos)
+	local total_frame_time = 0
+
+	hook.Add("CalcView", "seamless_portals_lerp_teleport", function(_, pos, ang)
 		local frame_time = FrameTime()
 		ang[3] = ang[3] * math.pow(math.max(0.3 - total_frame_time, 0) / 0.3, 3)
 
@@ -221,7 +235,7 @@ local function lerp_teleport(start_pos, start_vel)
 			pos:Set(start_pos)
 		elseif !SeamlessPortals.DrawPlayerInView then
 			SeamlessPortals.DrawPlayerInView = true
-			hook.Remove("GetMotionBlurValues", "seamless_portals_fix")
+			hook.Remove("GetMotionBlurValues", "seamless_portals_lerp_teleport")
 		end
 
 		weapon_pos:Set(pos)
@@ -229,26 +243,14 @@ local function lerp_teleport(start_pos, start_vel)
 		total_frame_time = total_frame_time + frame_time
 	end)
 
-	hook.Add("CalcViewModelView", "seamless_portals_fix", function(wep, vm, oldPos, oldAng, pos, ang)
+	hook.Add("CalcViewModelView", "seamless_portals_lerp_teleport", function(_, _, _, _, pos, ang)
 		pos:Set(weapon_pos)
 		ang[3] = ang[3] * math.pow(math.max(0.3 - total_frame_time, 0) / 0.3, 3)
 	end)
 
 	-- >:)
-	hook.Add("GetMotionBlurValues", "seamless_portals_fix", function(h, v, f, r)
+	hook.Add("GetMotionBlurValues", "seamless_portals_lerp_teleport", function(h, v, f, r)
 		return 0, 0, 0, 0
-	end)
-
-	timer.Create("seamless_portals_lerp_teleport", 0.3, 1, function()
-		SeamlessPortals.DrawPlayerInView = true
-		hook.Remove("CalcView", "seamless_portals_fix")
-		hook.Remove("CalcViewModelView", "seamless_portals_fix")
-		hook.Remove("GetMotionBlurValues", "seamless_portals_fix")
-
-		-- reset roll
-		local lp = LocalPlayer()
-		local ang = lp:EyeAngles() ang[3] = 0
-		lp:SetEyeAngles(ang)
 	end)
 end
 
