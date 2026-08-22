@@ -81,22 +81,24 @@ local function setPortalPlacement(owner, portal)
 	end
 
 	-- Extrude portal from the ground
-	local af, au = ang:Forward(), ang:Right()
+	local port_fw, port_up = ang:Forward(), ang:Right()
+	local hit_pos = tr.HitPos + tr.HitNormal
+	port_fw:Mul(siz[1] * size_mult[1])
+	port_up:Mul(siz[2] * size_mult[2])
+
 	local angTab = {
-		 af * siz[1] * size_mult[1],
-		-af * siz[1] * size_mult[1],
-		 au * siz[2] * size_mult[2],
-		-au * siz[2] * size_mult[2]
+		port_fw, port_fw:GetNegated(),
+		port_up, port_up:GetNegated()
 	}
 	for i = 1, 4 do
 		local extr = SeamlessPortals.TraceLine({
-			start  = tr.HitPos + tr.HitNormal,
-			endpos = tr.HitPos + tr.HitNormal - angTab[i],
+			start  = hit_pos,
+			endpos = hit_pos - angTab[i],
 			filter = seamlessCheck,
 		})
 
 		if extr.Hit then
-			tr.HitPos = tr.HitPos + angTab[i] * (1 - extr.Fraction)
+			tr.HitPos:Add(angTab[i] * (1 - extr.Fraction))
 		end
 	end
 

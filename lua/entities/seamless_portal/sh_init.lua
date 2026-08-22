@@ -39,14 +39,14 @@ function ENT:UpdatePhysmesh(size, sides)
 	sides = sides or self:GetSides()
 
 	local finalMesh = {}
-	local angleMul = 360 / sides
-	local degreeOffset = (sides * 90 + (sides % 4 != 0 and 0 or 45)) * (math.pi / 180)
+	local ang_mul = 360 / sides
+	local ang_pick = sides % 4 != 0 and 0 or 45
+	local rad_offset = math.rad(sides * 90 + ang_pick)
 	for side = 1, sides do
-		local sidea = math.rad(side * angleMul) + degreeOffset
-		local sidex = math.sin(sidea)
-		local sidey = math.cos(sidea)
-		local side1 = Vector(sidex, sidey, -1) side1:Mul(size)
-		local side2 = Vector(sidex, sidey,  0) side2:Mul(size)
+		local sidea = math.rad(side * ang_mul) + rad_offset
+		local sidex, sidey = math.sin(sidea), math.cos(sidea)
+		local side1 = Vector(sidex, sidey, -1); side1:Mul(size)
+		local side2 = Vector(sidex, sidey,  0); side2:Mul(size)
 		table.insert(finalMesh, side1)
 		table.insert(finalMesh, side2)
 	end
@@ -57,9 +57,13 @@ function ENT:UpdatePhysmesh(size, sides)
 		return
 	end
 	self:EnableCustomCollisions(true)
-	self:GetPhysicsObject():EnableMotion(false)
-	self:GetPhysicsObject():SetMaterial("glass")
-	self:GetPhysicsObject():SetMass(250)
+
+	local phys = self:GetPhysicsObject()
+	if phys and phys:IsValid() then
+		phys:EnableMotion(false)
+		phys:SetMaterial("glass")
+		phys:SetMass(250)
+	end
 
 	if CLIENT then
 		self:SetRenderBounds(-size, size)
