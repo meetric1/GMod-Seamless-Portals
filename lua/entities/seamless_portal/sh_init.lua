@@ -39,11 +39,11 @@ function ENT:UpdatePhysmesh(size, sides)
 	sides = sides or self:GetSides()
 
 	local finalMesh = {}
-	local angMul = 360 / sides
-	local angPick = sides % 4 != 0 and 0 or 45
-	local degOffset = math.rad(sides * 90 + angPick)
+	local ang_mul = 360 / sides
+	local ang_pick = sides % 4 != 0 and 0 or 45
+	local rad_offset = math.rad(sides * 90 + ang_pick)
 	for side = 1, sides do
-		local sidea = math.rad(side * angMul) + degOffset
+		local sidea = math.rad(side * ang_mul) + rad_offset
 		local sidex, sidey = math.sin(sidea), math.cos(sidea)
 		local side1 = Vector(sidex, sidey, -1); side1:Mul(size)
 		local side2 = Vector(sidex, sidey,  0); side2:Mul(size)
