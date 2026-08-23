@@ -45,8 +45,8 @@ function ENT:UpdatePhysmesh(size, sides)
 	for side = 1, sides do
 		local sidea = math.rad(side * ang_mul) + rad_offset
 		local sidex, sidey = math.sin(sidea), math.cos(sidea)
-		local side1 = Vector(sidex, sidey, -1); side1:Mul(size)
-		local side2 = Vector(sidex, sidey,  0); side2:Mul(size)
+		local side1 = Vector(sidex, sidey, -1) side1:Mul(size)
+		local side2 = Vector(sidex, sidey,  0) side2:Mul(size)
 		table.insert(finalMesh, side1)
 		table.insert(finalMesh, side2)
 	end
