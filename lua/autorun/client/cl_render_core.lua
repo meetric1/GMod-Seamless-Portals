@@ -98,17 +98,16 @@ end)
 -- what we can do is set the actual RenderView origin inside the map, so PVS gets set up correctly
 	-- and then modify the camera location afterwords with a 3d cam. context
 -- Unfortunately, source doesn't make this process easy and camera contexts can ONLY be set up at specific times in the renderer
--- But.. it is doable
 
 local clip_pos = Vector()
 local clip_up = Vector()
 local clip_offset = Vector()
-local num_cam_matrix = 0
 local num_cam_3d = 0
+local num_cam_matrix = 0
 local offset_matrix = Matrix()
 
 local function push_cam(scale)
-	cam.Start3D(EyePos() - clip_offset * scale, EyeAngles())
+	cam.Start3D(renderview_table.origin - clip_offset * scale, renderview_table.angles, renderview_table.fov)
 	num_cam_3d = num_cam_3d + 1
 end
 
@@ -116,18 +115,17 @@ local function push_matrix(scale)
 	offset_matrix:Identity()
 	offset_matrix:SetTranslation(clip_offset * scale)
 	cam.PushModelMatrix(offset_matrix)
-	render.PushCustomClipPlane(clip_up, clip_up:Dot(clip_pos + clip_offset * scale))
 	num_cam_matrix = num_cam_matrix + 1
 end
 
 local function pop_cams()
+	if !SeamlessPortals.Rendering then return end
 	for _ = 1, num_cam_3d do
 		cam.End3D()
 	end
 
 	for _ = 1, num_cam_matrix do
 		cam.PopModelMatrix()
-		render.PopCustomClipPlane()
 	end
 
 	num_cam_3d = 0
@@ -135,50 +133,30 @@ local function pop_cams()
 end
 
 local skybox_info = nil
-local skybox_rendered = false
 hook.Add("PreDrawSkyBox", "seamless_portals_renderview", function()
 	if !SeamlessPortals.Rendering then return end
 
 	render.EnableClipping(false) -- disable clipping in the skybox
 	skybox_info = skybox_info or game.Get3DSkyboxInfo()
-	skybox_rendered = true
-end)
+	if !skybox_info then return end
 
-hook.Add("PostDraw2DSkyBox", "seamless_portals_renderview", function()
-	if !SeamlessPortals.Rendering or !skybox_info then return end
-
-	if skybox_rendered then
-		pop_cams()
-		push_matrix(0)
-		push_cam(1 / skybox_info.scale)
-		skybox_rendered = false
-	end
+	renderview_table.origin:Mul(1 / skybox_info.scale)
+	renderview_table.origin:Add(skybox_info.origin)
+	pop_cams()
+	push_cam(1 / skybox_info.scale)
 end)
 
 hook.Add("PostDrawSkyBox", "seamless_portals_renderview", function()
 	if !SeamlessPortals.Rendering then return end
 
 	render.EnableClipping(true)
-end)
-
-hook.Add("PreDrawOpaqueRenderables", "seamless_portals_renderview", function(_, _, sky3d)
-	if !SeamlessPortals.Rendering then return end
-
 	pop_cams()
-	push_matrix(0)
-	if sky3d and skybox_info then
-		push_cam(1 / skybox_info.scale)
-	else
-		push_cam(1)
-	end
 end)
 
-hook.Add("PostDrawTranslucentRenderables", "seamless_portals_renderview", function()
-	if !SeamlessPortals.Rendering then return end
-
-	pop_cams()
-	push_matrix(1)
-end)
+local nofunc = function() end
+hook.Add("PostDraw2DSkyBox", "seamless_portals_renderview", pop_cams)
+hook.Add("SetupWorldFog", "seamless_portals_renderview", pop_cams)
+hook.Add("PreDrawOpaqueRenderables", "seamless_portals_renderview", pop_cams)
 
 -- The implementation of halos sucks.
 -- We must disable clipping so that the framebuffer doesn't become corrupted
@@ -195,8 +173,10 @@ local function render_scene()
 	SeamlessPortals.Rendering = SeamlessPortals.Rendering or true
 
 	local clip = render.EnableClipping(true)
-	push_matrix(1)
+	push_cam(1)
+	render.PushCustomClipPlane(clip_up, clip_up:Dot(clip_pos))
 	render.RenderView(renderview_table)
+	render.PopCustomClipPlane()
 	pop_cams()
 	render.EnableClipping(clip)
 	SeamlessPortals.Rendering = false

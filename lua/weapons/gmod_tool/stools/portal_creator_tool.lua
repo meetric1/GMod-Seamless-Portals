@@ -152,7 +152,7 @@ function TOOL:RightClick(trace)
 	if CLIENT then return true end
 
 	if owner:GetInfoNum("seamless_portals_toolsided", 0) == 1 then
-		local side = -math.Sign(portal:GetUp():Dot(portal:GetPos() - self:GetOwner():GetShootPos()))
+		local side = portal:GetUp():Dot(portal:GetPos() - self:GetOwner():GetShootPos()) < 0 and 1 or -1
 		local ent_ang = Angle(portal:GetAngles())
 
 		if side < 0 then
