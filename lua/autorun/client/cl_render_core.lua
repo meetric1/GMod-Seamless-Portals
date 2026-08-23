@@ -153,7 +153,6 @@ hook.Add("PostDrawSkyBox", "seamless_portals_renderview", function()
 	pop_cams()
 end)
 
-local nofunc = function() end
 hook.Add("PostDraw2DSkyBox", "seamless_portals_renderview", pop_cams)
 hook.Add("SetupWorldFog", "seamless_portals_renderview", pop_cams)
 hook.Add("PreDrawOpaqueRenderables", "seamless_portals_renderview", pop_cams)

@@ -97,7 +97,7 @@ function ENT:DrawStenciled(texture, flip, nudge_z)
 		if flip then
 			render.DrawTextureToScreenRect(texture, ScrW(), 0, -ScrW(), ScrH())
 		else
-			render.DrawTextureToScreenRect(texture, 0, 0, ScrW(), ScrH())
+			render.DrawTextureToScreen(texture)
 		end
 
 		render.SetStencilEnable(false)
