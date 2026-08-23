@@ -103,19 +103,10 @@ local clip_pos = Vector()
 local clip_up = Vector()
 local clip_offset = Vector()
 local num_cam_3d = 0
-local num_cam_matrix = 0
-local offset_matrix = Matrix()
 
 local function push_cam(scale)
 	cam.Start3D(renderview_table.origin - clip_offset * scale, renderview_table.angles, renderview_table.fov)
 	num_cam_3d = num_cam_3d + 1
-end
-
-local function push_matrix(scale)
-	offset_matrix:Identity()
-	offset_matrix:SetTranslation(clip_offset * scale)
-	cam.PushModelMatrix(offset_matrix)
-	num_cam_matrix = num_cam_matrix + 1
 end
 
 local function pop_cams()
@@ -124,12 +115,7 @@ local function pop_cams()
 		cam.End3D()
 	end
 
-	for _ = 1, num_cam_matrix do
-		cam.PopModelMatrix()
-	end
-
 	num_cam_3d = 0
-	num_cam_matrix = 0
 end
 
 local skybox_info = nil
@@ -146,16 +132,21 @@ hook.Add("PreDrawSkyBox", "seamless_portals_renderview", function()
 	push_cam(1 / skybox_info.scale)
 end)
 
+hook.Add("PostDraw2DSkyBox", "seamless_portals_renderview", pop_cams)
 hook.Add("PostDrawSkyBox", "seamless_portals_renderview", function()
 	if !SeamlessPortals.Rendering then return end
 
 	render.EnableClipping(true)
-	pop_cams()
 end)
 
-hook.Add("PostDraw2DSkyBox", "seamless_portals_renderview", pop_cams)
-hook.Add("SetupWorldFog", "seamless_portals_renderview", pop_cams)
-hook.Add("PreDrawOpaqueRenderables", "seamless_portals_renderview", pop_cams)
+local setup_world_fog_table = nil
+local setup_world_fog_override = {[""] = function()
+	pop_cams()
+
+	-- emulate hook library
+	hook.GetTable().SetupWorldFog = setup_world_fog_table
+	return hook.Run("SetupWorldFog")
+end}
 
 -- The implementation of halos sucks.
 -- We must disable clipping so that the framebuffer doesn't become corrupted
@@ -229,10 +220,17 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 			renderview_table.fov = fov
 			renderview_table.drawviewer = SeamlessPortals.DrawPlayerInView
 
+			-- I NEED this hook to setup cams properly! No overriding allowed..
+			local hook_table = hook.GetTable()
+			setup_world_fog_table = hook_table.SetupWorldFog
+			hook_table.SetupWorldFog = setup_world_fog_override
+
 			render.PushRenderTarget(framebuffer)
 			SeamlessPortals.Rendering = exit_portal
 			render_scene()
 			render.PopRenderTarget()
+
+			hook_table.SetupWorldFog = setup_world_fog_table
 
 			-- Draw quad reversed if the portal is linked to itself
 			portal:DrawStenciled(framebuffer, portal == exit_portal, 1.01)
