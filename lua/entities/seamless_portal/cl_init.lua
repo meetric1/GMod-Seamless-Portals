@@ -120,7 +120,7 @@ end
 
 function ENT:Think()
 	local phys = self:GetPhysicsObject()
-	if phys:IsValid() then
+	if IsValid(phys) then
 		phys:EnableMotion(false)
 		phys:SetPos(self:GetPos())
 		phys:SetAngles(self:GetAngles())
@@ -147,14 +147,14 @@ SeamlessPortals.PortalMeshes = {}
 SeamlessPortals.GetRenderMesh = function(sides)
 	if !SeamlessPortals.PortalMeshes[sides] then
 		SeamlessPortals.PortalMeshes[sides] = Mesh()
-
 		local meshTable = {}
-		local angleMul = 360 / sides
-		local degreeOffset = (sides * 90 + (sides % 4 != 0 and 0 or 45)) * (math.pi / 180)
+		local ang_mul = 360 / sides
+		local ang_pick = sides % 4 != 0 and 0 or 45
+		local rad_offset = math.rad(sides * 90 + ang_pick)
 		for side = 1, sides do
 			local side1 = Vector(0, 0, -1)
-			local sidex = math.rad(side * angleMul) + degreeOffset
-			local sidey = math.rad((side + 1) * angleMul) + degreeOffset
+			local sidex = math.rad(side * ang_mul) + rad_offset
+			local sidey = math.rad((side + 1) * ang_mul) + rad_offset
 			local side2 = Vector(math.sin(sidex), math.cos(sidex), -1)
 			local side3 = Vector(math.sin(sidey), math.cos(sidey), -1)
 
