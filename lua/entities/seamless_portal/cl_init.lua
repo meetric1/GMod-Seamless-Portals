@@ -120,7 +120,7 @@ end
 
 function ENT:Think()
 	local phys = self:GetPhysicsObject()
-	if phys and phys:IsValid() then
+	if IsValid(phys) then
 		phys:EnableMotion(false)
 		phys:SetPos(self:GetPos())
 		phys:SetAngles(self:GetAngles())
