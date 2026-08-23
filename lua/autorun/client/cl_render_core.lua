@@ -66,6 +66,10 @@ local function get_framebuffer(name)
 	)
 end
 
+-- TODO: ideally use pre-allocated framebuffers
+SeamlessPortals.PortalRT = get_framebuffer("seamless_portals_backbuffer")
+local framebuffer = get_framebuffer("seamless_portals_framebuffer")
+
 timer.Create("seamless_portal_distance_fix", 0.5, 0, function()
 	local eye_pos = MainEyePos()
 	table.sort(SeamlessPortals.Portals, function(a, b)
@@ -96,29 +100,47 @@ end)
 -- Unfortunately, source doesn't make this process easy and camera contexts can ONLY be set up at specific times in the renderer
 -- But.. it is doable
 
-local cams = 0
-local offset = Vector()
+local clip_pos = Vector()
+local clip_up = Vector()
+local clip_offset = Vector()
+local num_cam_matrix = 0
+local num_cam_3d = 0
+local offset_matrix = Matrix()
+
 local function push_cam(scale)
-	cam.Start3D(EyePos() - offset * scale)
-	cams = cams + 1
+	cam.Start3D(EyePos() - clip_offset * scale, EyeAngles())
+	num_cam_3d = num_cam_3d + 1
+end
+
+local function push_matrix(scale)
+	offset_matrix:Identity()
+	offset_matrix:SetTranslation(clip_offset * scale)
+	cam.PushModelMatrix(offset_matrix)
+	render.PushCustomClipPlane(clip_up, clip_up:Dot(clip_pos + clip_offset * scale))
+	num_cam_matrix = num_cam_matrix + 1
 end
 
 local function pop_cams()
-	for _ = 1, cams do
+	for _ = 1, num_cam_3d do
 		cam.End3D()
 	end
 
-	cams = 0
+	for _ = 1, num_cam_matrix do
+		cam.PopModelMatrix()
+		render.PopCustomClipPlane()
+	end
+
+	num_cam_3d = 0
+	num_cam_matrix = 0
 end
 
 local skybox_info = nil
-local skybox_clipped = false
 local skybox_rendered = false
 hook.Add("PreDrawSkyBox", "seamless_portals_renderview", function()
 	if !SeamlessPortals.Rendering then return end
 
+	render.EnableClipping(false) -- disable clipping in the skybox
 	skybox_info = skybox_info or game.Get3DSkyboxInfo()
-	skybox_clipped = render.EnableClipping(false) -- disable clipping in the skybox
 	skybox_rendered = true
 end)
 
@@ -126,6 +148,8 @@ hook.Add("PostDraw2DSkyBox", "seamless_portals_renderview", function()
 	if !SeamlessPortals.Rendering or !skybox_info then return end
 
 	if skybox_rendered then
+		pop_cams()
+		push_matrix(0)
 		push_cam(1 / skybox_info.scale)
 	end
 end)
@@ -133,16 +157,25 @@ end)
 hook.Add("PostDrawSkyBox", "seamless_portals_renderview", function()
 	if !SeamlessPortals.Rendering then return end
 
-	pop_cams()
-	render.EnableClipping(skybox_clipped)
-	skybox_rendered = false
+	render.EnableClipping(true)
 end)
 
-hook.Add("SetupWorldFog", "seamless_portals_renderview", function()
+hook.Add("PreDrawOpaqueRenderables", "seamless_portals_renderview", function(_, _, sky3d)
 	if !SeamlessPortals.Rendering then return end
 
 	pop_cams()
-	push_cam(1)
+	push_matrix(0)
+	if sky3d and skybox_info then
+		push_cam(1 / skybox_info.scale)
+	else
+		push_cam(1)
+	end
+end)
+
+hook.Add("PostDrawTranslucentRenderables", "seamless_portals_renderview", function()
+	if !SeamlessPortals.Rendering then return end
+
+	pop_cams()
 end)
 
 -- The implementation of halos sucks.
@@ -156,24 +189,17 @@ hook.Add("PreDrawEffects", "seamless_portals_effects", function()
 end)
 
 -- TODO: ideally we could "clip" the edges that we know are going to be discarded
-local function render_scene(cam_pos, clip_pos, clip_up)
+local function render_scene()
 	SeamlessPortals.Rendering = SeamlessPortals.Rendering or true
 
-	offset:Set(clip_pos)
-	offset:Sub(cam_pos)
-
 	local clip = render.EnableClipping(true)
-	render.PushCustomClipPlane(clip_up, clip_up:Dot(clip_pos))
+	push_matrix(1)
 	render.RenderView(renderview_table)
 	pop_cams()
-	render.PopCustomClipPlane()
 	render.EnableClipping(clip)
 	SeamlessPortals.Rendering = false
 end
 
--- TODO: ideally use pre-allocated framebuffers
-SeamlessPortals.PortalRT = get_framebuffer("seamless_portals_backbuffer")
-local framebuffer = get_framebuffer("seamless_portals_framebuffer")
 hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 	if !SeamlessPortals or #SeamlessPortals.Portals < 1 then return end
 
@@ -197,7 +223,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 
 		if SeamlessPortals.ShouldRender(portal, eye_pos, eye_ang, SeamlessPortals.GetDrawDistance()) then
 			local new_pos, new_ang = SeamlessPortals.TransformPortal(portal, exit_portal, eye_pos, eye_ang)
-			local clip_up = exit_portal:GetUp()
+			clip_up:Set(exit_portal:GetUp())
 
 			-- figure out where virtual camera VVIS should be set up. This is clamped within portal bounds
 			local exit_portal_size = exit_portal:GetSize() exit_portal_size:Mul(1 / 2)
@@ -207,12 +233,14 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 			local new_pos_delta = new_pos - exit_portal_pos
 			local exit_portal_forward_length = math.Clamp(new_pos_delta:Dot(exit_portal_forward), -(exit_portal_size[1]), exit_portal_size[1])
 			local exit_portal_right_length = math.Clamp(new_pos_delta:Dot(exit_portal_right), -(exit_portal_size[2]), exit_portal_size[2])
-			local clip_pos = exit_portal_pos
+			clip_pos:Set(exit_portal_pos)
 			exit_portal_forward:Mul(exit_portal_forward_length)
 			exit_portal_right:Mul(exit_portal_right_length)
 			clip_pos:Add(exit_portal_forward)
 			clip_pos:Add(exit_portal_right)
 			clip_pos:Sub(clip_up * 0.1)
+			clip_offset:Set(clip_pos)
+			clip_offset:Sub(new_pos)
 			--debugoverlay.Sphere(clip_pos, 10, 0.05)
 
 			renderview_table.origin:Set(clip_pos)
@@ -222,7 +250,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 
 			render.PushRenderTarget(framebuffer)
 			SeamlessPortals.Rendering = exit_portal
-			render_scene(new_pos, clip_pos, clip_up)
+			render_scene()
 			render.PopRenderTarget()
 
 			-- Draw quad reversed if the portal is linked to itself
