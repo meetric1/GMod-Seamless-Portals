@@ -46,12 +46,14 @@ To install this addon, clone this repo to your GarrysMod addon folder, or from t
  * [dvdvideo1234][ref-dvd] for making accurate portal gun surface angles & some optimizations
 
 ### Contribution
- * Use tabs for indentation, not 2 spaces
+ * Use tabs for indentation
  * No parenthesis in branch statements (while, if, for, etc)
  * No spaces between parenthesis
  * Local variable names are snake_case
  * Global variable names are UPPER_SNAKE_CASE
  * Use C style not operators (! and !=)
+ * Use normal Lua comments (-- and --[[ ) so github formatting doesn't implode
+ * Apologies if the codebase itself doesn't conform to these standards, some of it is old and doesn't use my newer practices.
 
 [ref-ws]: https://steamcommunity.com/sharedfiles/filedetails/?id=2773737445
 [ref-dsc]: https://discord.gg/vdsgHsFrx2
