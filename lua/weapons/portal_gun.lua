@@ -87,9 +87,12 @@ local function setPortalPlacement(owner, portal)
 	port_up:Mul(siz[2] * size_mult[2])
 
 	local angTab = {
-		port_fw, -port_fw,
-		port_up, -port_up
+		 port_fw, 
+		-port_fw,
+		 port_up, 
+		-port_up
 	}
+	
 	for i = 1, 4 do
 		local extr = SeamlessPortals.TraceLine({
 			start  = hit_pos,
