@@ -46,7 +46,7 @@ if CLIENT then
 		panel:NumSlider("Portal Sides", "seamless_portals_sides", 3, 100, 0)
         panel:CheckBox("Has Backface (Invisible until linked!)", "seamless_portals_backface")
         panel:CheckBox("Nudge Portals from walls", "seamless_portals_align")
-        panel:CheckBox("Make Tooled Side the Front", "seamless_portals_toolsided")
+        panel:CheckBox("Make Tooled side the front", "seamless_portals_toolsided")
 	end
 end
 
@@ -101,8 +101,6 @@ end
 function TOOL:LeftClick(trace)
 	if !trace.Hit then return false end
 
-	self:SetStage(1)
-
 	local pos, ang, size = self:GetPlacementPosition(trace)
 	if !pos then return false end
 
@@ -154,7 +152,7 @@ function TOOL:RightClick(trace)
 	if CLIENT then return true end
 
 	if owner:GetInfoNum("seamless_portals_toolsided", 0) == 1 then
-		local side = -math.Sign(portal:GetUp():Dot(portal:GetPos() - self:GetOwner():GetShootPos()))
+		local side = portal:GetUp():Dot(portal:GetPos() - self:GetOwner():GetShootPos()) < 0 and 1 or -1
 		local ent_ang = Angle(portal:GetAngles())
 
 		if side < 0 then

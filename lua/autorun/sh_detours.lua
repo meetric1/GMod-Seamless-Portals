@@ -50,7 +50,6 @@ util.TraceLine = function(data) -- Trace line that can go through portals
 				return SeamlessPortals.TraceLine(editeddata)
 			end
 		end
-		if data["WorldDetour"] then tr.Entity = game.GetWorld() end
 	end
 	return tr
 end

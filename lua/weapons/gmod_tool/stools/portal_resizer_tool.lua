@@ -35,7 +35,7 @@ if CLIENT then
 		local traceTable = util.GetPlayerTrace(self:GetOwner())
 		local trace = SeamlessPortals.TraceLine(traceTable)
 
-		if !trace.Entity or trace.Entity:GetClass() != "seamless_portal" then return end	-- dont draw the world or else u crash lol
+		if !IsValid(trace.Entity) or trace.Entity:GetClass() != "seamless_portal" then return end	-- dont draw the world or else u crash lol
 
 		local mins, maxs = trace.Entity:OBBMins(), trace.Entity:OBBMaxs()
 		mins[3] = mins[3]

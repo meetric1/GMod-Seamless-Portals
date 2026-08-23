@@ -58,16 +58,15 @@ function ENT:UpdatePhysmesh(size, sides)
 	end
 	self:EnableCustomCollisions(true)
 
-	local phys = self:GetPhysicsObject()
-	if phys and phys:IsValid() then
-		phys:EnableMotion(false)
-		phys:SetMaterial("glass")
-		phys:SetMass(250)
-	end
-
 	if CLIENT then
+		--self:MakePhysicsObjectAShadow(false, false)
 		self:SetRenderBounds(-size, size)
 	end
+
+	local phys = self:GetPhysicsObject()
+	phys:EnableMotion(false)
+	phys:SetMaterial("glass")
+	phys:SetMass(250)
 end
 
 SeamlessPortals.Portals = SeamlessPortals.Portals or {}

@@ -121,16 +121,12 @@ end
 function ENT:Think()
 	local phys = self:GetPhysicsObject()
 	if phys and phys:IsValid() then
+		phys:EnableMotion(false)
 		phys:SetPos(self:GetPos())
 		phys:SetAngles(self:GetAngles())
-		phys:EnableMotion(false)
-		self:SetNextClientThink(CurTime())
 	else
 		self:UpdatePhysmesh()
-		self:SetNextClientThink(CurTime() + 1)
 	end
-
-	return true
 end
 
 -- Hacky bullet fix
@@ -144,8 +140,6 @@ SeamlessPortals.DrawPlayerInView = true
 SeamlessPortals.GetDrawDistance = function()
 	return varDrawDistance:GetFloat()
 end
-
-SeamlessPortals.PortalRT = GetRenderTarget("seamless_portal_rt", ScrW(), ScrH())
 
 -- Create meshes used for the portals
 -- They can have a dynamic amount of sides
