@@ -121,16 +121,12 @@ end
 function ENT:Think()
 	local phys = self:GetPhysicsObject()
 	if phys:IsValid() then
+		phys:EnableMotion(false)
 		phys:SetPos(self:GetPos())
 		phys:SetAngles(self:GetAngles())
-		phys:EnableMotion(false)
-		self:SetNextClientThink(CurTime())
 	else
 		self:UpdatePhysmesh()
-		self:SetNextClientThink(CurTime() + 1)
 	end
-
-	return true
 end
 
 -- Hacky bullet fix

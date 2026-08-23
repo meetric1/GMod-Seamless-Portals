@@ -1,8 +1,6 @@
 -- add the exit portals positions to player's PVS
 hook.Add("SetupPlayerVisibility", "seamless_portals", function(ply, viewEntity)
-    if #SeamlessPortals.Portals == 0 then
-        return
-    end
+    if #SeamlessPortals.Portals < 1 then return end
 
     local distance = ply:GetInfoNum("seamless_portal_drawdistance", 250)
     local eyePos = IsValid(viewEntity) and viewEntity:GetPos() or ply:EyePos()
