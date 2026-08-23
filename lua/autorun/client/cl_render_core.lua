@@ -151,6 +151,7 @@ hook.Add("PostDraw2DSkyBox", "seamless_portals_renderview", function()
 		pop_cams()
 		push_matrix(0)
 		push_cam(1 / skybox_info.scale)
+		skybox_rendered = false
 	end
 end)
 
@@ -176,6 +177,7 @@ hook.Add("PostDrawTranslucentRenderables", "seamless_portals_renderview", functi
 	if !SeamlessPortals.Rendering then return end
 
 	pop_cams()
+	push_matrix(1)
 end)
 
 -- The implementation of halos sucks.
