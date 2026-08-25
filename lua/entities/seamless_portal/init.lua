@@ -101,6 +101,7 @@ function ENT:Initialize()
 	if map_format then
 		if map_format == 0 then
 			self:SetAngles(self:GetAngles() + Angle(90, 0, 0))
+			self:SetSize(self:GetSize() * 0.999)
 		end
 	end
 
