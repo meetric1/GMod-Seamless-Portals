@@ -68,7 +68,7 @@ function ENT:DrawStenciled(texture, flip, nudge_z)
 	end
 
 	-- frame flat face
-	if SeamlessPortals.Rendering or !IsValid(self:GetExitPortal()) then
+	if SeamlessPortals.Rendering or !self.SEAMLESS_PORTALS_RENDERED then
 		if !backface_disabled then
 			portal_size[3] = 0
 			render.CullMode(1)

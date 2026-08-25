@@ -18,44 +18,6 @@ local renderview_table = {
 	viewid = 2
 }
 
--- Skybox doesn't render when inside of the world, so we must manually draw it ourselves.
-local sky_convar = GetConVar("sv_skyname")
-local sky_name = nil
-local sky_materials = {}
-local sky_directions = {
-	Vector(-1,  0,  0),
-	Vector( 1,  0,  0),
-	Vector( 0, -1,  0),
-	Vector( 0,  1,  0),
-	Vector( 0,  0, -1),
-	Vector( 0,  0,  1),
-}
-
-local function update_sky()
-	local new_sky_name = sky_convar:GetString()
-	if sky_name == new_sky_name then return end
-	sky_name = new_sky_name
-
-	local prefix = "skybox/" .. sky_name
-	sky_materials[1] = Material(prefix .. "rt")
-	sky_materials[2] = Material(prefix .. "lf")
-	sky_materials[3] = Material(prefix .. "bk")
-	sky_materials[4] = Material(prefix .. "ft")
-	sky_materials[5] = Material(prefix .. "up")
-	sky_materials[6] = Material(prefix .. "dn")
-end
-
-update_sky()
-
--- clear the framebuffer with the 2d skybox (Thanks to Fafy2801 for the sky material reference)
-local function draw_sky(eye_pos)
-	for i, dir in ipairs(sky_directions) do
-		render.SetMaterial(sky_materials[i])
-		--render.SetMaterial(Material("models/props_combine/combine_interface_disp"))
-		render.DrawQuadEasy(eye_pos - dir * 996, dir, 2000, 2000, color_white, i >= 5 and 0 or 180)
-	end
-end
-
 local function get_framebuffer(name)
 	return GetRenderTargetEx(name, 1, 1,
 	    RT_SIZE_FULL_FRAME_BUFFER,
@@ -87,8 +49,6 @@ timer.Create("seamless_portal_distance_fix", 0.5, 0, function()
 
 		return a_distance < b_distance
 	end)
-
-	update_sky()
 end)
 
 -- Oh boy... VVIS with renderview.. my favorite problem
@@ -185,7 +145,6 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 
 	-- clear framebuffer (PortalRT) with 2d sky
 	render.ClearDepth(true)
-	draw_sky(eye_pos)
 
 	local flashlight = get_flashlight and get_flashlight(eye_pos, eye_ang)
 	local flashlight_pos = flashlight and flashlight:GetPos()
@@ -194,6 +153,8 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 	local portals_rendered = 0
 	for _, portal in ipairs(SeamlessPortals.Portals) do
 		if !IsValid(portal) then continue end
+
+		portal.SEAMLESS_PORTALS_RENDERED = false
 
 		local exit_portal = portal:GetExitPortal()
 		if !IsValid(exit_portal) then continue end
@@ -239,6 +200,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 
 			render.PushRenderTarget(framebuffer)
 			SeamlessPortals.Rendering = exit_portal
+			portal.SEAMLESS_PORTALS_RENDERED = true
 			render_scene()
 			render.PopRenderTarget()
 
