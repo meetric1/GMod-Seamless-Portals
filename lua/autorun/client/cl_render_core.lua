@@ -49,6 +49,10 @@ timer.Create("seamless_portal_distance_fix", 0.5, 0, function()
 
 		return a_distance < b_distance
 	end)
+
+	for _, portal in ipairs(SeamlessPortals.Portals) do
+		portal.SEAMLESS_PORTALS_RENDERED = false
+	end
 end)
 
 -- Oh boy... VVIS with renderview.. my favorite problem
