@@ -129,11 +129,14 @@ function ENT:Think()
 	end
 end
 
--- Hacky bullet fix
-if game.SinglePlayer() then
-	function ENT:TestCollision(startpos, delta, isbox, extents, mask)
-		if bit.band(mask, CONTENTS_GRATE) != 0 then return true end
-	end
+function ENT:TestCollision(startpos, delta, isbox, extents, mask)
+	-- probably flashlight
+	if mask == 33570947 or mask == 33570827 then return false end
+
+	-- Hacky bullet fix for singleplayer
+	if game.SinglePlayer() and mask == 1174421507 then return false end
+
+	return true
 end
 
 SeamlessPortals.DrawPlayerInView = true

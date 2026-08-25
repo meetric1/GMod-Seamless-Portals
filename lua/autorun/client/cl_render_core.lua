@@ -173,6 +173,7 @@ local function render_scene()
 	SeamlessPortals.Rendering = false
 end
 
+local get_flashlight = include("cl_portal_flashlight.lua")
 hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 	if !SeamlessPortals or #SeamlessPortals.Portals < 1 then return end
 
@@ -186,6 +187,9 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 	render.ClearDepth(true)
 	draw_sky(eye_pos)
 
+	local flashlight = get_flashlight and get_flashlight(eye_pos, eye_ang)
+	local flashlight_pos = flashlight and flashlight:GetPos()
+	local flashlight_ang = flashlight and flashlight:GetAngles()
 	local portal_render_max = max_render:GetInt()
 	local portals_rendered = 0
 	for _, portal in ipairs(SeamlessPortals.Portals) do
@@ -226,6 +230,13 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 			setup_world_fog_table = hook_table.SetupWorldFog
 			hook_table.SetupWorldFog = setup_world_fog_override
 
+			if flashlight then
+				local new_pos_fl, new_ang_fl = SeamlessPortals.TransformPortal(portal, exit_portal, flashlight_pos, flashlight_ang)
+				flashlight:SetPos(new_pos_fl)
+				flashlight:SetAngles(new_ang_fl)
+				flashlight:Update()
+			end
+
 			render.PushRenderTarget(framebuffer)
 			SeamlessPortals.Rendering = exit_portal
 			render_scene()
@@ -241,6 +252,10 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 				break
 			end
 		end
+	end
+
+	if flashlight then
+		flashlight:Remove()
 	end
 
 	render.PopRenderTarget()
