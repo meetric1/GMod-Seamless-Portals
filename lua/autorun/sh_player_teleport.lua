@@ -189,8 +189,8 @@ local function extrude_player(ply, ply_pos)
 end
 
 -- client lerp prevention
--- TODO: though it doesnt really matter, might be good practice to cache these functions
 local get_flashlight = CLIENT and include("cl_portal_flashlight.lua")
+local flashlight = nil -- flashlight will flicker going through (because of player lerp).. create a temporary fake one
 local function lerp_teleport(start_pos, start_vel)
 	-- reset values after teleport
 	timer.Create("seamless_portals_lerp_teleport", 0.3, 1, function()
@@ -204,6 +204,7 @@ local function lerp_teleport(start_pos, start_vel)
 		local ang = ply:EyeAngles() ang[3] = 0
 		ply:SetEyeAngles(ang)
 		ply:SetFlashlightColor(Color(255, 255, 255))
+		if flashlight then flashlight:Remove() end
 	end)
 
 	local ply = LocalPlayer()
@@ -222,7 +223,6 @@ local function lerp_teleport(start_pos, start_vel)
 
 	local weapon_pos = Vector(start_pos)
 	local total_frame_time = 0
-	local flashlight = nil -- flashlight will flicker going through (because of player lerp).. create a temporary fake one
 	hook.Add("CalcView", "seamless_portals_lerp_teleport", function(_, pos, ang)
 		local frame_time = FrameTime()
 		ang[3] = ang[3] * math.pow(math.max(0.3 - total_frame_time, 0) / 0.3, 3)
@@ -230,22 +230,21 @@ local function lerp_teleport(start_pos, start_vel)
 		-- prevents client from seeing small jitter during teleport with portals on differing heights (hack..)
 		pos:Set(ply:EyePos())
 
-		if flashlight then flashlight:Remove() end
-
 		-- in my testing, lerp from positions takes roughly 0.03 seconds
 		-- which means we need to fake our velocity for a tiny bit
 		if total_frame_time < 0.03 then
 			start_pos:Add(ply:GetVelocity() * frame_time)
 			pos:Set(start_pos)
 
-			ply:SetFlashlightColor(Color(0, 0, 0)) -- yeahh..
-			flashlight = get_flashlight(pos, ang)
-			if flashlight then flashlight:Update() end
 		elseif !SeamlessPortals.DrawPlayerInView then
 			SeamlessPortals.DrawPlayerInView = true
 			hook.Remove("GetMotionBlurValues", "seamless_portals_lerp_teleport")
-			ply:SetFlashlightColor(Color(255, 255, 255))
 		end
+
+		ply:SetFlashlightColor(Color(0, 0, 0)) -- yeahh..
+		if flashlight then flashlight:Remove() end
+		flashlight = get_flashlight(pos, ang)
+		if flashlight then flashlight:Update() end
 
 		weapon_pos:Set(pos)
 
