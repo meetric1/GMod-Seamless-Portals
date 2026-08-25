@@ -129,9 +129,10 @@ function ENT:Think()
 	end
 end
 
+local flashlight_extents = Vector(4, 4, 4)
 function ENT:TestCollision(startpos, delta, isbox, extents, mask)
 	-- probably flashlight
-	if mask == 33570947 or mask == 33570827 then return false end
+	if (mask == 33570947 or mask == 33570827) and extents == flashlight_extents then return false end
 
 	-- Hacky bullet fix for singleplayer
 	if game.SinglePlayer() and mask == 1174421507 then return false end

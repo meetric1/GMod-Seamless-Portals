@@ -8,6 +8,7 @@ end
 local portal_trace_data = {
 	filter = function(e) return e:GetClass() == "seamless_portal" end,
 	ignoreworld = true,
+	mask = MASK_PLAYERSOLID
 }
 
 -- hull modifier (so we can enter floor/ground)
