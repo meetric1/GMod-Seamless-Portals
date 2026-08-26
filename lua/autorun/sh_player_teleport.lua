@@ -1,4 +1,5 @@
 AddCSLuaFile()
+AddCSLuaFile("cl_portal_flashlight.lua")
 
 local function too_fast(vel)
 	return vel:LengthSqr() > 1000 * 1000
