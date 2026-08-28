@@ -328,14 +328,14 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 		end
 	else
 		if game.SinglePlayer() then
+			ply:SetEyeAngles(new_ply_ang)
+
 			-- singleplayer sucks. Network everything over
 			net.Start("SEAMLESS_PORTALS_FIX_SINGLEPLAYER")
 			net.WriteVector(new_ply_eyepos)
 			net.WriteVector(new_ply_vel)
 			net.WriteBool(portal == exit_portal)
 			net.Send(ply)
-
-			ply:SetEyeAngles(new_ply_ang)
 		end
 
 		-- shrinkinator (most popular resizing mod- change if there is a better one)
