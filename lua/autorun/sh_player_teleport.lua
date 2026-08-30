@@ -167,6 +167,10 @@ end
 
 -- TODO: extrude on sides too so we dont get stuck in a wall
 local function extrude_player(ply, ply_pos)
+	if ply:GetMoveType() == MOVETYPE_NOCLIP then
+		return false
+	end
+
 	local mins, maxs = (ply:Crouching() and ply.GetHullDuck or ply.GetHull)(ply)
 	local max_diff = maxs[3] - mins[3]
 	if max_diff <= 0 then return false end
@@ -237,7 +241,6 @@ local function lerp_teleport(start_pos, start_vel)
 		if total_frame_time < 0.03 then
 			start_pos:Add(ply:GetVelocity() * frame_time)
 			pos:Set(start_pos)
-
 		elseif !SeamlessPortals.DrawPlayerInView then
 			SeamlessPortals.DrawPlayerInView = true
 			hook.Remove("GetMotionBlurValues", "seamless_portals_lerp_teleport")
@@ -253,7 +256,9 @@ local function lerp_teleport(start_pos, start_vel)
 		total_frame_time = total_frame_time + frame_time
 	end)
 
-	hook.Add("CalcViewModelView", "seamless_portals_lerp_teleport", function(_, _, _, _, pos, ang)
+	hook.Add("CalcViewModelView", "seamless_portals_lerp_teleport", function(_, _, old_pos, _, pos, ang)
+		--pos:Sub(old_pos)
+		--pos:Add(weapon_pos)
 		pos:Set(weapon_pos)
 		ang[3] = ang[3] * math.pow(math.max(0.3 - total_frame_time, 0) / 0.3, 3)
 	end)
