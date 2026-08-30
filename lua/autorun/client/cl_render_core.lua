@@ -127,13 +127,17 @@ end)
 local function render_scene()
 	SeamlessPortals.Rendering = SeamlessPortals.Rendering or true
 
+	-- DOORS support, their detour breaks my cam context..
+	local render_view = render.RealRenderView or render.RenderView
+
 	local clip = render.EnableClipping(true)
-	push_cam(1)
 	render.PushCustomClipPlane(clip_up, clip_up:Dot(clip_pos))
-	render.RenderView(renderview_table)
-	render.PopCustomClipPlane()
+	push_cam(1)
+	render_view(renderview_table)
 	pop_cams()
+	render.PopCustomClipPlane()
 	render.EnableClipping(clip)
+
 	SeamlessPortals.Rendering = false
 end
 
