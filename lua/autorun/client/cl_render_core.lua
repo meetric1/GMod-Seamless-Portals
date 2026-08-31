@@ -6,6 +6,7 @@ if SERVER then return end
 
 local max_render = CreateClientConVar("seamless_portals_maxrender", "6", true, false, "maximum number of portals to render per frame", 0)
 local skip_frames = CreateClientConVar("seamless_portals_refreshrate", "1", false, false, "How many frames to skip when rendering portals", 1)
+local draw_viewer = CreateClientConVar("seamless_portals_drawviewer", "1", false, false, "Draw player in portal view", 0, 1)
 local renderview_table = {
 	x = 0,
 	y = 0,
@@ -160,6 +161,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 	local flashlight_pos = flashlight and flashlight:GetPos()
 	local flashlight_ang = flashlight and flashlight:GetAngles()
 	local portal_render_max = max_render:GetInt()
+	local portal_draw_distance = SeamlessPortals.GetDrawDistance()
 	local portals_rendered = 0
 	for _, portal in ipairs(SeamlessPortals.Portals) do
 		if !IsValid(portal) then continue end
@@ -169,7 +171,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 		local exit_portal = portal:GetExitPortal()
 		if !IsValid(exit_portal) then continue end
 
-		if SeamlessPortals.ShouldRender(portal, eye_pos, eye_ang, SeamlessPortals.GetDrawDistance()) then
+		if SeamlessPortals.ShouldRender(portal, eye_pos, eye_ang, portal_draw_distance) then
 			local new_pos, new_ang = SeamlessPortals.TransformPortal(portal, exit_portal, eye_pos, eye_ang)
 			clip_up:Set(exit_portal:GetUp())
 
@@ -194,7 +196,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 			renderview_table.origin:Set(clip_pos)
 			renderview_table.angles:Set(new_ang)
 			renderview_table.fov = fov
-			renderview_table.drawviewer = SeamlessPortals.DrawPlayerInView
+			renderview_table.drawviewer = draw_viewer:GetBool() and SeamlessPortals.DrawPlayerInView or false
 
 			-- I NEED this hook to setup cams properly! No overriding allowed..
 			local hook_table = hook.GetTable()
