@@ -5,8 +5,7 @@ AddCSLuaFile()
 if SERVER then return end
 
 local max_render = CreateClientConVar("seamless_portals_maxrender", "6", true, false, "maximum number of portals to render per frame", 0)
-local skip_render = CreateClientConVar("seamless_portals_refreshrate", "1", false, false, "How many frames to skip when rendering portals", 1)
-local skip = 0
+local skip_frames = CreateClientConVar("seamless_portals_refreshrate", "1", false, false, "How many frames to skip when rendering portals", 1)
 local renderview_table = {
 	x = 0,
 	y = 0,
@@ -30,6 +29,7 @@ end
 
 -- TODO: ideally use pre-allocated framebuffers
 SeamlessPortals.PortalRT = get_framebuffer("seamless_portals_backbuffer")
+SeamlessPortals.Frame = 0
 local framebuffer = get_framebuffer("seamless_portals_framebuffer")
 
 timer.Create("seamless_portal_distance_fix", 0.5, 0, function()
@@ -54,7 +54,7 @@ timer.Create("seamless_portal_distance_fix", 0.5, 0, function()
 		portal.SEAMLESS_PORTALS_RENDERED = false
 	end
 
-	skip = -1
+	SeamlessPortals.Frame = -1
 end)
 
 -- Oh boy... VVIS with renderview.. my favorite problem
@@ -147,8 +147,8 @@ local get_flashlight = include("cl_portal_flashlight.lua")
 hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 	if !SeamlessPortals or #SeamlessPortals.Portals < 1 then return end
 
-	skip = (skip + 1) % skip_render:GetInt()
-	if skip != 0 then return end
+	SeamlessPortals.Frame = (SeamlessPortals.Frame + 1) % skip_frames:GetInt()
+	if SeamlessPortals.Frame > 0 then return end
 
 	cam.Start3D(eye_pos, eye_ang, fov)
 	render.PushRenderTarget(SeamlessPortals.PortalRT)

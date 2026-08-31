@@ -198,6 +198,8 @@ end
 local get_flashlight = CLIENT and include("cl_portal_flashlight.lua")
 local flashlight = nil -- flashlight will flicker going through (because of player lerp).. create a temporary fake one
 local function lerp_teleport(start_pos, start_vel)
+	SeamlessPortals.Frame = -1 -- force render after a teleport to avoid flashing
+
 	-- reset values after teleport
 	timer.Create("seamless_portals_lerp_teleport", 0.3, 1, function()
 		SeamlessPortals.DrawPlayerInView = true
