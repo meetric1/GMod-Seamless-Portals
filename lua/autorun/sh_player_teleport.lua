@@ -348,6 +348,8 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 
 		portal:TriggerOutput("OnTeleportFrom", ply)
 		exit_portal:TriggerOutput("OnTeleportTo", ply)
+
+		ply:DropObject()
 	end
 
 	-- incase we get stuck

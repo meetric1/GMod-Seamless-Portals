@@ -7,7 +7,7 @@ ENT.Author       = "Mee"
 ENT.Purpose      = "Seamlessly connects two locations"
 ENT.Instructions = ""
 ENT.Spawnable    = true
-ENT.RenderGroup  = RENDERGROUP_OPAQUE
+ENT.RenderGroup  = RENDERGROUP_TRANSLUCENT
 
 SeamlessPortals  = SeamlessPortals or {}
 
@@ -72,13 +72,13 @@ end
 SeamlessPortals.Portals = SeamlessPortals.Portals or {}
 SeamlessPortals.TransformPortal = function(a, b, pos, ang)
 	if !IsValid(a) or !IsValid(b) then return Vector(), Angle() end
-	local editedPos = Vector()
-	local editedAng = Angle()
+	local editedPos = nil
+	local editedAng = nil
 
 	if pos then
 		editedPos = a:WorldToLocal(pos) * (b:GetSize()[1] / a:GetSize()[1])
 		editedPos = b:LocalToWorld(Vector(editedPos[1], -editedPos[2], -editedPos[3]))
-		editedPos = editedPos + b:GetUp() * 0.01 -- So you don't become trapped
+		--editedPos = editedPos + b:GetUp() * 0.01 -- So you don't become trapped
 	end
 
 	if ang then
@@ -98,7 +98,7 @@ SeamlessPortals.TransformPortal = function(a, b, pos, ang)
 		end
 	end
 
-	return editedPos, editedAng
+	return editedPos or Vector(), editedAng or Angle()
 end
 
 -- Only render the portals that are in the frustum, or should be rendered
