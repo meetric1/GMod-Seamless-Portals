@@ -1,6 +1,9 @@
 -- Mimics the sourceengine flashlight, given the player eyepos and angle
 -- returns a projected texture, or nil if the flashlight is off
 
+local light_size = Vector(4, 4, 4)
+local light_size_negative = -light_size
+
 -- //========= Copyright Valve Corporation, All rights reserved. ============//
 
 local r_flashlightoffsety = GetConVar("r_flashlightoffsety")
@@ -62,8 +65,8 @@ local function UpdateLightNew(vecPos, vecAng)
 		local pmOriginTrace = util.TraceHull({
 			start = vecPos,
 			endpos = vOrigin,
-			mins = Vector(-4, -4, -4),
-			maxs = Vector(4, 4, 4),
+			mins = light_size_negative,
+			maxs = light_size,
 			mask = bit.band(MASK_SOLID, bit.bnot(CONTENTS_HITBOX)),
 			filter = traceFilter
 		})
@@ -101,8 +104,8 @@ local function UpdateLightNew(vecPos, vecAng)
 	local pmDirectionTrace = util.TraceHull({
 		start = vOrigin,
 		endpos = vTarget,
-		mins = Vector(-4, -4, -4),
-		maxs = Vector(4, 4, 4),
+		mins = light_size_negative,
+		maxs = light_size,
 		mask = iMask,
 		filter = traceFilter
 	})
@@ -118,8 +121,8 @@ local function UpdateLightNew(vecPos, vecAng)
 			local pmBackTrace = util.TraceHull({
 				start = vOrigin,
 				endpos = vOrigin - vDir * (flPullBackDist - flEpsilon),
-				mins = Vector(-4, -4, -4),
-				maxs = Vector(4, 4, 4),
+				mins = light_size_negative,
+				maxs = light_size,
 				mask = iMask,
 				filter = traceFilter
 			})

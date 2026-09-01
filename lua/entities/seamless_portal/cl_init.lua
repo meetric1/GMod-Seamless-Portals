@@ -151,10 +151,17 @@ SeamlessPortals.PortalMeshes = {}
 SeamlessPortals.GetRenderMesh = function(sides)
 	if !SeamlessPortals.PortalMeshes[sides] then
 		SeamlessPortals.PortalMeshes[sides] = Mesh()
-		local meshTable = {}
 		local ang_mul = 360 / sides
 		local ang_pick = sides % 4 != 0 and 0 or 45
 		local rad_offset = math.rad(sides * 90 + ang_pick)
+		local function mesh_vertex(pos, u, v)
+			mesh.Position(pos)
+			mesh.TexCoord(0, u, v)
+			mesh.Normal(0, 0, 0)
+			mesh.UserData(0, 0, 0, 0)
+			mesh.AdvanceVertex()
+		end
+		mesh.Begin(SeamlessPortals.PortalMeshes[sides], MATERIAL_TRIANGLES, sides * 3)
 		for side = 1, sides do
 			local side1 = Vector(0, 0, -1)
 			local sidex = math.rad(side * ang_mul) + rad_offset
@@ -164,20 +171,19 @@ SeamlessPortals.GetRenderMesh = function(sides)
 
 			local streach1 = (side / sides) * 4
 			local streach2 = ((side + 1) / sides) * 4
+			mesh_vertex(side2, 0, 0)
+			mesh_vertex(side1, 0, 1)
+			mesh_vertex(side3, 1, 0)
 
-			table.insert(meshTable, {pos = side2, u = 0, v = 0})
-			table.insert(meshTable, {pos = side1, u = 0, v = 1})
-			table.insert(meshTable, {pos = side3, u = 1, v = 0})
+			mesh_vertex(Vector(side2[1], side2[2]), streach1, 1)
+			mesh_vertex(side2, streach1, 0)
+			mesh_vertex(side3, streach2, 0)
 
-			table.insert(meshTable, {pos = Vector(side2[1], side2[2], 0), u = streach1, v = 1})
-			table.insert(meshTable, {pos = side2, u = streach1, v = 0})
-			table.insert(meshTable, {pos = side3, u = streach2, v = 0})
-
-			table.insert(meshTable, {pos = side3, u = streach2, v = 0})
-			table.insert(meshTable, {pos = Vector(side3[1], side3[2], 0), u = streach2, v = 1})
-			table.insert(meshTable, {pos = Vector(side2[1], side2[2], 0), u = streach1, v = 1})
+			mesh_vertex(side3, streach2, 0)
+			mesh_vertex(Vector(side3[1], side3[2]), streach2, 1)
+			mesh_vertex(Vector(side2[1], side2[2]), streach1, 1)
 		end
-		SeamlessPortals.PortalMeshes[sides]:BuildFromTriangles(meshTable)
+		mesh.End()
 	end
 
 	return SeamlessPortals.PortalMeshes[sides]
