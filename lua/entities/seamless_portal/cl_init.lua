@@ -107,6 +107,8 @@ function ENT:DrawStenciled(texture, flip, nudge_z)
 end
 
 function ENT:Draw(flags)
+	if bit.band(flags, STUDIO_SHADOWDEPTHTEXTURE) > 0 then return end -- portal should not cast shadows
+
 	-- resetting the stencil buffer when drawing halos will cause horrible flashing
 	-- also, don't render the portal we're rendering out of
 	if halo.RenderedEntity() == self or SeamlessPortals.Rendering == self then return end

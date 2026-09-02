@@ -7,7 +7,7 @@ ENT.Author       = "Mee"
 ENT.Purpose      = "Seamlessly connects two locations"
 ENT.Instructions = ""
 ENT.Spawnable    = true
-ENT.RenderGroup  = RENDERGROUP_TRANSLUCENT
+ENT.RenderGroup  = RENDERGROUP_OPAQUE
 
 SeamlessPortals  = SeamlessPortals or {}
 

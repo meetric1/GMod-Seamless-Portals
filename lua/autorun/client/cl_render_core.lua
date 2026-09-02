@@ -181,8 +181,16 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 			local exit_portal_forward = exit_portal:GetForward()
 			local exit_portal_right = exit_portal:GetRight()
 			local new_pos_delta = new_pos - exit_portal_pos
-			local exit_portal_forward_length = math.Clamp(new_pos_delta:Dot(exit_portal_forward), -(exit_portal_size[1]), exit_portal_size[1])
-			local exit_portal_right_length = math.Clamp(new_pos_delta:Dot(exit_portal_right), -(exit_portal_size[2]), exit_portal_size[2])
+			local exit_portal_forward_length = math.Clamp(
+				new_pos_delta:Dot(exit_portal_forward),
+				-(exit_portal_size[1]),
+				exit_portal_size[1]
+			)
+			local exit_portal_right_length = math.Clamp(
+				new_pos_delta:Dot(exit_portal_right),
+				-(exit_portal_size[2]),
+				exit_portal_size[2]
+			)
 			clip_pos:Set(exit_portal_pos)
 			exit_portal_forward:Mul(exit_portal_forward_length)
 			exit_portal_right:Mul(exit_portal_right_length)
@@ -196,7 +204,7 @@ hook.Add("RenderScene", "seamless_portals_draw", function(eye_pos, eye_ang, fov)
 			renderview_table.origin:Set(clip_pos)
 			renderview_table.angles:Set(new_ang)
 			renderview_table.fov = fov
-			renderview_table.drawviewer = draw_viewer:GetBool() and SeamlessPortals.DrawPlayerInView or false
+			renderview_table.drawviewer = SeamlessPortals.DrawPlayerInView and draw_viewer:GetBool()
 
 			-- I NEED this hook to setup cams properly! No overriding allowed..
 			local hook_table = hook.GetTable()
