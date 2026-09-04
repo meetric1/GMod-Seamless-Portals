@@ -128,7 +128,7 @@ function ENT:GeneratePhysmesh(portal, new)
 	end
 
 	local function generate_quad(pos0, pos1, pos2, pos3)
-	    -- check for degen triangles
+		-- check for degen triangles
 		if vector_equal(pos0, pos1) or vector_equal(pos0, pos3) or vector_equal(pos1, pos3) then return end
 		if vector_equal(pos3, pos2) or vector_equal(pos3, pos0) or vector_equal(pos2, pos0) then return end
 
@@ -142,20 +142,20 @@ function ENT:GeneratePhysmesh(portal, new)
 	end
 
 	local function trace_local_generate_quad(start_pos, end_pos)
-	    local tr = SeamlessPortals.TraceLine({
-	        start = portal:LocalToWorld(start_pos),
-	        endpos = portal:LocalToWorld(end_pos),
-	        mask = 131083, -- world only
-	    })
+		local tr = SeamlessPortals.TraceLine({
+			start = portal:LocalToWorld(start_pos),
+			endpos = portal:LocalToWorld(end_pos),
+			mask = 131083, -- world only
+		})
 
-	    if !tr.Hit then return nil end
+		if !tr.Hit then return nil end
 
-	    tr.HitAngle = portal:WorldToLocalAngles(tr.HitNormal:Angle())
-	    tr.HitPos = portal:WorldToLocal(tr.HitPos)
+		tr.HitAngle = portal:WorldToLocalAngles(tr.HitNormal:Angle())
+		tr.HitPos = portal:WorldToLocal(tr.HitPos)
 
-	    local right = tr.HitAngle:Right() * size[1] * 1.5
-	    local front = tr.HitAngle:Up() * size[1] * 1.5
-	    generate_quad(tr.HitPos - front + right, tr.HitPos + front + right, tr.HitPos - front - right, tr.HitPos + front - right)
+		local right = tr.HitAngle:Right() * size[1] * 1.5
+		local front = tr.HitAngle:Up() * size[1] * 1.5
+		generate_quad(tr.HitPos - front + right, tr.HitPos + front + right, tr.HitPos - front - right, tr.HitPos + front - right)
 	end
 
     -- ground quads
@@ -206,28 +206,24 @@ function ENT:GeneratePhysmesh(portal, new)
 		local left1  = trace_local(portal, pos01 - Vector(100, 0, -inset), pos01)
 
 		-- corner triangles
-	    generate_tri(left0, pos00, back0)
-	    generate_tri(back1, pos10, right0)
-	    generate_tri(right1, pos11, front1)
-	    generate_tri(front0, pos01, left1)
+		generate_tri(left0, pos00, back0)
+		generate_tri(back1, pos10, right0)
+		generate_tri(right1, pos11, front1)
+		generate_tri(front0, pos01, left1)
 
-	    -- edge quads
-	    generate_quad(pos00, left0, pos01, left1)
-	    generate_quad(pos10, back1, pos00, back0)
-	    generate_quad(pos10, pos11, right0, right1)
-	    generate_quad(front1, pos11, front0, pos01)
+		-- edge quads
+		generate_quad(pos00, left0, pos01, left1)
+		generate_quad(pos10, back1, pos00, back0)
+		generate_quad(pos10, pos11, right0, right1)
+		generate_quad(front1, pos11, front0, pos01)
     end
-
-    for i = 1, #vertices, 3 do
-    	debugoverlay.Triangle(
-        	self:LocalToWorld(vertices[i]),
-        	self:LocalToWorld(vertices[i + 1]),
-        	self:LocalToWorld(vertices[i + 2]),
-        	0.5,
-        	Color(255, 255, 255, 5),
-        	false
+	--[[
+	for i = 1, #vertices, 3 do
+		debugoverlay.Triangle(
+			self:LocalToWorld(vertices[i]), self:LocalToWorld(vertices[i + 1]), self:LocalToWorld(vertices[i + 2]),
+			0.5, Color(255, 255, 255, 5), false
 		)
-    end
+	end]]
 
     for _, v in ipairs(vertices) do
     	table.insert(self.VERTICES, v)
@@ -236,16 +232,16 @@ end
 
 function ENT:CreatePhysmesh()
 	self:SetSolid(SOLID_VPHYSICS)
-    self:SetMoveType(MOVETYPE_NONE)
-    self:PhysicsFromMesh(self.VERTICES)
-    self:EnableCustomCollisions(true)
+	self:SetMoveType(MOVETYPE_NONE)
+	self:PhysicsFromMesh(self.VERTICES)
+	self:EnableCustomCollisions(true)
 
-    local phys = self:GetPhysicsObject()
-    if IsValid(phys) then
-        phys:EnableMotion(false)
-        phys:SetPos(self:GetPos())
-        phys:SetAngles(self:GetAngles())
-    end
+	local phys = self:GetPhysicsObject()
+	if IsValid(phys) then
+		phys:EnableMotion(false)
+		phys:SetPos(self:GetPos())
+		phys:SetAngles(self:GetAngles())
+	end
 end
 
 local allowed_classes = {
@@ -260,10 +256,10 @@ function ENT:Think()
 	size[1] = size[1] / 2
 	size[2] = size[2] / 2
 
-    local mins, maxs = self:GetRotatedAABB(-size, Vector(size[1], size[2]))
-    local self_pos = self:GetPos()
-    mins:Add(self_pos)
-    maxs:Add(self_pos)
+	local mins, maxs = self:GetRotatedAABB(-size, Vector(size[1], size[2]))
+	local self_pos = self:GetPos()
+	mins:Add(self_pos)
+	maxs:Add(self_pos)
 
 	--debugoverlay.Box(Vector(), mins, maxs, 1/3, Color(0, 255, 0, 0))
 	--debugoverlay.BoxAngles(self_pos, -size, Vector(size[1], size[2], 0), self:GetAngles(), 1/3, Color(255, 0, 255, 0))
@@ -380,7 +376,7 @@ function ENT:TestCollision(_, delta, isbox, _, mask)
 end
 
 function ENT:OnRemove()
-    for ent, _ in pairs(self.ENTITIES) do
-    	self:RemoveEntity(ent)
-    end
+	for ent, _ in pairs(self.ENTITIES) do
+		self:RemoveEntity(ent)
+	end
 end
