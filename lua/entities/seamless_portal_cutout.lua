@@ -95,7 +95,7 @@ function ENT:GetPortal()
 end
 
 function ENT:Initialize()
-    self:SetCollisionGroup(COLLISION_GROUP_DISSOLVING) -- props only
+    self:SetCollisionGroup(COLLISION_GROUP_PASSABLE_DOOR) -- props only
     self:SetTrigger(true)
 end
 
