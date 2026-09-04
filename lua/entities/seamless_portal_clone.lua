@@ -72,8 +72,6 @@ if SERVER then
 		local self_phys = self:GetPhysicsObject()
 		if !IsValid(self_phys) then return end
 
-		--local new_mass = self_phys:GetMass() * (scale / self:GetModelScale())^3 -- realistic mass calculation
-
 		self:SetModelScale(scale)
 
 		-- don't scale if it will likely lag us
@@ -88,7 +86,7 @@ if SERVER then
 		end
 
 		self_phys = self:GetPhysicsObject()
-		--self_phys:SetMass(math.Clamp(new_mass, 1, 50000))
+		self_phys:SetMass(self_phys:GetMass() * scale * scale) -- realistic mass calculation
 
 		return self_phys
 	end
@@ -111,7 +109,6 @@ if SERVER then
 		if setpos or !motion then
 			local e1_pos, e1_ang = SeamlessPortals.TransformPortal(portal1, portal2, e2:GetPos(), e2:GetAngles())
 			local e1_vel = transform_portal_local(portal1, portal2, e2_vel)
-			local e1_angvel = transform_portal_local(portal1, portal2, e2_angvel)
 
 			-- scaling
 			if setpos then
@@ -132,7 +129,7 @@ if SERVER then
 			e1:SetPos(e1_pos)
 			e1:SetAngles(e1_ang)
 			e1_phys:SetVelocity(e1_vel)
-			e1_phys:SetAngleVelocity(e1_angvel)
+			e1_phys:SetAngleVelocity(e2_angvel) -- already in local frame, no transform needed
 
 			return
 		end
@@ -148,7 +145,7 @@ if SERVER then
 		local e2_percentage_through = 1 - e1_percentage_through
 
 		local e1_vel = transform_portal_local(portal2, portal1, e1_phys:GetVelocity())
-		local e1_angvel = e1_phys:GetAngleVelocity() -- TODO: why doesn't this need to be transformed?
+		local e1_angvel = e1_phys:GetAngleVelocity() -- already in local frame
 		local vel_average = (e2_vel * e1_percentage_through + e1_vel * e2_percentage_through)
 		local angvel_average = (e2_angvel * e1_percentage_through + e1_angvel * e2_percentage_through)
 
@@ -179,10 +176,11 @@ if SERVER then
 		self:SetMaterial(child:GetMaterial())
 		self:SetSkin(child:GetSkin())
 		self:SetSolid(child:GetSolid())
-		self:PhysicsInit(child:GetSolid())
-		self:SetMoveType(child:GetMoveType()) -- MOVETYPE_NONE
+		self:SetMoveType(child:GetMoveType())
+		if !self:PhysicsInit(child:GetSolid()) then return end
 		self:SetLightingOriginEntity(child)
 		self:SetModelScale(child:GetModelScale())
+		self:GetPhysicsObject():SetMass(child:GetPhysicsObject():GetMass())
 		self:VerletWeld(self, child, true)
 		child:DeleteOnRemove(self)
 		portal1:DeleteOnRemove(self)

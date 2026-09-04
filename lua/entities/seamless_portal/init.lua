@@ -226,6 +226,9 @@ function ENT:Think()
 	for ent, _ in pairs(cutout.ENTITIES) do
 		if !IsValid(ent) then continue end
 
+		local phys = ent:GetPhysicsObject()
+		if !IsValid(phys) then continue end
+
 		local clone = ent.SEAMLESS_PORTALS_CLONE
 		if !IsValid(clone) then
 			clone = ents.Create("seamless_portal_clone")
@@ -238,9 +241,6 @@ function ENT:Think()
 		end
 
 		if ent:IsPlayerHolding() then continue end
-
-		local phys = ent:GetPhysicsObject()
-		if !IsValid(phys) then continue end
 
 		local ent_pos = ent:GetPos()
 		local ent_pos_center = ent:LocalToWorld(ent:OBBCenter())
