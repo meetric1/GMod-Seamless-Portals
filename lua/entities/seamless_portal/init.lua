@@ -132,7 +132,7 @@ function ENT:Initialize()
 	self:SetSize(size)
 
 	sides = self:GetSides()
-	sides = math.Clamp(sides, 1, 100)
+	sides = math.Clamp(sides, 3, 100)
 	self:SetSides(sides)
 
 	self.SEAMLESS_PORTALS_INITIALIZED = true
@@ -179,4 +179,97 @@ end
 
 function ENT:UpdateTransmitState()
 	return TRANSMIT_ALWAYS
+end
+
+function ENT:UpdateCutout(recursive)
+	local self_pos = self:GetPos()
+	local cutout = self.SEAMLESS_PORTALS_CUTOUT
+	if !IsValid(cutout) then
+		cutout = ents.Create("seamless_portal_cutout")
+		cutout:SetPortal(self)
+		cutout:Spawn()
+		self:DeleteOnRemove(cutout)
+		self.SEAMLESS_PORTALS_CUTOUT = cutout
+	end
+
+	if recursive or (FrameNumber() % 15 == 0 and cutout:GetPos() != self_pos) then
+		local exit_portal = self:GetExitPortal()
+		cutout:SetPos(self_pos)
+		cutout:SetAngles(self:GetAngles())
+		cutout:GeneratePhysmesh(exit_portal, true)
+		cutout:GeneratePhysmesh(self)
+		cutout:CreatePhysmesh()
+
+		if !recursive then
+			exit_portal:UpdateCutout(true)
+		end
+	end
+end
+
+-- Prop and object teleporting
+function ENT:Think()
+	local exit_portal = self:GetExitPortal()
+	if !IsValid(exit_portal) or self == exit_portal then
+		SafeRemoveEntity(self.SEAMLESS_PORTALS_CUTOUT)
+		return
+	end
+
+	self:UpdateCutout()
+
+	local exit_cutout = exit_portal.SEAMLESS_PORTALS_CUTOUT
+	if !exit_cutout then return end
+
+	local exit_pos = exit_portal:GetPos()
+	local self_pos = self:GetPos()
+	local self_up = self:GetUp()
+	local cutout = self.SEAMLESS_PORTALS_CUTOUT
+	for ent, _ in pairs(cutout.ENTITIES) do
+		if !IsValid(ent) then continue end
+
+		local clone = ent.SEAMLESS_PORTALS_CLONE
+		if !IsValid(clone) then
+			clone = ents.Create("seamless_portal_clone")
+			clone:SetChild(ent)
+			clone:SetPortal1(self)
+			clone:SetPortal2(exit_portal)
+			clone:Spawn()
+			ent.SEAMLESS_PORTALS_CLONE = clone
+			clone.SEAMLESS_PORTALS_CUTOUT = exit_cutout
+		end
+
+		if ent:IsPlayerHolding() then continue end
+
+		local phys = ent:GetPhysicsObject()
+		if !IsValid(phys) then continue end
+
+		local ent_pos = ent:GetPos()
+		local ent_pos_center = ent:LocalToWorld(ent:OBBCenter())
+		if (ent_pos_center - self_pos):Dot(self_up) > 0 then continue end
+
+		local new_pos, new_ang = SeamlessPortals.TransformPortal(self, exit_portal, ent_pos, ent:GetAngles())
+		local ent_vel = phys:GetVelocity()
+		ent_vel:Add(self_pos)
+
+		local new_vel = SeamlessPortals.TransformPortal(self, exit_portal, ent_vel)
+		new_vel:Sub(exit_pos)
+
+		cutout:RemoveEntity(ent, true)
+		exit_cutout:AddEntity(ent)
+
+		ent:ForcePlayerDrop()
+		clone:ForcePlayerDrop()
+		ent:SetPos(new_pos) -- avoid physobj lerp
+		ent:SetAngles(new_ang)
+		phys:SetVelocity(new_vel)
+		clone:SetPortal1(exit_portal)
+		clone:SetPortal2(self)
+		clone:VerletWeld(clone, ent, true)
+
+		if ent:BoundingRadius() < 0.5 then -- too small!
+			SafeRemoveEntity(ent)
+		end
+	end
+
+	self:NextThink(CurTime())
+	return true
 end
