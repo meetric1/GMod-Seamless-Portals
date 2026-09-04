@@ -86,7 +86,7 @@ if SERVER then
 		end
 
 		self_phys = self:GetPhysicsObject()
-		self_phys:SetMass(self_phys:GetMass() * scale * scale) -- realistic mass calculation
+		self_phys:SetMass(math.Clamp(self_phys:GetMass() * scale * scale, 1, 50000)) -- realistic mass calculation
 
 		return self_phys
 	end
