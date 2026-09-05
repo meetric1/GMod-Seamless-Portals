@@ -223,6 +223,7 @@ function ENT:Think()
 	local self_up = self:GetUp()
 	local cutout = self.SEAMLESS_PORTALS_CUTOUT
 	local exit_cutout = exit_portal.SEAMLESS_PORTALS_CUTOUT
+	local exit_cutout_valid = IsValid(exit_cutout)
 	for ent, _ in pairs(cutout.ENTITIES) do
 		if !IsValid(ent) then continue end
 
@@ -253,10 +254,8 @@ function ENT:Think()
 		local new_vel = SeamlessPortals.TransformPortal(self, exit_portal, ent_vel)
 		new_vel:Sub(exit_pos)
 
-		cutout:RemoveEntity(ent, true)
-		if IsValid(exit_cutout) then
-			exit_cutout:AddEntity(ent)
-		end
+		cutout:RemoveEntity(ent, exit_cutout_valid)
+		if exit_cutout_valid then exit_cutout:AddEntity(ent) end
 
 		ent:ForcePlayerDrop()
 		clone:ForcePlayerDrop()
