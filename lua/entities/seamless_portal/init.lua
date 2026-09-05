@@ -182,6 +182,9 @@ function ENT:UpdateTransmitState()
 end
 
 function ENT:UpdateCutout(recursive)
+	local exit_portal = self:GetExitPortal()
+	if !IsValid(exit_portal) then return end
+
 	local self_pos = self:GetPos()
 	local cutout = self.SEAMLESS_PORTALS_CUTOUT
 	if !IsValid(cutout) then
@@ -193,10 +196,9 @@ function ENT:UpdateCutout(recursive)
 	end
 
 	if recursive or (FrameNumber() % 15 == 0 and cutout:GetPos() != self_pos) then
-		local exit_portal = self:GetExitPortal()
 		cutout:SetPos(self_pos)
 		cutout:SetAngles(self:GetAngles())
-		cutout:GeneratePhysmesh(exit_portal, true)
+		cutout:GeneratePhysmesh(exit_portal, self)
 		cutout:GeneratePhysmesh(self)
 		cutout:CreatePhysmesh()
 
@@ -216,13 +218,11 @@ function ENT:Think()
 
 	self:UpdateCutout()
 
-	local exit_cutout = exit_portal.SEAMLESS_PORTALS_CUTOUT
-	if !exit_cutout then return end
-
 	local exit_pos = exit_portal:GetPos()
 	local self_pos = self:GetPos()
 	local self_up = self:GetUp()
 	local cutout = self.SEAMLESS_PORTALS_CUTOUT
+	local exit_cutout = exit_portal.SEAMLESS_PORTALS_CUTOUT
 	for ent, _ in pairs(cutout.ENTITIES) do
 		if !IsValid(ent) then continue end
 
@@ -254,7 +254,9 @@ function ENT:Think()
 		new_vel:Sub(exit_pos)
 
 		cutout:RemoveEntity(ent, true)
-		exit_cutout:AddEntity(ent)
+		if IsValid(exit_cutout) then
+			exit_cutout:AddEntity(ent)
+		end
 
 		ent:ForcePlayerDrop()
 		clone:ForcePlayerDrop()

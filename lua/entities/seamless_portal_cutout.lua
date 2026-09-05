@@ -100,7 +100,7 @@ function ENT:Initialize()
 end
 
 -- approximates the world surface with a hole cut into it
-function ENT:GeneratePhysmesh(portal, new)
+function ENT:GeneratePhysmesh(portal, exit_portal)
 	local size = portal:GetSize()
 	local offset = size / 2
 
@@ -166,7 +166,7 @@ function ENT:GeneratePhysmesh(portal, new)
 	trace_local_generate_quad(pos_local(0.5, 0.5, offset[3]), pos_local(0.5, 0.5, offset[1] * 3))
 
 	-- inner quads
-	if !new then
+	if !exit_portal then
 		local pos00_z = Vector(pos00[1], pos00[2])
 		local pos01_z = Vector(pos01[1], pos01[2])
 		local pos10_z = Vector(pos10[1], pos10[2])
@@ -180,8 +180,8 @@ function ENT:GeneratePhysmesh(portal, new)
 	if #vertices <= 0 then return end
 
 	vertices = cut_concave(vertices, vector_origin, Vector(0, 0, 1))
-	if new then -- invert cut
-		local ratio = portal:GetExitPortal():GetSize()[1] / portal:GetSize()[1]
+	if exit_portal then -- invert cut
+		local ratio = exit_portal:GetSize()[1] / portal:GetSize()[1]
 		local negated_verts = {}
 		for _, v in ipairs(vertices) do
 			if !negated_verts[v] then
