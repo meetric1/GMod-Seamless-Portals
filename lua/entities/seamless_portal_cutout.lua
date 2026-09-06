@@ -283,7 +283,7 @@ function ENT:Think()
 		end
 
 		-- trim out entities not infront of portal
-		local ent_pos = ent:LocalToWorld(ent:OBBCenter()) ent_pos:Sub(self_pos)
+		local ent_pos = ent:GetPos() ent_pos:Sub(self_pos)
 		local ent_dot_forward = math.abs(ent_pos:Dot(self_forward))
 		if ent_dot_forward > size[1] then continue end
 		local ent_dot_right = math.abs(ent_pos:Dot(self_right))
