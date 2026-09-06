@@ -128,7 +128,7 @@ local function update_hull(ply, ply_pos)
 				maxs = hull_maxs,
 				filter = ply,
 				mask = MASK_PLAYERSOLID,
-				collisiongroup = COLLISION_GROUP_INTERACTIVE
+				collisiongroup = COLLISION_GROUP_PLAYER
 			}).Hit
 			then
 				-- shit. We're stuck
@@ -175,7 +175,10 @@ local function extrude_player(ply, ply_pos)
 	local max_diff = maxs[3] - mins[3]
 	if max_diff <= 0 then return false end
 
+	mins:Mul(0.999)
+	maxs:Mul(0.999)
 	mins[3] = maxs[3]
+
 	local tr_ground = util.TraceHull({
 		start = ply_pos,
 		endpos = ply_pos - Vector(0, 0, maxs[3]),
@@ -183,7 +186,7 @@ local function extrude_player(ply, ply_pos)
 		maxs = maxs,
 		filter = ply,
 		mask = MASK_PLAYERSOLID,
-		collisiongroup = COLLISION_GROUP_INTERACTIVE
+		collisiongroup = COLLISION_GROUP_PLAYER
 	})
 
 	if !tr_ground.StartSolid and tr_ground.Hit then
