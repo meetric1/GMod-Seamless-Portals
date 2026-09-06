@@ -8,7 +8,7 @@ ENT.PrintName         = "Physics Prop"
 ENT.Author            = "Meetric"
 ENT.Purpose           = ""
 ENT.Instructions      = ""
-ENT.PhysgunDisabled   = false
+ENT.DisableDuplicator = true
 
 function ENT:SetupDataTables()
     self:NetworkVar("Entity", 0, "Child")

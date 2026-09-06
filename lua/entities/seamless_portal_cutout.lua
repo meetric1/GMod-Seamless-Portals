@@ -1,13 +1,14 @@
 ENT.Type = "anim"
 ENT.Base = "base_anim"
 
-ENT.Category     = "Seamless Portals"
-ENT.PrintName    = "Cutout"
-ENT.Author       = "Meetric"
-ENT.Purpose      = ""
-ENT.Instructions = ""
-ENT.ENTITIES     = {}
-ENT.VERTICES     = {}
+ENT.Category          = "Seamless Portals"
+ENT.PrintName         = "Cutout"
+ENT.Author            = "Meetric"
+ENT.Purpose           = ""
+ENT.Instructions      = ""
+ENT.DisableDuplicator = true
+ENT.ENTITIES          = {}
+ENT.VERTICES          = {}
 
 -- SERVER only entity
 -- physically cuts a hole in the world,
