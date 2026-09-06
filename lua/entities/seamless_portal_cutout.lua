@@ -278,12 +278,14 @@ function ENT:Think()
 		if !allowed_classes[ent:GetClass()] then continue end
 		if ent:BoundingRadius() > max_bounding then continue end
 
-		if ent:GetVelocity():Dot(self_up) >= 0 then
-			old_ents[ent] = nil -- if added, don't bother removing
+		-- if already added, don't bother with checks
+		if old_ents[ent] then
+			old_ents[ent] = nil
 			continue
 		end
 
 		-- trim out entities not infront of portal
+		if ent:GetVelocity():Dot(self_up) >= 0 then continue end
 		local ent_pos = ent:GetPos() ent_pos:Sub(self_pos)
 		local ent_dot_forward = math.abs(ent_pos:Dot(self_forward))
 		if ent_dot_forward > size[1] then continue end
@@ -292,10 +294,8 @@ function ENT:Think()
 		local ent_dot_up = ent_pos:Dot(self_up)
 		if ent_dot_up < -size[3] then continue end
 
-		if !old_ents[ent] then
-			self:AddEntity(ent)
-			constraint.RemoveAll(ent) -- yeah. not even gonna try
-		end
+		self:AddEntity(ent)
+		constraint.RemoveAll(ent) -- yeah. not even gonna try
 		old_ents[ent] = nil
 	end
 

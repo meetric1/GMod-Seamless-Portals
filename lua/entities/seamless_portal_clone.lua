@@ -16,13 +16,6 @@ function ENT:SetupDataTables()
     self:NetworkVar("Entity", 2, "Portal2")
 end
 
-local function transform_portal_local(portal1, portal2, dir)
-	dir = SeamlessPortals.TransformPortal(portal1, portal2, dir + portal1:GetPos())
-	dir:Sub(portal2:GetPos())
-
-	return dir
-end
-
 function ENT:Think()
 	if SERVER then
 		self:VerletWeld(self, self:GetChild())
@@ -56,6 +49,13 @@ function ENT:Think()
 end
 
 if SERVER then
+	local function transform_portal_local(portal1, portal2, dir)
+		dir = SeamlessPortals.TransformPortal(portal1, portal2, dir + portal1:GetPos())
+		dir:Sub(portal2:GetPos())
+
+		return dir
+	end
+
 	local function abs_ratio(scale1, scale2)
 		if scale1 > scale2 then
 			return scale1 / scale2
