@@ -173,9 +173,9 @@ SeamlessPortals.GetRenderMesh = function(sides)
 
 			local streach1 = (side / sides) * 4
 			local streach2 = ((side + 1) / sides) * 4
-			mesh_vertex(side2, 0, 0)
+			mesh_vertex(side2, 1, 0)
 			mesh_vertex(side1, 0, 1)
-			mesh_vertex(side3, 1, 0)
+			mesh_vertex(side3, 0, 0)
 
 			mesh_vertex(Vector(side2[1], side2[2]), streach1, 1)
 			mesh_vertex(side2, streach1, 0)

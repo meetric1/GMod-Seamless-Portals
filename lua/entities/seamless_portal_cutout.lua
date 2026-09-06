@@ -288,6 +288,8 @@ function ENT:Think()
 		if ent_dot_forward > size[1] then continue end
 		local ent_dot_right = math.abs(ent_pos:Dot(self_right))
 		if ent_dot_right > size[2] then continue end
+		local ent_dot_up = ent_pos:Dot(self_up)
+		if ent_dot_up < -size[3] then continue end
 
 		if !old_ents[ent] then
 			self:AddEntity(ent)
