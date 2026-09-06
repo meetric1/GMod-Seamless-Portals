@@ -104,7 +104,7 @@ function ENT:GeneratePhysmesh(portal, exit_portal)
 	local size = portal:GetSize()
 	local offset = size / 2
 
-	if new then self.VERTICES = {} end
+	if exit_portal then self.VERTICES = {} end
 	local vertices = {}
 
 	local function pos_local(x, y, z)
@@ -233,6 +233,7 @@ end
 function ENT:CreatePhysmesh()
 	self:SetSolid(SOLID_VPHYSICS)
 	self:SetMoveType(MOVETYPE_NONE)
+	self:PhysicsDestroy()
 	self:PhysicsFromMesh(self.VERTICES)
 	self:EnableCustomCollisions(true)
 
