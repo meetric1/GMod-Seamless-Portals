@@ -187,17 +187,22 @@ if SERVER then
 		portal2:DeleteOnRemove(self)
 		constraint.NoCollide(self, game.GetWorld(), 0, 0, false)
 
-		local child_trail = child.SToolTrail
+		local child_trail = child.SToolTrail or child:GetInternalVariable("m_pGlowTrail")
 		if IsValid(child_trail) then
-			self.SToolTrail = util.SpriteTrail(self, 0, child_trail:GetColor(), false,
+			local self_trail = util.SpriteTrail(self,
+				child_trail:GetInternalVariable("m_nAttachment"),
+				child_trail:GetColor(), false,
 				child_trail:GetInternalVariable("startwidth"),
 				child_trail:GetInternalVariable("endwidth"),
 				child_trail:GetInternalVariable("lifetime"),
 				child_trail:GetInternalVariable("m_flTextureRes"),
 				child_trail:GetInternalVariable("model")
 			)
-			child_trail:DeleteOnRemove(self.SToolTrail)
+			self_trail:SetRenderMode(child_trail:GetRenderMode())
+			child_trail:DeleteOnRemove(self_trail)
+			self.SToolTrail = self_trail
 		end
+		child.SToolTrail = child_trail
 	end
 
 	function ENT:OnTakeDamage(damage)

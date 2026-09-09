@@ -251,6 +251,7 @@ local allowed_classes = {
 	["prop_vehicle_airboat"] = true,
 	["prop_vehicle_prisoner_pod"] = true,
 	["prop_combine_ball"] = true,
+	["npc_grenade_frag"] = true,
 }
 
 function ENT:Think()

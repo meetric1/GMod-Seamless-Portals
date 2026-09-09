@@ -177,6 +177,10 @@ function ENT:SpawnFunction(ply, tr)
 	return portal1
 end
 
+function ENT:TestCollision(startpos, delta, isbox, extents, mask)
+	return isbox or mask != 1107296257 -- grenade should not collide
+end
+
 function ENT:UpdateTransmitState()
 	return TRANSMIT_ALWAYS
 end
@@ -258,14 +262,14 @@ function ENT:Think()
 		local new_trail = clone.SToolTrail
 		if IsValid(old_trail) and IsValid(new_trail) then
 			clone.SToolTrail = old_trail
-			old_trail:SetAttachment(clone)
+			old_trail:SetAttachment(clone, new_trail:GetInternalVariable("m_nAttachment"))
 			old_trail:DontDeleteOnRemove(new_trail)
 
 			ent.SToolTrail = new_trail
-			new_trail:SetAttachment(ent)
+			new_trail:SetAttachment(ent, old_trail:GetInternalVariable("m_nAttachment"))
 			new_trail:DeleteOnRemove(old_trail)
 
-			if cleanup and undo then
+			if undo and cleanup then
 				undo.ReplaceEntity(old_trail, new_trail)
 				cleanup.ReplaceEntity(old_trail, new_trail)
 			end
