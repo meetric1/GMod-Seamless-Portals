@@ -254,6 +254,25 @@ function ENT:Think()
 		local new_vel = SeamlessPortals.TransformPortal(self, exit_portal, ent_vel)
 		new_vel:Sub(exit_pos)
 
+		local old_trail = ent.SToolTrail
+		local new_trail = clone.SToolTrail
+		if IsValid(old_trail) and IsValid(new_trail) then
+			clone.SToolTrail = old_trail
+			old_trail:SetAttachment(clone)
+			old_trail:DontDeleteOnRemove(new_trail)
+
+			ent.SToolTrail = new_trail
+			new_trail:SetAttachment(ent)
+			new_trail:DeleteOnRemove(old_trail)
+
+			if cleanup and undo then
+				undo.ReplaceEntity(old_trail, new_trail)
+				cleanup.ReplaceEntity(old_trail, new_trail)
+			end
+		else
+			SafeRemoveEntity(new_trail)
+		end
+
 		cutout:RemoveEntity(ent, exit_cutout_valid)
 		if exit_cutout_valid then exit_cutout:AddEntity(ent) end
 

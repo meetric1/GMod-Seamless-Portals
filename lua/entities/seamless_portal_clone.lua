@@ -186,6 +186,18 @@ if SERVER then
 		portal1:DeleteOnRemove(self)
 		portal2:DeleteOnRemove(self)
 		constraint.NoCollide(self, game.GetWorld(), 0, 0, false)
+
+		local child_trail = child.SToolTrail
+		if IsValid(child_trail) then
+			self.SToolTrail = util.SpriteTrail(self, 0, child_trail:GetColor(), false,
+				child_trail:GetInternalVariable("startwidth"),
+				child_trail:GetInternalVariable("endwidth"),
+				child_trail:GetInternalVariable("lifetime"),
+				child_trail:GetInternalVariable("m_flTextureRes"),
+				child_trail:GetInternalVariable("model")
+			)
+			child_trail:DeleteOnRemove(self.SToolTrail)
+		end
 	end
 
 	function ENT:OnTakeDamage(damage)
@@ -195,6 +207,19 @@ if SERVER then
 		damage:SetDamagePosition(child:LocalToWorld(self:WorldToLocal(damage:GetDamagePosition())))
 		damage:SetDamageForce(transform_portal_local(portal2, portal1, damage:GetDamageForce()))
 		child:TakeDamageInfo(damage)
+	end
+
+	function ENT:OnRemove()
+		local trail = self.SToolTrail
+		if IsValid(trail) then
+			-- trail needs to stay alive for a bit
+			local target = ents.Create("info_target")
+			target:SetPos(self:GetPos())
+			target:Spawn()
+			SafeRemoveEntityDelayed(target, math.min(trail:GetInternalVariable("lifetime"), 10))
+
+			trail:SetAttachment(target)
+		end
 	end
 else
 	function ENT:OnRemove()
