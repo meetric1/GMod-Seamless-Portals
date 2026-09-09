@@ -251,6 +251,7 @@ local allowed_classes = {
 	["prop_vehicle_airboat"] = true,
 	["prop_vehicle_prisoner_pod"] = true,
 	["prop_combine_ball"] = true,
+	["prop_energy_ball"] = true,
 	["npc_grenade_frag"] = true,
 }
 
@@ -313,14 +314,18 @@ function ENT:Think()
     return true
 end
 
-local logic_collision_pair = ents.Create("logic_collision_pair")
-logic_collision_pair:Spawn()
+local logic_collision_pair = NULL
 local function set_collision(ent, ent2, enable)
 	if !IsValid(ent) then return end
 
 	local ent_phys = ent:GetPhysicsObject()
 	local ent2_phys = ent2:GetPhysicsObject()
 	if !IsValid(ent_phys) or !IsValid(ent2_phys) then return end
+
+	if !IsValid(logic_collision_pair) then
+		logic_collision_pair = ents.Create("logic_collision_pair")
+		logic_collision_pair:Spawn()
+	end
 
 	logic_collision_pair:SetPhysConstraintObjects(ent_phys, ent2_phys)
 	logic_collision_pair:Activate()

@@ -177,14 +177,16 @@ if SERVER then
 		self:SetSkin(child:GetSkin())
 		self:SetSolid(child:GetSolid())
 		self:SetMoveType(child:GetMoveType())
-		if !self:PhysicsInit(child:GetSolid()) then return end
+		self:SetRenderMode(child:GetRenderMode())
+		self:SetRenderFX(child:GetRenderFX())
 		self:SetLightingOriginEntity(child)
 		self:SetModelScale(child:GetModelScale())
-		self:GetPhysicsObject():SetMass(child:GetPhysicsObject():GetMass())
-		self:VerletWeld(self, child, true)
 		child:DeleteOnRemove(self)
 		portal1:DeleteOnRemove(self)
 		portal2:DeleteOnRemove(self)
+		if !self:PhysicsInit(child:GetSolid()) then return end
+		self:GetPhysicsObject():SetMass(child:GetPhysicsObject():GetMass())
+		self:VerletWeld(self, child, true)
 		constraint.NoCollide(self, game.GetWorld(), 0, 0, false)
 
 		local child_trail = child.SToolTrail or child:GetInternalVariable("m_pGlowTrail")
