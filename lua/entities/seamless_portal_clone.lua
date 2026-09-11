@@ -88,11 +88,11 @@ if SERVER then
 
 		-- don't scale if it will likely lag us
 		local max_verts = 0
-		for _, convex in ipairs(self_phys:GetMeshConvexes()) do
+		for _, convex in ipairs(self_phys:GetMeshConvexes() or {}) do
 			max_verts = math.max(max_verts, #convex)
 		end
 
-		if max_verts < 2000 then
+		if max_verts > 0 and max_verts < 2000 then
 			self:PhysicsInit(self:GetSolid())
 			self:Activate()
 		end
