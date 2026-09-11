@@ -96,6 +96,8 @@ function ENT:GetPortal()
 end
 
 function ENT:Initialize()
+	self:SetSolid(SOLID_VPHYSICS)
+	self:SetMoveType(MOVETYPE_NONE)
     self:SetCollisionGroup(COLLISION_GROUP_PASSABLE_DOOR) -- props only
     self:SetTrigger(true)
 end
@@ -232,8 +234,6 @@ function ENT:GeneratePhysmesh(portal, exit_portal)
 end
 
 function ENT:CreatePhysmesh()
-	self:SetSolid(SOLID_VPHYSICS)
-	self:SetMoveType(MOVETYPE_NONE)
 	self:PhysicsDestroy()
 	self:PhysicsFromMesh(self.VERTICES)
 	self:EnableCustomCollisions(true)
@@ -253,6 +253,7 @@ local allowed_classes = {
 	["prop_combine_ball"] = true,
 	["prop_energy_ball"] = true,
 	["npc_grenade_frag"] = true,
+	["sent_ball"] = true,
 }
 
 function ENT:Think()

@@ -26,6 +26,18 @@ function ENT:Think()
 	local child = self:GetChild()
 	if !IsValid(child) then return end
 
+	if child:IsScripted() and child.Draw != self.Draw then
+		-- we need data values (like SENT:GetBallColor), since Draw relies on them
+		-- TODO: is this safe?
+		for k, v in pairs(child:GetTable()) do
+			if !self[k] then
+				self[k] = v
+			end
+		end
+
+		self.Draw = child.Draw
+	end
+
 	local portal1 = self:GetPortal1()
 	local portal2 = self:GetPortal2()
 	local new_pos, new_ang = SeamlessPortals.TransformPortal(portal1, portal2, child:GetPos(), child:GetAngles())
