@@ -68,32 +68,41 @@ local function is_hull_invalid(ply)
 	return ply.SEAMLESS_PORTALS_HULL_MINS and true or false
 end
 
-local function get_hull_clip(hull_mins, hull_maxs)
-	for i = 1, 2 do
-		hull_mins[i] = math.max(hull_mins[i] / 4, -4)
-		hull_maxs[i] = math.min(hull_maxs[i] / 4, 4)
+local function get_hull_clipped(hull_mins, hull_maxs, plane_pos, plane_dir)
+	local extrude = 0
+	local iterator = Vector()
+	for point_id = 0, 7 do
+		for i = 1, 3 do
+			iterator[i] = point_id % 2^i < 2^(i-1) and hull_mins[i] or hull_maxs[i]
+		end
+
+		iterator:Sub(plane_pos)
+		extrude = math.max(extrude, -(iterator:Dot(plane_dir)))
 	end
 
-	hull_maxs[3] = hull_maxs[3] * 0.9
+	plane_dir = plane_dir * extrude
+	hull_mins:Add(plane_dir)
+	hull_maxs:Add(plane_dir)
+	hull_maxs[3] = hull_maxs[3] * 0.9 -- for ceiling portals
 end
 
 -- hull stand and hull duck must be calculated separately
-local function clip_hull(ply, hull_mins, hull_maxs, half)
-	--local hull_mins, hull_maxs = get_hull(ply) -- pass in to avoid gc spaz (-2 vectors)
-	get_hull_clip(hull_mins, hull_maxs)
+local function clip_hull(ply, plane_pos, plane_dir, half)
+	if !half then
+		plane_dir[3] = 0
+	end
+
+	local hull_mins, hull_maxs = get_hull(ply)
+	get_hull_clipped(hull_mins, hull_maxs, plane_pos, plane_dir)
 
 	local hull_duck_mins, hull_duck_maxs = get_hull_duck(ply)
-	get_hull_clip(hull_duck_mins, hull_duck_maxs)
-
-	if half then
-		hull_mins[3] = hull_maxs[3]
-		hull_duck_mins[3] = hull_maxs[3] -- genuine fuckshit
-	end
+	get_hull_clipped(hull_duck_mins, hull_duck_maxs, plane_pos, plane_dir)
 
 	ply:SetHull(hull_mins, hull_maxs)
 	ply:SetHullDuck(hull_duck_mins, hull_duck_maxs)
 
-	--debugoverlay.Box(ply:GetPos(), hull_mins, hull_maxs, 0.5, Color(255, 0, 0, 0))
+	debugoverlay.Box(ply:GetPos(), hull_mins, hull_maxs, 0.05, Color(0, 255, 0, 0))
+	debugoverlay.Box(ply:GetPos(), hull_duck_mins, hull_duck_maxs, 0.05, Color(255, 0, 0, 0))
 end
 
 local function update_hull(ply, ply_pos)
@@ -103,6 +112,7 @@ local function update_hull(ply, ply_pos)
 		return
 	end
 
+	-- hull trace (find portal)
 	local hull_mins, hull_maxs = get_hull(ply)
 	portal_trace_data.start = ply_pos
 	portal_trace_data.endpos = ply_pos
@@ -110,44 +120,26 @@ local function update_hull(ply, ply_pos)
 	portal_trace_data.maxs = hull_maxs
 	local tr_hull = util.TraceHull(portal_trace_data)
 	if !tr_hull.Hit then
-		if is_hull_invalid(ply) then
-			-- FIXME: during a teleport, this GetPos will check the ENTERED location, instead of the current
-			-- meaning, it will check the enter location, and possibly think your collision hull is good for validation.
-			-- (possibly sticking you into a wall)
-			-- however, the likelyhood of this is nearly impossible, since you:
-				-- 1. Need enough speed to not overlap the portal on exit
-				-- 2. But not enough speed, since the too_fast check will force this overlap check to reutrn true
-				-- 3. Enter a portal attached to nothing
-				-- 4. Exit into a location which gets the normal hull stuck and non extruded
-			-- I cant replicate this bug at all or find a situation where it happens, so I'm going to just leave this as-is for now
-			ply_pos = ply:GetPos()
-			if util.TraceHull({
-				start = ply_pos,
-				endpos = ply_pos,
-				mins = hull_mins,
-				maxs = hull_maxs,
-				filter = ply,
-				mask = MASK_PLAYERSOLID,
-				collisiongroup = COLLISION_GROUP_PLAYER
-			}).Hit
-			then
-				-- shit. We're stuck
-				clip_hull(ply, hull_mins, hull_maxs, false) -- back to standing
-				return true -- let movement code try to extrude player
-			end
-		end
-
-		return validate_hull(ply)
+		return is_hull_invalid(ply) and 1
 	end
 
 	local portal = tr_hull.Entity
 	if !IsValid(portal:GetExitPortal()) then return end
 
+	-- eyepos trace
+	local portal_up = portal:GetUp()
+	local eye_pos = ply:GetCurrentViewOffset() eye_pos:Add(ply_pos)
+	portal_trace_data.start = eye_pos
+	portal_trace_data.endpos = eye_pos - portal_up * hull_maxs[3]
+	if !SeamlessPortals.TraceLine(portal_trace_data).Hit then
+		return is_hull_invalid(ply) and 1
+	end
+
 	-- we're about to change hull
 	invalidate_hull(ply)
 
 	-- floor portal mode. yikes.
-	local half = portal:GetUp():Dot(Vector(0, 0, 1)) > 0.5
+	local half = portal_up:Dot(Vector(0, 0, 1)) > 0.5
 	if half then
 		portal_trace_data.start = ply_pos + Vector(0, 0, hull_maxs[3])
 		portal_trace_data.endpos = ply_pos + Vector(0, 0, hull_mins[3])
@@ -156,7 +148,8 @@ local function update_hull(ply, ply_pos)
 		half = tr_ground.Hit and !tr_ground.StartSolid
 	end
 
-	clip_hull(ply, hull_mins, hull_maxs, half)
+	local plane_pos = portal:GetPos() plane_pos:Sub(ply_pos) -- local to player
+	clip_hull(ply, plane_pos, portal_up, half)
 
 	if half then
 		ply:SetGroundEntity(nil)
@@ -165,23 +158,32 @@ local function update_hull(ply, ply_pos)
 	return true
 end
 
--- TODO: extrude on sides too so we dont get stuck in a wall
-local function extrude_player(ply, ply_pos)
+local function extrude_player(ply, ply_pos, force)
 	if ply:GetMoveType() == MOVETYPE_NOCLIP then
 		return false
 	end
 
 	local mins, maxs = (ply:Crouching() and ply.GetHullDuck or ply.GetHull)(ply)
 	local max_diff = maxs[3] - mins[3]
-	if max_diff <= 0 then return false end
+
+	if force then
+		local middle = (mins + maxs) middle:Mul(0.5)
+		middle[3] = mins[3]
+		ply_pos:Add(middle)
+		ply:SetGroundEntity(nil)
+		validate_hull(ply)
+	end
 
 	mins:Mul(0.999)
 	maxs:Mul(0.999)
-	mins[3] = maxs[3]
 
+	local start = ply_pos + Vector(0, 0, maxs[3])
+	local endpos = ply_pos + Vector(0, 0, mins[3])
+	mins[3] = 0
+	maxs[3] = 0
 	local tr_ground = util.TraceHull({
-		start = ply_pos,
-		endpos = ply_pos - Vector(0, 0, maxs[3]),
+		start = start,
+		endpos = endpos,
 		mins = mins,
 		maxs = maxs,
 		filter = ply,
@@ -189,8 +191,8 @@ local function extrude_player(ply, ply_pos)
 		collisiongroup = COLLISION_GROUP_PLAYER
 	})
 
-	if !tr_ground.StartSolid and tr_ground.Hit then
-		ply_pos[3] = ply_pos[3] + math.min((1 - tr_ground.Fraction) * maxs[3], max_diff)
+	if force or (!tr_ground.StartSolid and tr_ground.Hit) then
+		ply_pos[3] = ply_pos[3] + (1 - tr_ground.Fraction) * max_diff
 		return true
 	end
 
@@ -286,10 +288,11 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 
 	-- update_hull will return true if we might need to do a ground extrusion
 	local ply_pos = mv:GetOrigin()
-	if update_hull(ply, ply_pos + ply_vel_offset) then
-		if extrude_player(ply, ply_pos) then
-			mv:SetOrigin(ply_pos)
-		end
+	local update = update_hull(ply, ply_pos + ply_vel_offset)
+	if !update then return end
+
+	if extrude_player(ply, ply_pos, update == 1) then
+		mv:SetOrigin(ply_pos)
 	end
 
 	-- teleportation logic
