@@ -286,11 +286,10 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 
 	-- update_hull will return true if we might need to do a ground extrusion
 	local ply_pos = mv:GetOrigin()
-	local update = update_hull(ply, ply_pos + ply_vel_offset)
-	if !update then return end
-
-	if extrude_player(ply, ply_pos) then
-		mv:SetOrigin(ply_pos)
+	if update_hull(ply, ply_pos + ply_vel_offset) then
+		if extrude_player(ply, ply_pos) then
+			mv:SetOrigin(ply_pos)
+		end
 	end
 
 	-- teleportation logic
