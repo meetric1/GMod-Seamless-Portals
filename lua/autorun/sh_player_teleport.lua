@@ -286,10 +286,11 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 
 	-- update_hull will return true if we might need to do a ground extrusion
 	local ply_pos = mv:GetOrigin()
-	if update_hull(ply, ply_pos + ply_vel_offset) then
-		if extrude_player(ply, ply_pos) then
-			mv:SetOrigin(ply_pos)
-		end
+	local update = update_hull(ply, ply_pos + ply_vel_offset)
+	if !update then return end
+
+	if extrude_player(ply, ply_pos) then
+		mv:SetOrigin(ply_pos)
 	end
 
 	-- teleportation logic
@@ -311,16 +312,17 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 		hit_pos = tr.HitPos
 	end
 
+	ply_vel:Add(portal:GetPos())
 	local new_ply_eyepos, new_ply_ang = SeamlessPortals.TransformPortal(portal, exit_portal, hit_pos, ply:EyeAngles())
-	local _, new_ply_vel = SeamlessPortals.TransformPortal(portal, exit_portal, nil, ply_vel:Angle())
-	new_ply_vel = new_ply_vel:Forward()
-	new_ply_vel:Mul(math.max(
-		ply_vel:Length(),
-		exit_portal:GetUp():Dot(-physenv.GetGravity() / 2) -- minimum velocity (to prevent fast in/out movement)
-	))
+	local new_ply_vel = SeamlessPortals.TransformPortal(portal, exit_portal, ply_vel)
+	new_ply_vel:Sub(exit_portal:GetPos())
 
-	local ratio = exit_portal:GetSize()[1] / portal:GetSize()[1]
-	new_ply_vel:Mul(ratio)
+	-- minimum velocity (prevents fast in/out movement)
+	local exit_portal_up = exit_portal:GetUp()
+	local min_velocity = physenv.GetGravity() / -2
+	min_velocity:Mul(math.max(0, exit_portal_up:Dot(min_velocity:GetNormalized())))
+	exit_portal_up:Mul(math.max(0, min_velocity:Length() - math.sqrt(math.max(0, min_velocity:Dot(new_ply_vel)))))
+	new_ply_vel:Add(exit_portal_up)
 
 	local new_ply_pos = ply:GetCurrentViewOffset()
 	new_ply_pos:Negate()
@@ -348,8 +350,8 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 			net.Send(ply)
 		end
 
-		-- shrinkinator (most popular resizing mod- change if there is a better one)
-		ply:SetNWInt("desired_size", ply:GetNWInt("desired_size", 100) * ratio)
+		-- shrinkinator support (most popular resizing mod, change if there is a better one)
+		ply:SetNWInt("desired_size", ply:GetNWInt("desired_size", 100) * exit_portal:GetSize()[1] / portal:GetSize()[1])
 
 		portal:TriggerOutput("OnTeleportFrom", ply)
 		exit_portal:TriggerOutput("OnTeleportTo", ply)
