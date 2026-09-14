@@ -109,7 +109,7 @@ local function update_hull(ply, ply_pos)
 	-- no need to modify hull if we're in noclip
 	if ply:GetMoveType() == MOVETYPE_NOCLIP then
 		validate_hull(ply)
-		return
+		return true
 	end
 
 	-- hull trace (find portal)
