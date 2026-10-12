@@ -246,7 +246,7 @@ function ENT:CreatePhysmesh()
 	end
 end
 
-local allowed_classes = {
+SeamlessPortals.cutout_allowed_classes = {
 	["prop_physics"] = true,
 	["prop_vehicle_airboat"] = true,
 	["prop_vehicle_prisoner_pod"] = true,
@@ -278,7 +278,7 @@ function ENT:Think()
     local self_up = self:GetUp()
     local max_bounding = portal:BoundingRadius() * 4
 	for _, ent in ipairs(valid_ents) do
-		if !allowed_classes[ent:GetClass()] then continue end
+		if !SeamlessPortals.cutout_allowed_classes[ent:GetClass()] then continue end
 		if ent:BoundingRadius() > max_bounding then continue end
 
 		-- if already added, don't bother with checks
