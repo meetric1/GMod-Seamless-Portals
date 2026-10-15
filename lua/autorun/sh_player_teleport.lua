@@ -5,9 +5,14 @@ local function too_fast(vel)
 	return vel:LengthSqr() > 1000 * 1000
 end
 
+SeamlessPortals = SeamlessPortals or {}
+SeamlessPortals.IsSeamlessPortalOrBased = function(class)
+	return class == "seamless_portal" or scripted_ents.IsBasedOn(class, "seamless_portal")
+end
+
 -- TODO: figure out the correct mask for this..
 local portal_trace_data = {
-	filter = function(e) return e:GetClass() == "seamless_portal" end,
+	filter = function(e) return SeamlessPortals.IsSeamlessPortalOrBased(e:GetClass()) end,
 	ignoreworld = true,
 	mask = MASK_PLAYERSOLID
 }
