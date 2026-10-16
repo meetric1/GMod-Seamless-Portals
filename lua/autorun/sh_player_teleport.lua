@@ -5,8 +5,6 @@ local function too_fast(vel)
 	return vel:LengthSqr() > 1000 * 1000
 end
 
-SeamlessPortals = SeamlessPortals or {}
-
 -- TODO: figure out the correct mask for this..
 local portal_trace_data = {
 	filter = function(e) return SeamlessPortals.IsSeamlessPortalBased(e) end,
