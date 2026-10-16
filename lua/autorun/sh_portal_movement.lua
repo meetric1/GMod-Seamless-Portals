@@ -1,3 +1,5 @@
+-- this is the player movement code for the portals. Rewritten on 7/30/26
+
 AddCSLuaFile()
 AddCSLuaFile("cl_portal_flashlight.lua")
 
