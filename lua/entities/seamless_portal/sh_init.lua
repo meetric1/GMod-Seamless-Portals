@@ -113,3 +113,8 @@ SeamlessPortals.ShouldRender = function(portal, eyePos, eyeAngle, distance)
 	if(eye:LengthSqr() >= distance^2 * max) then return false end -- Second condition is not met so bail put
 	return (eye:Dot(eyeAngle:Forward()) < max) -- Decides the return value of the function
 end
+
+SeamlessPortals.IsSeamlessPortalBased = function(ent)
+	local class = ent:GetClass()
+	return class == "seamless_portal" or scripted_ents.IsBasedOn(class, "seamless_portal")
+end
