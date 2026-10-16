@@ -356,7 +356,7 @@ hook.Add("Move", "seamless_portal_teleport", function(ply, mv)
 		exit_portal:TriggerOutput("OnTeleportTo", ply)
 
 		ply:DropObject()
-		ply:SetPos(new_ply_pos) -- helps clientside lerp a bit
+		--ply:SetPos(new_ply_pos) -- helps clientside lerp a bit
 	end
 
 	-- incase we get stuck
