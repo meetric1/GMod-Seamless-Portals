@@ -7,7 +7,7 @@ hook.Add("EntityFireBullets", "seamless_portal_detour_bullet", function(entity, 
 	local tr = SeamlessPortals.TraceLine({start = data.Src, endpos = data.Src + data.Dir * (data.Distance or 56755), filter = entity})
 	local hitPortal = tr.Entity
 	if !IsValid(hitPortal) then return end
-	if !SeamlessPortals.IsSeamlessPortalOrBased(hitPortal:GetClass()) then return end
+	if !SeamlessPortals.IsSeamlessPortalBased(hitPortal) then return end
 	local exitportal = hitPortal:GetExitPortal()
 	if !IsValid(exitportal) then return end
 	if (tr.HitPos - hitPortal:GetPos()):Dot(hitPortal:GetUp()) > 0 then
