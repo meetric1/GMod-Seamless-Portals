@@ -9,8 +9,8 @@ SWEP.WorldModel = "models/weapons/w_irifle.mdl"
 SWEP.SetHoldType = "pistol"
 
 SWEP.Weight = 5
-SWEP.AutoSwichTo = true
-SWEP.AutoSwichFrom = false
+SWEP.AutoSwitchTo = true
+SWEP.AutoSwitchFrom = false
 
 SWEP.Category = "Seamless Portals"
 SWEP.Slot = 0
