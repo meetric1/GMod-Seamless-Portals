@@ -156,6 +156,7 @@ function SWEP:DoLink(base, link, colr)
 	ent:LinkPortal(self[link])
 	setPortalPlacement(self:GetOwner(), ent)
 	self:SetNextPrimaryFire(CurTime() + 0.25)
+	self:SetNextSecondaryFire(CurTime() + 0.25)
 end
 
 function SWEP:PrimaryAttack()
