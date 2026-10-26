@@ -129,6 +129,7 @@ function ENT:Think()
 		phys:SetAngles(self:GetAngles())
 	else
 		self:UpdatePhysmesh()
+		self.SEAMLESS_PORTALS_INITIALIZED = true
 	end
 end
 

@@ -57,7 +57,7 @@ function ENT:SetRemoveExit(bool)
 	set_dupe_link(self:GetCreator(), self, {exit_remove = bool})
 end
 
-function ENT:GetRemoveExit(bool)
+function ENT:GetRemoveExit()
 	return self.SEAMLESS_PORTALS_REMOVE_EXIT
 end
 
