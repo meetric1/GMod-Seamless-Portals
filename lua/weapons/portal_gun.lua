@@ -1,26 +1,17 @@
 SWEP.Base = "weapon_base"
+
+SWEP.Spawnable = true
 SWEP.PrintName = "Portal Gun"
+SWEP.Category = "Seamless Portals"
 
 SWEP.ViewModel = "models/weapons/c_irifle.mdl"
-SWEP.ViewModelFlip = false
 SWEP.UseHands = true
-
 SWEP.WorldModel = "models/weapons/w_irifle.mdl"
-SWEP.SetHoldType = "pistol"
 
-SWEP.Weight = 5
-SWEP.AutoSwichTo = true
-SWEP.AutoSwichFrom = false
-
-SWEP.Category = "Seamless Portals"
 SWEP.Slot = 0
 SWEP.SlotPos = 1
 
-SWEP.DrawAmmo = true
-SWEP.DrawChrosshair = true
-
-SWEP.Spawnable = true
-SWEP.AdminSpawnable = false
+SWEP.DrawAmmo = false
 
 SWEP.Primary.ClipSize = -1
 SWEP.Primary.DefaultClip = -1
