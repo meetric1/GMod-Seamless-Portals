@@ -28,18 +28,18 @@ SeamlessPortals = SeamlessPortals or {}
 
 function detour_trace(func_name)
 	SeamlessPortals[func_name] = SeamlessPortals[func_name] or util[func_name]
-	util[func_name] = function(data) -- Trace line that can go through portals
+	util[func_name] = function(data) -- Trace that can go through portals
 		local tr = SeamlessPortals[func_name](data)
 
 		if IsValid(tr.Entity) then
-			if tr.Entity:GetClass() == "seamless_portal" and IsValid(tr.Entity:GetExitPortal()) then
+			if SeamlessPortals.IsSeamlessPortalBased(tr.Entity) and IsValid(tr.Entity:GetExitPortal()) then
 				local hitPortal = tr.Entity
 				if tr.HitNormal:Dot(hitPortal:GetUp()) > 0.9 then
 					local editeddata = table.Copy(data)
 					local exitportal = hitPortal:GetExitPortal()
 					editeddata.start = SeamlessPortals.TransformPortal(hitPortal, exitportal, tr.HitPos)
 					editeddata.endpos = SeamlessPortals.TransformPortal(hitPortal, exitportal, data.endpos)
-					-- filter the exit portal from being hit by the ray
+					-- filter the exit portal from being hit by the trace
 					if IsEntity(data.filter) then
 						editeddata.filter = {data.filter, exitportal}
 					else
