@@ -23,36 +23,42 @@ hook.Add("EntityFireBullets", "seamless_portal_detour_bullet", function(entity, 
 	end
 end)
 
--- super simple traceline detour
+-- super simple trace detours
 SeamlessPortals = SeamlessPortals or {}
-SeamlessPortals.TraceLine = SeamlessPortals.TraceLine or util.TraceLine
-util.TraceLine = function(data) -- Trace line that can go through portals
-	local tr = SeamlessPortals.TraceLine(data)
 
-	if IsValid(tr.Entity) then
-		if tr.Entity:GetClass() == "seamless_portal" and IsValid(tr.Entity:GetExitPortal()) then
-			local hitPortal = tr.Entity
-			if tr.HitNormal:Dot(hitPortal:GetUp()) > 0.9 then
-				local editeddata = table.Copy(data)
-				local exitportal = hitPortal:GetExitPortal()
-				editeddata.start = SeamlessPortals.TransformPortal(hitPortal, exitportal, tr.HitPos)
-				editeddata.endpos = SeamlessPortals.TransformPortal(hitPortal, exitportal, data.endpos)
-				-- filter the exit portal from being hit by the ray
-				if IsEntity(data.filter) then
-					editeddata.filter = {data.filter, exitportal}
-				else
-					if istable(editeddata.filter) then
-						table.insert(editeddata.filter, exitportal)
+function detour_trace(func_name)
+	SeamlessPortals[func_name] = SeamlessPortals[func_name] or util[func_name]
+	util[func_name] = function(data) -- Trace that can go through portals
+		local tr = SeamlessPortals[func_name](data)
+
+		if IsValid(tr.Entity) then
+			if SeamlessPortals.IsSeamlessPortalBased(tr.Entity) and IsValid(tr.Entity:GetExitPortal()) then
+				local hitPortal = tr.Entity
+				if tr.HitNormal:Dot(hitPortal:GetUp()) > 0.9 then
+					local editeddata = table.Copy(data)
+					local exitportal = hitPortal:GetExitPortal()
+					editeddata.start = SeamlessPortals.TransformPortal(hitPortal, exitportal, tr.HitPos)
+					editeddata.endpos = SeamlessPortals.TransformPortal(hitPortal, exitportal, data.endpos)
+					-- filter the exit portal from being hit by the trace
+					if IsEntity(data.filter) then
+						editeddata.filter = {data.filter, exitportal}
 					else
-						editeddata.filter = exitportal
+						if istable(editeddata.filter) then
+							table.insert(editeddata.filter, exitportal)
+						else
+							editeddata.filter = exitportal
+						end
 					end
+					return SeamlessPortals[func_name](editeddata)
 				end
-				return SeamlessPortals.TraceLine(editeddata)
 			end
 		end
+		return tr
 	end
-	return tr
 end
+
+detour_trace("TraceLine")
+detour_trace("TraceHull")
 
 if SERVER then return end
 
