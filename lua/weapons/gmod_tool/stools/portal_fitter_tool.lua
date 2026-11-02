@@ -28,7 +28,7 @@ if CLIENT then
 end
 
 function TOOL:EasyTrace(pos, dir)
-    return util.TraceLine({
+    return SeamlessPortals.TraceLine({
         start = pos,
         endpos = pos + dir * 500,
         filter = self:GetOwner()
@@ -36,10 +36,9 @@ function TOOL:EasyTrace(pos, dir)
 end
 
 function TOOL:GetPlacementPosition(tr)
-	local ply = self:GetOwner()
-	if not tr then tr = ply:GetEyeTrace() end
     if not tr.Hit then return nil end
 
+    local ply = self:GetOwner()
     local ang = ply:EyeAngles()
 
     -- bias pitch a bit, because its more likely we are placing on a wall

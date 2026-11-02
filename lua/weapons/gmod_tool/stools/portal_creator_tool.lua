@@ -98,7 +98,10 @@ function TOOL:GetPlacementPosition(trace)
 end
 
 -- portal creation
-function TOOL:LeftClick(trace)
+function TOOL:LeftClick()
+	local traceTable = util.GetPlayerTrace(self:GetOwner())
+	local trace = SeamlessPortals.TraceLine(traceTable)
+
 	if !trace.Hit then return false end
 
 	local pos, ang, size = self:GetPlacementPosition(trace)
@@ -143,7 +146,9 @@ function TOOL:GetLinkTarget()
 end
 
 
-function TOOL:RightClick(trace)
+function TOOL:RightClick()
+	local traceTable = util.GetPlayerTrace(self:GetOwner())
+	local trace = SeamlessPortals.TraceLine(traceTable)
 	if !trace.Hit then return false end
 	local owner = self:GetOwner()
 	local portal = trace.Entity
@@ -178,7 +183,10 @@ function TOOL:RightClick(trace)
 end
 
 -- portal unlinking
-function TOOL:Reload(trace)
+function TOOL:Reload()
+	local traceTable = util.GetPlayerTrace(self:GetOwner())
+	local trace = SeamlessPortals.TraceLine(traceTable)
+
 	local portal = trace.Entity
 	if !IsValid(portal) or portal:GetClass() ~= "seamless_portal" then return false end
 
@@ -193,8 +201,9 @@ if CLIENT then
 	local green = Color(0, 255, 0, 50)
 	local beam_material = Material("cable/blue_elec")
 	function TOOL:DrawHUD()
-		local owner = self:GetOwner()
-		local trace = owner:GetEyeTrace()
+		local traceTable = util.GetPlayerTrace(self:GetOwner())
+		local trace = SeamlessPortals.TraceLine(traceTable)
+		if !trace.Hit then return end
         local pos, ang, size = self:GetPlacementPosition(trace)
 		if not pos then return end
 
