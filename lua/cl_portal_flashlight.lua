@@ -62,7 +62,7 @@ local function UpdateLightNew(vecPos, vecAng)
 
 	-- Not on ladder...trace a hull
 	if !bPlayerOnLadder then
-		local pmOriginTrace = util.TraceHull({
+		local pmOriginTrace = SeamlessPortals.TraceHull({
 			start = vecPos,
 			endpos = vOrigin,
 			mins = light_size_negative,
@@ -101,7 +101,7 @@ local function UpdateLightNew(vecPos, vecAng)
 	vRight:Sub(vUp:Dot(vRight) * vUp)
 	vRight:Normalize()
 
-	local pmDirectionTrace = util.TraceHull({
+	local pmDirectionTrace = SeamlessPortals.TraceHull({
 		start = vOrigin,
 		endpos = vTarget,
 		mins = light_size_negative,
@@ -118,7 +118,7 @@ local function UpdateLightNew(vecPos, vecAng)
 		m_flDistMod = Lerp(flDistDrag, m_flDistMod, flPullBackDist)
 
 		if !bPlayerOnLadder then
-			local pmBackTrace = util.TraceHull({
+			local pmBackTrace = SeamlessPortals.TraceHull({
 				start = vOrigin,
 				endpos = vOrigin - vDir * (flPullBackDist - flEpsilon),
 				mins = light_size_negative,

@@ -110,7 +110,7 @@ local function update_hull(ply, ply_pos)
 	portal_trace_data.endpos = ply_pos
 	portal_trace_data.mins = hull_mins
 	portal_trace_data.maxs = hull_maxs
-	local tr_hull = util.TraceHull(portal_trace_data)
+	local tr_hull = SeamlessPortals.TraceHull(portal_trace_data)
 	if !tr_hull.Hit then
 		if is_hull_invalid(ply) then
 			-- FIXME: during a teleport, this GetPos will check the ENTERED location, instead of the current
@@ -123,7 +123,7 @@ local function update_hull(ply, ply_pos)
 				-- 4. Exit into a location which gets the normal hull stuck and non extruded
 			-- I cant replicate this bug at all or find a situation where it happens, so I'm going to just leave this as-is for now
 			ply_pos = ply:GetPos()
-			if util.TraceHull({
+			if SeamlessPortals.TraceHull({
 				start = ply_pos,
 				endpos = ply_pos,
 				mins = hull_mins,
@@ -181,7 +181,7 @@ local function extrude_player(ply, ply_pos)
 	maxs:Mul(0.999)
 	mins[3] = maxs[3]
 
-	local tr_ground = util.TraceHull({
+	local tr_ground = SeamlessPortals.TraceHull({
 		start = ply_pos,
 		endpos = ply_pos - Vector(0, 0, maxs[3]),
 		mins = mins,
