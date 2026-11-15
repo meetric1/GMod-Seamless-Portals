@@ -246,7 +246,7 @@ function ENT:CreatePhysmesh()
 	end
 end
 
-SeamlessPortals.cutout_allowed_classes = {
+SeamlessPortals.cutout_allowed_classes = SeamlessPortals.cutout_allowed_classes or {
 	["prop_physics"] = true,
 	["prop_vehicle_airboat"] = true,
 	["prop_vehicle_prisoner_pod"] = true,
@@ -288,7 +288,7 @@ function ENT:Think()
 		end
 
 		-- trim out entities not infront of portal
-		if ent:GetVelocity():Dot(self_up) >= 0 then continue end
+		if ent:GetVelocity():Dot(self_up) > 0 then continue end
 		local ent_pos = ent:GetPos() ent_pos:Sub(self_pos)
 		local ent_dot_forward = math.abs(ent_pos:Dot(self_forward))
 		if ent_dot_forward > size[1] then continue end
